@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protótipo — Painel do Gestor · Garbin Transportes</title>
+<script src="https://unpkg.com/feather-icons"></script>
+<style>
+  :root{
+    --primary:#0066FF;
+    --primary-dark:#0C447C;
+    --chip-bg:#EFF6FF;
+    --success:#00B87C;
+    --success-text:#175C3A;
+    --success-bg:#E1F5EE;
+    --warning-bg:#FAEEDA;
+    --warning-text:#633806;
+    --warning-strong:#854F0B;
+    --danger:#A32D2D;
+    --danger-bg:#FCEBEB;
+    --danger-text:#791F1F;
+    --dark:#1E293B;
+    --bg:#F8FAFC;
+    --border:#E2E8F0;
+    --text:#1E293B;
+    --text-secondary:#64748B;
+    --text-muted:#94A3B8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:#EEF1F5;
+    color:var(--text);
+  }
+  .page-head{max-width:1240px;margin:0 auto;padding:20px 24px 0;}
+  .page-head h1{font-size:19px;font-weight:600;margin:0 0 4px;}
+  .page-head p{font-size:13px;color:var(--text-secondary);margin:0 0 4px;line-height:1.5;max-width:820px;}
+  .app-shell{max-width:1240px;margin:16px auto 64px;padding:0 24px;display:flex;gap:0;
+    background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 20px 40px rgba(15,23,42,0.12);min-height:760px;}
+  .app-shell{padding:0;}
+  .sidebar{
+    width:220px;background:var(--dark);color:#fff;flex-shrink:0;display:flex;flex-direction:column;
+    padding:20px 0;
+  }
+  .sidebar .brand{padding:0 20px 20px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:12px;}
+  .sidebar .brand .logo{width:32px;height:32px;border-radius:8px;background:var(--primary);
+    display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
+  .sidebar .brand .logo svg{width:18px;height:18px;color:#fff;}
+  .sidebar .brand .name{font-size:14px;font-weight:600;}
+  .sidebar .brand .sub{font-size:11px;color:#94A3B8;margin-top:2px;}
+  .sidebar nav{display:flex;flex-direction:column;gap:2px;padding:0 12px;}
+  .sidebar nav button{
+    display:flex;align-items:center;gap:10px;background:none;border:none;color:#CBD5E1;
+    padding:10px 12px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;text-align:left;
+    font-family:inherit;width:100%;
+  }
+  .sidebar nav button svg{width:16px;height:16px;flex-shrink:0;}
+  .sidebar nav button:hover{background:rgba(255,255,255,0.06);color:#fff;}
+  .sidebar nav button.active{background:var(--primary);color:#fff;}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .topbar{
+    padding:18px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+    justify-content:space-between;gap:16px;flex-wrap:wrap;
+  }
+  .topbar h2{font-size:17px;font-weight:600;margin:0;}
+  .topbar .desc{font-size:12px;color:var(--text-secondary);margin:2px 0 0;}
+  .select-like{
+    display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);
+    border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;
+  }
+  .select-like svg{width:14px;height:14px;color:var(--text-secondary);}
+  .view{display:none;padding:24px 28px;overflow-y:auto;}
+  .view.active{display:block;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;
+    font-family:inherit;
+  }
+  .btn svg{width:15px;height:15px;}
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-outline{background:#fff;border:1px solid var(--border);color:var(--text);}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .btn-ghost{background:none;color:var(--text-secondary);font-weight:600;}
+  .btn-sm{padding:7px 12px;font-size:12px;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .kpi-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .kpi-card .label{font-size:12px;color:var(--text-secondary);margin:0;}
+  .kpi-card .value{font-size:22px;font-weight:700;margin:6px 0 0;}
+  .kpi-card.success{background:var(--success-bg);border-color:transparent;}
+  .kpi-card.success .value{color:var(--success-text);}
+  .alert-card{background:#fff;border:1px solid var(--warning-strong);border-left:4px solid var(--warning-strong);
+    border-radius:10px;padding:14px 16px;margin-bottom:20px;}
+  .alert-card h3{font-size:13px;font-weight:600;margin:0 0 10px;display:flex;align-items:center;gap:6px;}
+  .alert-card h3 svg{width:15px;height:15px;color:var(--warning-strong);}
+  .alert-item{
+    display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:13px;cursor:pointer;
+    background:var(--warning-bg);color:var(--warning-text);margin-bottom:6px;
+  }
+  .alert-item:last-child{margin-bottom:0;}
+  .alert-item svg{width:14px;height:14px;flex-shrink:0;}
+  .alert-item span.chev{margin-left:auto;}
+  .module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .module-card{
+    background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;
+    display:flex;align-items:center;gap:12px;
+  }
+  .module-card:hover{border-color:var(--primary);}
+  .module-card .ic{width:38px;height:38px;border-radius:10px;background:var(--chip-bg);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .module-card .ic svg{width:18px;height:18px;color:var(--primary);}
+  .module-card .t{font-size:13px;font-weight:600;margin:0;}
+  .module-card .s{font-size:11px;color:var(--text-secondary);margin:2px 0 0;}
+  .section-title{font-size:14px;font-weight:600;margin:0 0 12px;}
+  .filters-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+  .filters-row input[type=text]{
+    border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;
+    min-width:220px;
+  }
+  .filters-row select{
+    border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;
+    background:#fff;
+  }
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;}
+  table th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--text-secondary);
+    padding:10px 14px;background:#F8FAFC;border-bottom:1px solid var(--border);
+  }
+  table td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);}
+  table tr:last-child td{border-bottom:none;}
+  table tr.zebra{background:#FBFCFD;}
+  .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;}
+  .badge svg{width:11px;height:11px;}
+  .badge-success{background:var(--success-bg);color:var(--success-text);}
+  .badge-warning{background:var(--warning-bg);color:var(--warning-text);}
+  .badge-danger{background:var(--danger-bg);color:var(--danger-text);}
+  .badge-neutral{background:#F1F5F9;color:var(--text-secondary);}
+  .trip-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;cursor:pointer;}
+  .trip-card:hover{border-color:var(--primary);}
+  .trip-card .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+  .trip-card .route{font-size:14px;font-weight:600;margin:0;display:flex;align-items:center;gap:6px;}
+  .trip-card .route svg{width:15px;height:15px;color:var(--primary);}
+  .trip-card .meta{font-size:11.5px;color:var(--text-secondary);margin:4px 0 0;}
+  .trip-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+  .trip-grid .cell{background:#F8FAFC;border-radius:8px;padding:9px 11px;}
+  .trip-grid .cell .l{font-size:10.5px;color:var(--text-secondary);margin:0;}
+  .trip-grid .cell .v{font-size:14px;font-weight:600;margin:3px 0 0;}
+  .trip-grid .cell.highlight{background:var(--success-bg);}
+  .trip-grid .cell.highlight.low{background:var(--danger-bg);}
+  .trip-grid .cell.highlight .v{color:var(--success-text);}
+  .trip-grid .cell.highlight.low .v{color:var(--danger-text);}
+  .note-line{font-size:11.5px;color:var(--text-secondary);margin:10px 0 0;display:flex;gap:5px;align-items:flex-start;}
+  .note-line svg{width:13px;height:13px;margin-top:1px;flex-shrink:0;color:var(--text-muted);}
+  .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:11.5px;font-weight:600;margin-bottom:5px;color:var(--text);}
+  .field input,.field select,.field textarea{
+    width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 11px;
+    font-size:13px;font-family:inherit;color:var(--text);background:#fff;
+  }
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 10px center;background-size:14px;}
+  .locked-block{background:var(--chip-bg);border-radius:8px;padding:10px 12px;margin:2px 0 12px;}
+  .locked-block .row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--primary-dark);}
+  .locked-block .lock-label{display:flex;align-items:center;gap:5px;}
+  .locked-block .lock-label svg{width:12px;height:12px;}
+  .locked-block .value{font-weight:600;font-size:13px;}
+  .locked-block .caption{font-size:11px;color:var(--text-secondary);margin:6px 0 0;}
+  .segmented{display:grid;gap:6px;}
+  .segmented div{
+    border-radius:8px;padding:8px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;
+    border:1px solid var(--border);color:var(--text);
+  }
+  .segmented div.selected{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:50;
+    align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{background:#fff;border-radius:14px;max-width:560px;width:100%;padding:22px;margin-bottom:40px;}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .modal-head p{margin:0;font-size:16px;font-weight:600;}
+  .modal-head svg{width:18px;height:18px;color:var(--text-secondary);cursor:pointer;}
+  .divider{height:1px;background:var(--border);margin:14px 0;}
+  .subtle-box{background:#F8FAFC;border-radius:10px;padding:12px 14px;margin-bottom:14px;}
+  .lancamento-item{display:flex;align-items:center;gap:10px;padding:9px 11px;background:#F8FAFC;border-radius:8px;margin-bottom:6px;font-size:12.5px;}
+  .lancamento-item .tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:#fff;border:1px solid var(--border);flex-shrink:0;}
+  .lancamento-item .desc{flex:1;}
+  .lancamento-item .val{font-weight:600;flex-shrink:0;}
+  .lancamento-item svg{width:13px;height:13px;color:var(--text-muted);cursor:pointer;flex-shrink:0;}
+  .tab-toggle{display:flex;gap:6px;margin-bottom:14px;}
+  .tab-toggle button{
+    background:#F1F5F9;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;
+    color:var(--text-secondary);cursor:pointer;font-family:inherit;
+  }
+  .tab-toggle button.active{background:var(--primary);color:#fff;}
+  .tire-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;max-width:360px;margin:0 auto;}
+  .axle-row{display:flex;gap:14px;justify-content:center;}
+  .tire{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:#fff;font-size:10px;font-weight:700;flex-shrink:0;}
+  .tire.g{background:var(--success);}
+  .tire.y{background:#D97706;}
+  .tire.r{background:var(--danger);}
+  .placeholder-banner{
+    display:flex;align-items:flex-start;gap:10px;background:var(--warning-bg);color:var(--warning-text);
+    border-radius:10px;padding:12px 14px;font-size:12.5px;margin-bottom:20px;
+  }
+  .placeholder-banner svg{width:15px;height:15px;flex-shrink:0;margin-top:1px;}
+  .empty-box{background:#F8FAFC;border-radius:8px;padding:14px;text-align:center;font-size:12px;color:var(--text-muted);}
+  .avatar-chip{display:flex;align-items:center;gap:8px;}
+  .avatar-chip .dot{width:26px;height:26px;border-radius:50%;background:var(--chip-bg);color:var(--primary-dark);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+  @media(max-width:1000px){
+    .app-shell{flex-direction:column;}
+    .sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:12px;}
+    .sidebar .brand{display:none;}
+    .sidebar nav{flex-direction:row;padding:0;}
+    .kpi-grid{grid-template-columns:repeat(2,1fr);}
+    .module-grid{grid-template-columns:repeat(2,1fr);}
+    .trip-grid{grid-template-columns:repeat(2,1fr);}
+    .field-row,.field-row-3{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>Protótipo navegável — Painel do Gestor</h1>
+  <p>Clique nos itens da barra lateral, nos alertas e nos cards de viagem como faria no sistema real. Sem backend — é só para revisar hierarquia, fluxo e campos. Acompanha <code>especificacao_revisada_gestao_frotas.md</code>.</p>
+</div>
+
+<div class="app-shell">
+  <div class="sidebar">
+    <div class="brand">
+      <div class="logo"><i data-feather="truck"></i></div>
+      <div class="name">Garbin Transportes</div>
+      <div class="sub">Painel do gestor</div>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-view="dashboard" onclick="showView('dashboard', this)"><i data-feather="grid"></i>Visão Geral</button>
+      <button class="nav-btn" data-view="viagens" onclick="showView('viagens', this)"><i data-feather="map"></i>Viagens</button>
+      <button class="nav-btn" data-view="pneus" onclick="showView('pneus', this)"><i data-feather="circle"></i>Veículos & Pneus</button>
+      <button class="nav-btn" data-view="motoristas" onclick="showView('motoristas', this)"><i data-feather="users"></i>Motoristas</button>
+      <button class="nav-btn" data-view="manutencoes" onclick="showView('manutencoes', this)"><i data-feather="tool"></i>Manutenções</button>
+      <button class="nav-btn" data-view="custosfixos" onclick="showView('custosfixos', this)"><i data-feather="archive"></i>Custos Fixos</button>
+      <button class="nav-btn" data-view="financeiro" onclick="showView('financeiro', this)"><i data-feather="dollar-sign"></i>Financeiro</button>
+    </nav>
+  </div>
+
+  <div class="main">
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <div class="view active" id="view-dashboard">
+      <div class="topbar">
+        <div><h2>Visão Geral</h2><p class="desc">Resultado do mês e alertas prioritários</p></div>
+        <div class="select-like"><i data-feather="calendar"></i>Setembro 2026<i data-feather="chevron-down"></i></div>
+      </div>
+      <div style="padding:24px 28px;">
+        <div class="kpi-grid">
+          <div class="kpi-card"><p class="label">Faturamento Bruto</p><p class="value">R$ 40.820,00</p></div>
+          <div class="kpi-card"><p class="label">Custos Operacionais</p><p class="value">R$ 8.010,00</p></div>
+          <div class="kpi-card"><p class="label">Custos Fixos</p><p class="value">R$ 1.800,00</p></div>
+          <div class="kpi-card success"><p class="label">Resultado Líquido</p><p class="value">R$ 24.269,60</p></div>
+        </div>
+
+        <div class="alert-card">
+          <h3><i data-feather="alert-triangle"></i>Atenção necessária</h3>
+          <div class="alert-item" onclick="showView('manutencoes', document.querySelector('[data-view=manutencoes]'))">
+            <i data-feather="tool"></i>Veículo ABC-1D23: troca de óleo a 300 km do limite.<span class="chev"><i data-feather="chevron-right"></i></span>
+          </div>
+          <div class="alert-item" onclick="showView('motoristas', document.querySelector('[data-view=motoristas]'))">
+            <i data-feather="user"></i>Motorista Marcelo: CNH vence em 12 dias.<span class="chev"><i data-feather="chevron-right"></i></span>
+          </div>
+          <div class="alert-item" onclick="showView('motoristas', document.querySelector('[data-view=motoristas]'))">
+            <i data-feather="alert-octagon"></i>Motorista Carlos: CNH vencida.<span class="chev"><i data-feather="chevron-right"></i></span>
+          </div>
+          <div class="alert-item" onclick="showView('pneus', document.querySelector('[data-view=pneus]'))">
+            <i data-feather="circle"></i>Pneu eixo 2 direito (GHI-3F67): necessita rodízio.<span class="chev"><i data-feather="chevron-right"></i></span>
+          </div>
+        </div>
+
+        <h3 class="section-title">Acesso rápido</h3>
+        <div class="module-grid">
+          <div class="module-card" onclick="showView('viagens', document.querySelector('[data-view=viagens]'))">
+            <div class="ic"><i data-feather="map"></i></div>
+            <div><p class="t">Viagens e DRE</p><p class="s">3 em andamento</p></div>
+          </div>
+          <div class="module-card" onclick="showView('motoristas', document.querySelector('[data-view=motoristas]'))">
+            <div class="ic"><i data-feather="users"></i></div>
+            <div><p class="t">Motoristas</p><p class="s">3 cadastrados</p></div>
+          </div>
+          <div class="module-card" onclick="showView('manutencoes', document.querySelector('[data-view=manutencoes]'))">
+            <div class="ic"><i data-feather="tool"></i></div>
+            <div><p class="t">Manutenções</p><p class="s">2 próximas</p></div>
+          </div>
+          <div class="module-card" onclick="showView('pneus', document.querySelector('[data-view=pneus]'))">
+            <div class="ic"><i data-feather="circle"></i></div>
+            <div><p class="t">Veículos & Pneus</p><p class="s">1 alerta</p></div>
+          </div>
+          <div class="module-card" onclick="showView('financeiro', document.querySelector('[data-view=financeiro]'))">
+            <div class="ic"><i data-feather="dollar-sign"></i></div>
+            <div><p class="t">Financeiro</p><p class="s">Fechamento do mês</p></div>
+          </div>
+          <div class="module-card" onclick="showView('custosfixos', document.querySelector('[data-view=custosfixos]'))">
+            <div class="ic"><i data-feather="archive"></i></div>
+            <div><p class="t">Custos Fixos</p><p class="s">R$ 1.800,00 / mês</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== VIAGENS / DRE ===================== -->
+    <div class="view" id="view-viagens">
+      <div class="topbar">
+        <div><h2>Gestão de Viagens e DRE por Rota</h2><p class="desc">Crie, atribua e acompanhe a margem de cada viagem</p></div>
+        <button class="btn btn-primary" onclick="abrirModalNovaViagem()"><i data-feather="plus"></i>Nova viagem</button>
+      </div>
+      <div style="padding:24px 28px;">
+        <div class="filters-row">
+          <input type="text" placeholder="Buscar por placa, motorista ou destino...">
+          <select id="filtro-status-viagem" onchange="renderViagens()">
+            <option value="todas">Todas</option>
+            <option value="programada">Programadas</option>
+            <option value="em_andamento">Em andamento</option>
+            <option value="finalizada">Finalizadas</option>
+          </select>
+        </div>
+        <div id="lista-viagens"></div>
+      </div>
+    </div>
+
+    <!-- ===================== PNEUS (PLACEHOLDER) ===================== -->
+    <div class="view" id="view-pneus">
+      <div class="topbar">
+        <div><h2>Veículos & Pneus</h2><p class="desc">Controle visual de eixos e pneus</p></div>
+      </div>
+      <div style="padding:24px 28px;">
+        <div class="placeholder-banner">
+          <i data-feather="info"></i>
+          <span><b>Protótipo simplificado.</b> Esta tela segue como no documento original e ainda não recebeu o mesmo nível de refinamento das demais — está pendente de validação de campo com motoristas e donos de frota antes de investir no desenho completo (ver <code>especificacao_revisada_gestao_frotas.md</code>, seção 6.2).</span>
+        </div>
+        <div class="filters-row" style="justify-content:space-between;">
+          <select id="pneus-veiculo-select" onchange="renderInfoVeiculo()"></select>
+          <button class="btn btn-outline btn-sm" onclick="abrirModalTanqueCheio()"><i data-feather="droplet"></i>Registrar abastecimento (tanque cheio)</button>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="trip-grid" style="grid-template-columns:repeat(4,1fr);" id="info-veiculo-grid"></div>
+          <p class="note-line"><i data-feather="info"></i>O consumo médio é calculado automaticamente a cada abastecimento com tanque cheio (ver <code>especificacao_revisada_gestao_frotas.md</code>, seção 5c) e é o que alimenta a estimativa de combustível por viagem na Tela de Viagens.</p>
+        </div>
+        <div class="card">
+          <div class="tire-grid">
+            <div class="axle-row"><div class="tire g" title="Dianteiro esquerdo — bom estado" onclick="mostrarPneu(this,'Dianteiro esquerdo','Sulco 7mm · bom estado')">OK</div><div class="tire g" title="Dianteiro direito" onclick="mostrarPneu(this,'Dianteiro direito','Sulco 6,5mm · bom estado')">OK</div></div>
+            <div class="axle-row"><div class="tire y" onclick="mostrarPneu(this,'Tração — externo esquerdo','Sulco 4mm · atenção')">AT</div><div class="tire y" onclick="mostrarPneu(this,'Tração — interno esquerdo','Sulco 4mm · atenção')">AT</div><div class="tire g" onclick="mostrarPneu(this,'Tração — interno direito','Sulco 6mm · bom estado')">OK</div><div class="tire g" onclick="mostrarPneu(this,'Tração — externo direito','Sulco 6mm · bom estado')">OK</div></div>
+            <div class="axle-row"><div class="tire r" onclick="mostrarPneu(this,'Eixo 2 direito','Sulco 2mm · troca urgente')">TR</div><div class="tire g" onclick="mostrarPneu(this,'Eixo 2 esquerdo','Sulco 6mm · bom estado')">OK</div></div>
+          </div>
+          <p style="text-align:center;font-size:11px;color:var(--text-muted);margin:14px 0 0;">Verde = bom estado · Amarelo = atenção · Vermelho = troca urgente</p>
+          <div id="detalhe-pneu" class="subtle-box" style="display:none;margin-top:16px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== MOTORISTAS ===================== -->
+    <div class="view" id="view-motoristas">
+      <div class="topbar">
+        <div><h2>Motoristas</h2><p class="desc">Cadastro, remuneração e documentos</p></div>
+        <button class="btn btn-primary" onclick="abrirModalMotorista()"><i data-feather="plus"></i>Novo motorista</button>
+      </div>
+      <div style="padding:24px 28px;">
+        <table>
+          <thead><tr><th>Nome</th><th>Veículo</th><th>Remuneração</th><th>CNH — validade</th><th>Status</th><th></th></tr></thead>
+          <tbody id="tabela-motoristas"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===================== MANUTENÇÕES ===================== -->
+    <div class="view" id="view-manutencoes">
+      <div class="topbar">
+        <div><h2>Manutenções e Preventivas</h2><p class="desc">Registros de oficina e alertas por quilometragem</p></div>
+        <button class="btn btn-primary" onclick="abrirModalManutencao()"><i data-feather="plus"></i>Nova manutenção</button>
+      </div>
+      <div style="padding:24px 28px;">
+        <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;">
+          <div class="kpi-card"><p class="label">Vencidas</p><p class="value" style="color:var(--danger-text);">0</p></div>
+          <div class="kpi-card"><p class="label">Próximas</p><p class="value" style="color:var(--warning-strong);">2</p></div>
+          <div class="kpi-card"><p class="label">Total gasto no mês</p><p class="value">R$ 1.500,00</p></div>
+        </div>
+        <table>
+          <thead><tr><th>Data</th><th>Placa</th><th>Tipo</th><th>Oficina</th><th>Valor</th><th>Pagamento</th></tr></thead>
+          <tbody id="tabela-manutencoes">
+            <tr><td>05/09/2026</td><td>ABC-1D23</td><td>Preventiva — troca de óleo</td><td>Oficina Central</td><td>R$ 480,00</td><td><span class="badge badge-success">Pago</span></td></tr>
+            <tr class="zebra"><td>11/09/2026</td><td>GHI-3F67</td><td>Corretiva — suspensão</td><td>Mecânica Sul</td><td>R$ 1.020,00</td><td><span class="badge badge-warning">Pendente</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===================== CUSTOS FIXOS (PLACEHOLDER) ===================== -->
+    <div class="view" id="view-custosfixos">
+      <div class="topbar"><div><h2>Custos Fixos</h2><p class="desc">Despesas mensais recorrentes da operação</p></div></div>
+      <div style="padding:24px 28px;">
+        <div class="placeholder-banner"><i data-feather="info"></i><span>Tela ainda não detalhada nesta revisão — só o link e o valor total (R$ 1.800,00/mês) aparecem hoje na Visão Geral e no Financeiro.</span></div>
+      </div>
+    </div>
+
+    <!-- ===================== FINANCEIRO ===================== -->
+    <div class="view" id="view-financeiro">
+      <div class="topbar">
+        <div><h2>Financeiro e Fechamento Mensal</h2><p class="desc">DRE consolidado do mês, por placa</p></div>
+        <div style="display:flex;gap:8px;">
+          <div class="select-like"><i data-feather="calendar"></i>Setembro 2026<i data-feather="chevron-down"></i></div>
+          <button class="btn btn-outline btn-sm"><i data-feather="printer"></i>Exportar PDF</button>
+        </div>
+      </div>
+      <div style="padding:24px 28px;">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:0;">
+            <div class="kpi-card"><p class="label">Faturamento Bruto</p><p class="value">R$ 40.820,00</p></div>
+            <div class="kpi-card"><p class="label">Custos Operacionais</p><p class="value">R$ 8.010,00</p></div>
+            <div class="kpi-card"><p class="label">Custos Fixos</p><p class="value">R$ 1.800,00</p></div>
+            <div class="kpi-card success"><p class="label">Lucro Líquido Real</p><p class="value">R$ 24.269,60 · 59,4%</p></div>
+          </div>
+          <div class="divider"></div>
+          <div style="display:flex;gap:32px;">
+            <div><p style="margin:0;font-size:11px;color:var(--text-secondary);">Custo por KM (CPK)</p><p style="margin:4px 0 0;font-size:15px;font-weight:600;">R$ 2,18/km</p></div>
+            <div><p style="margin:0;font-size:11px;color:var(--text-secondary);">Faturamento por KM</p><p style="margin:4px 0 0;font-size:15px;font-weight:600;">R$ 5,37/km</p></div>
+          </div>
+        </div>
+
+        <div class="alert-card" style="border-color:var(--primary);border-left-color:var(--primary);">
+          <h3 style="color:var(--primary-dark);"><i data-feather="credit-card" style="color:var(--primary);"></i>Adiantamentos em aberto</h3>
+          <p style="margin:0 0 8px;font-size:20px;font-weight:700;" id="total-adiantamentos-abertos">R$ 0,00</p>
+          <button class="btn btn-outline btn-sm" onclick="showView('viagens', document.querySelector('[data-view=viagens]'))"><i data-feather="arrow-right"></i>Ver na Gestão de Viagens</button>
+        </div>
+
+        <h3 class="section-title">Desempenho comparativo por placa</h3>
+        <table>
+          <thead><tr><th>Placa</th><th>Km rodado</th><th>Faturamento</th><th>Combustível</th><th>Comissão</th><th>Resultado</th><th>Margem</th></tr></thead>
+          <tbody>
+            <tr><td>ABC-1D23</td><td>2.000 km</td><td>R$ 5.500,00</td><td>R$ 480,00</td><td>R$ 770,00</td><td>R$ 4.250,00</td><td><span class="badge badge-success"><i data-feather="arrow-up-right"></i>77,3%</span></td></tr>
+            <tr class="zebra"><td>DEF-2E45</td><td>3.100 km</td><td>R$ 7.000,00</td><td>R$ 1.080,00</td><td>R$ 0,00</td><td>R$ 5.720,00</td><td><span class="badge badge-success"><i data-feather="arrow-up-right"></i>81,7%</span></td></tr>
+            <tr><td>GHI-3F67</td><td>4.900 km</td><td>R$ 25.320,00</td><td>R$ 3.100,00</td><td>R$ 3.038,40</td><td>R$ 19.011,60</td><td><span class="badge badge-success"><i data-feather="arrow-up-right"></i>75,1%</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== MODAL: NOVA VIAGEM ===================== -->
+<div class="modal-overlay" id="modal-nova-viagem">
+  <div class="modal">
+    <div class="modal-head"><p>Nova viagem</p><i data-feather="x" onclick="fecharModal('modal-nova-viagem')"></i></div>
+    <div class="field">
+      <label>Motorista</label>
+      <select id="nv-motorista" onchange="aoEscolherMotorista()"></select>
+    </div>
+    <div class="field"><label>Veículo</label><input type="text" id="nv-veiculo" readonly style="background:#F8FAFC;"></div>
+    <div class="field"><label>Cliente / embarcador (opcional)</label><input type="text" id="nv-cliente" placeholder="Não informado"></div>
+    <div class="field-row">
+      <div class="field"><label>Origem</label><input type="text" id="nv-origem" value="Pato Branco/PR"></div>
+      <div class="field"><label>Destino</label><input type="text" id="nv-destino" value="Curitiba/PR"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Carga</label><input type="text" id="nv-carga" placeholder="Ex.: Carga seca, paletizada"></div>
+      <div class="field"><label>Data prevista</label><input type="date" id="nv-data" value="2026-09-25"></div>
+    </div>
+    <div class="field"><label>Valor do frete (R$)</label><input type="text" id="nv-frete" value="5.500,00" oninput="atualizarSugestaoAdiantamento()"></div>
+    <div class="locked-block">
+      <div class="row"><span class="lock-label"><i data-feather="trending-up"></i>Adiantamento sugerido</span><span class="value" id="nv-sugestao">—</span></div>
+      <p class="caption" id="nv-sugestao-legenda">Calculando...</p>
+    </div>
+    <div class="field"><label>Adiantamento a definir (R$)</label><input type="text" id="nv-adiantamento"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="salvarNovaViagem()"><i data-feather="check"></i>Salvar e atribuir</button>
+    <p class="note-line"><i data-feather="info"></i>A viagem é criada como "programada" e aparece em "Próximas viagens" no app do motorista. O km inicial não é pedido aqui — o motorista informa ao confirmar a saída.</p>
+  </div>
+</div>
+
+<!-- ===================== MODAL: DETALHE DA VIAGEM ===================== -->
+<div class="modal-overlay" id="modal-detalhe-viagem">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-head"><p id="dv-titulo">Detalhe da viagem</p><i data-feather="x" onclick="fecharModal('modal-detalhe-viagem')"></i></div>
+    <div id="dv-conteudo"></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: MOTORISTA ===================== -->
+<div class="modal-overlay" id="modal-motorista">
+  <div class="modal">
+    <div class="modal-head"><p id="mot-titulo">Novo motorista</p><i data-feather="x" onclick="fecharModal('modal-motorista')"></i></div>
+    <div class="field-row">
+      <div class="field"><label>Nome completo</label><input type="text" id="mot-nome"></div>
+      <div class="field"><label>CPF</label><input type="text" id="mot-cpf" placeholder="000.000.000-00"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Telefone</label><input type="text" id="mot-telefone" placeholder="(00) 00000-0000"></div>
+      <div class="field"><label>Veículo vinculado</label>
+        <select id="mot-veiculo"><option>ABC-1D23 — Volvo FH 540</option><option>DEF-2E45 — Scania R450</option><option>GHI-3F67 — Iveco Way</option></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>CNH — número</label><input type="text" id="mot-cnh"></div>
+      <div class="field"><label>CNH — validade</label><input type="date" id="mot-cnh-validade"></div>
+    </div>
+    <div class="field">
+      <label>Modelo de remuneração</label>
+      <div class="segmented" style="grid-template-columns:1fr 1fr;" id="mot-remuneracao-grupo">
+        <div class="selected" onclick="selecionarRemuneracao(this,'comissionado')">Comissionado</div>
+        <div onclick="selecionarRemuneracao(this,'assalariado')">Assalariado</div>
+      </div>
+    </div>
+    <div class="field" id="mot-campo-comissao"><label>% Comissão</label><input type="text" id="mot-comissao" value="14"></div>
+    <div class="field" id="mot-campo-salario" style="display:none;"><label>Salário fixo (R$) — opcional</label><input type="text" id="mot-salario" placeholder="Reservado para fase futura"></div>
+    <div class="field"><label>Status</label>
+      <select id="mot-status"><option>Ativo</option><option>Inativo</option></select>
+    </div>
+    <button class="btn btn-outline" style="width:100%;margin-bottom:8px;"><i data-feather="key"></i>Gerar/redefinir PIN de acesso</button>
+    <button class="btn btn-primary" style="width:100%;" onclick="salvarMotorista()"><i data-feather="check"></i>Salvar motorista</button>
+  </div>
+</div>
+
+<!-- ===================== MODAL: NOVA MANUTENÇÃO ===================== -->
+<div class="modal-overlay" id="modal-manutencao">
+  <div class="modal">
+    <div class="modal-head"><p>Nova manutenção</p><i data-feather="x" onclick="fecharModal('modal-manutencao')"></i></div>
+    <div class="field-row">
+      <div class="field"><label>Veículo</label>
+        <select><option>ABC-1D23 — Volvo FH 540</option><option>DEF-2E45 — Scania R450</option><option>GHI-3F67 — Iveco Way</option></select>
+      </div>
+      <div class="field"><label>Viagem relacionada (opcional)</label><select><option>Nenhuma</option></select></div>
+    </div>
+    <div class="field">
+      <label>Tipo</label>
+      <div class="segmented" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="selected" onclick="selecionarSegmento(this)">Preventiva</div>
+        <div onclick="selecionarSegmento(this)">Corretiva</div>
+        <div onclick="selecionarSegmento(this)">Borracharia</div>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Valor (R$)</label><input type="text" placeholder="0,00"></div>
+      <div class="field"><label>Data</label><input type="date"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Km atual do veículo</label><input type="text" placeholder="Ex.: 702.300"></div>
+      <div class="field"><label>Próxima manutenção em (+km)</label><input type="text" placeholder="Ex.: 20.000"></div>
+    </div>
+    <div class="field"><label>Oficina</label><input type="text" placeholder="Nome da oficina"></div>
+    <div class="field"><label>Nota fiscal</label><input type="file"></div>
+    <button class="btn btn-primary" style="width:100%;" onclick="fecharModal('modal-manutencao')"><i data-feather="check"></i>Salvar manutenção</button>
+  </div>
+</div>
+
+<!-- ===================== MODAL: TANQUE CHEIO ===================== -->
+<div class="modal-overlay" id="modal-tanque-cheio">
+  <div class="modal">
+    <div class="modal-head"><p>Registrar abastecimento (tanque cheio)</p><i data-feather="x" onclick="fecharModal('modal-tanque-cheio')"></i></div>
+    <p class="note-line" style="margin:-4px 0 14px;"><i data-feather="info"></i>Normalmente esse registro vem do app do motorista (checkbox "Tanque cheio"). Este formulário só simula o mesmo efeito aqui no protótipo do gestor.</p>
+    <div class="field"><label>Veículo</label><select id="tc-veiculo"></select></div>
+    <div class="field-row">
+      <div class="field"><label>Km atual (odômetro)</label><input type="text" id="tc-km" placeholder="Ex.: 703.100"></div>
+      <div class="field"><label>Litros</label><input type="text" id="tc-litros" placeholder="Ex.: 210,50"></div>
+    </div>
+    <div class="field"><label>Valor total (R$)</label><input type="text" id="tc-valor" placeholder="Ex.: 1.300,00"></div>
+    <button class="btn btn-primary" style="width:100%;" onclick="registrarTanqueCheio()"><i data-feather="check"></i>Registrar e apurar viagens</button>
+  </div>
+</div>
+
+<script>
+  const motoristas = [
+    {id:1, nome:'Marcelo Alves', veiculo:'ABC-1D23 — Volvo FH 540', remuneracao:'comissionado', comissao:14, cnhValidade:'2026-10-03', status:'Ativo'},
+    {id:2, nome:'João Pedro Lima', veiculo:'DEF-2E45 — Scania R450', remuneracao:'assalariado', comissao:0, cnhValidade:'2027-03-15', status:'Ativo'},
+    {id:3, nome:'Carlos Souza', veiculo:'GHI-3F67 — Iveco Way', remuneracao:'comissionado', comissao:12, cnhValidade:'2026-09-20', status:'Ativo'},
+  ];
+
+  // consumoMedio (km/L) e precoRef alimentam a estimativa de combustível por km (ver especificacao_revisada_gestao_frotas.md, seção 5c).
+  // ultimoKmTanqueCheio ancora a "janela de consumo" — null significa que ainda não houve nenhum fechamento de tanque cheio registrado.
+  let veiculos = [
+    {placa:'ABC-1D23', modelo:'Volvo FH 540', status:'Ativo', kmAtual:702300, consumoMedio:3.2, precoRef:6.19, ultimoKmTanqueCheio:700100},
+    {placa:'DEF-2E45', modelo:'Scania R450', status:'Ativo', kmAtual:451800, consumoMedio:2.9, precoRef:6.10, ultimoKmTanqueCheio:null},
+    {placa:'GHI-3F67', modelo:'Iveco Way', status:'Em manutenção', kmAtual:382400, consumoMedio:3.4, precoRef:6.15, ultimoKmTanqueCheio:380700},
+  ];
+
+  let viagens = [
+    {id:1, motoristaId:1, origem:'Pato Branco/PR', destino:'Curitiba/PR', cliente:'Não informado', carga:'Carga seca, paletizada',
+     data:'25/09/2026', status:'programada', freteBase:5500, kmRodado:null, combustivelStatus:null, combustivelValor:0, despesas:0, comissaoPct:14,
+     adiantamentoDefinido:500, adiantamentoGasto:0, acertado:false, lancamentosGestor:[], complementosMotorista:[]},
+    {id:2, motoristaId:1, origem:'Curitiba/PR', destino:'Guarapuava/PR', cliente:'Comercial Ponta Grossa', carga:'Bebidas',
+     data:'18/09/2026', status:'em_andamento', freteBase:3200, kmRodado:null, combustivelStatus:null, combustivelValor:0, despesas:60, comissaoPct:14,
+     adiantamentoDefinido:400, adiantamentoGasto:150, acertado:false, lancamentosGestor:[], complementosMotorista:[]},
+    {id:3, motoristaId:2, origem:'Guarapuava/PR', destino:'Cordeirópolis/SP', cliente:'Agroindústria Sul', carga:'Grãos',
+     data:'12/09/2026', status:'finalizada', freteBase:7000, kmRodado:600, combustivelStatus:'estimado', combustivelValor:0, despesas:200, comissaoPct:0,
+     adiantamentoDefinido:600, adiantamentoGasto:550, acertado:false, lancamentosGestor:[], complementosMotorista:[]},
+    {id:4, motoristaId:3, origem:'Pato Branco/PR', destino:'Salvador/BA', cliente:'Não informado', carga:'Carga geral',
+     data:'15/09/2026', status:'finalizada', freteBase:25000, kmRodado:1700, combustivelStatus:'apurado', combustivelValor:3100, despesas:170, comissaoPct:12,
+     adiantamentoDefinido:500, adiantamentoGasto:500, acertado:true, lancamentosGestor:[{tipo:'Diária de espera', valor:320, data:'14/09/2026', obs:'Fila na descarga'}], complementosMotorista:[{valor:800}]},
+  ];
+  let proximoIdViagem = 5;
+
+  function veiculoDoMotorista(motoristaId){
+    const m = motoristas.find(m=>m.id===motoristaId);
+    const placa = m.veiculo.split(' — ')[0];
+    return veiculos.find(v=>v.placa===placa);
+  }
+
+  function calcularCombustivel(v){
+    if(v.combustivelStatus === 'apurado') return {valor: v.combustivelValor, status:'apurado'};
+    if(v.status !== 'finalizada' || !v.kmRodado) return {valor: 0, status: null};
+    const veic = veiculoDoMotorista(v.motoristaId);
+    const litros = v.kmRodado / veic.consumoMedio;
+    return {valor: litros * veic.precoRef, status:'estimado'};
+  }
+
+  function refreshIcons(){ if(window.feather){ feather.replace(); } }
+  function formatBRL(v){ return 'R$ ' + (Math.round(v*100)/100).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function parseNum(v){ const limpo = String(v||'').replace(/[^0-9.,-]/g,''); return parseFloat(limpo.replace(/\./g,'').replace(',','.')) || 0; }
+  function formatDateBR(iso){ if(!iso) return '—'; const [y,m,d] = iso.split('-'); return d+'/'+m+'/'+y; }
+  function diasAte(iso){ return Math.round((new Date(iso) - new Date('2026-09-21')) / 86400000); }
+
+  function showView(id, btn){
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-'+id).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    if(id === 'viagens') renderViagens();
+    if(id === 'motoristas') renderMotoristas();
+    if(id === 'financeiro') renderTotalAdiantamentosAbertos();
+    if(id === 'pneus') renderInfoVeiculo();
+    refreshIcons();
+  }
+
+  function abrirModal(id){ document.getElementById(id).classList.add('open'); refreshIcons(); }
+  function fecharModal(id){ document.getElementById(id).classList.remove('open'); }
+
+  // ---------- VIAGENS ----------
+  function calcularViagem(v){
+    const complementos = v.complementosMotorista.reduce((s,c)=>s+c.valor,0);
+    const lancamentos = v.lancamentosGestor.reduce((s,l)=>s+l.valor,0);
+    const freteTotal = v.freteBase + complementos + lancamentos;
+    const comissao = freteTotal * (v.comissaoPct/100);
+    const comb = calcularCombustivel(v);
+    const margem = freteTotal - comb.valor - v.despesas - comissao;
+    const margemPct = freteTotal > 0 ? (margem/freteTotal*100) : 0;
+    return {freteTotal, comissao, margem, margemPct, complementos, lancamentos, combustivelValor: comb.valor, combustivelStatusCalc: comb.status};
+  }
+
+  function badgeCombustivel(status){
+    if(status === 'estimado') return ' <span class="badge badge-neutral" title="Calculado por km rodado × consumo médio do veículo. Será corrigido no próximo tanque cheio.">Estimado</span>';
+    if(status === 'apurado') return ' <span class="badge badge-success" title="Valor real, rateado a partir de um abastecimento com tanque cheio.">Apurado</span>';
+    return '';
+  }
+
+  function statusBadge(status){
+    if(status === 'programada') return '<span class="badge badge-neutral"><i data-feather="clock"></i>Programada</span>';
+    if(status === 'em_andamento') return '<span class="badge badge-warning"><i data-feather="truck"></i>Em andamento</span>';
+    return '<span class="badge badge-success"><i data-feather="check"></i>Finalizada</span>';
+  }
+
+  function nomeMotorista(id){ const m = motoristas.find(m=>m.id===id); return m ? m.nome : '—'; }
+
+  function renderViagens(){
+    const filtro = document.getElementById('filtro-status-viagem').value;
+    const lista = viagens.filter(v => filtro === 'todas' || v.status === filtro);
+    const cont = document.getElementById('lista-viagens');
+    if(lista.length === 0){ cont.innerHTML = '<div class="empty-box">Nenhuma viagem encontrada.</div>'; refreshIcons(); return; }
+    cont.innerHTML = lista.map(v => {
+      const c = calcularViagem(v);
+      const highlightClass = c.margemPct >= 30 ? 'highlight' : (c.margemPct < 10 ? 'highlight low' : '');
+      let nota = '';
+      if(c.complementos > 0 || c.lancamentos > 0){
+        const partes = [];
+        if(c.lancamentos > 0) partes.push(formatBRL(c.lancamentos) + ' de lançamentos do gestor');
+        if(c.complementos > 0) partes.push(formatBRL(c.complementos) + ' de carga complementar');
+        nota = '<p class="note-line"><i data-feather="info"></i>Inclui ' + partes.join(' e ') + '.</p>';
+      }
+      return '<div class="trip-card" onclick="abrirDetalheViagem('+v.id+')">'
+        + '<div class="head"><div><p class="route"><i data-feather="map-pin"></i>' + v.origem + ' → ' + v.destino + '</p>'
+        + '<p class="meta">' + v.data + ' · ' + nomeMotorista(v.motoristaId) + ' · ' + (motoristas.find(m=>m.id===v.motoristaId)||{}).veiculo + '</p></div>'
+        + statusBadge(v.status) + '</div>'
+        + '<div class="trip-grid">'
+        + '<div class="cell"><p class="l">Frete Bruto</p><p class="v">' + formatBRL(c.freteTotal) + '</p></div>'
+        + '<div class="cell"><p class="l">Combustível</p><p class="v">' + formatBRL(c.combustivelValor) + '</p>' + (badgeCombustivel(c.combustivelStatusCalc) ? '<p style="margin:4px 0 0;">' + badgeCombustivel(c.combustivelStatusCalc) + '</p>' : '') + '</div>'
+        + '<div class="cell"><p class="l">Comissão</p><p class="v">' + formatBRL(c.comissao) + '</p></div>'
+        + '<div class="cell"><p class="l">Outras Despesas</p><p class="v">' + formatBRL(v.despesas) + '</p></div>'
+        + '<div class="cell ' + highlightClass + '"><p class="l">Margem Operacional</p><p class="v">' + formatBRL(c.margem) + ' (' + c.margemPct.toFixed(1) + '%)</p></div>'
+        + '</div>' + nota + '</div>';
+    }).join('');
+    refreshIcons();
+  }
+
+  function sugerirAdiantamento(origem, destino){
+    const historico = viagens.filter(v => v.status === 'finalizada' && v.origem.toLowerCase() === origem.toLowerCase() && v.destino.toLowerCase() === destino.toLowerCase());
+    if(historico.length === 0) return null;
+    const media = historico.reduce((s,v)=>s+v.adiantamentoDefinido,0) / historico.length;
+    return {media, n: historico.length};
+  }
+
+  function atualizarSugestaoAdiantamento(){
+    const origem = document.getElementById('nv-origem').value;
+    const destino = document.getElementById('nv-destino').value;
+    const sug = sugerirAdiantamento(origem, destino);
+    if(sug){
+      document.getElementById('nv-sugestao').textContent = formatBRL(sug.media);
+      document.getElementById('nv-sugestao-legenda').textContent = 'Média de ' + sug.n + ' viagem(ns) já finalizada(s) em ' + origem + ' → ' + destino + '.';
+      document.getElementById('nv-adiantamento').value = sug.media.toLocaleString('pt-BR', {minimumFractionDigits:2});
+    } else {
+      document.getElementById('nv-sugestao').textContent = '—';
+      document.getElementById('nv-sugestao-legenda').textContent = 'Sem histórico nesta rota — defina o valor manualmente.';
+      document.getElementById('nv-adiantamento').value = '';
+    }
+  }
+
+  function aoEscolherMotorista(){
+    const id = parseInt(document.getElementById('nv-motorista').value);
+    const m = motoristas.find(m=>m.id===id);
+    document.getElementById('nv-veiculo').value = m ? m.veiculo : '';
+  }
+
+  function abrirModalNovaViagem(){
+    const sel = document.getElementById('nv-motorista');
+    sel.innerHTML = motoristas.filter(m=>m.status==='Ativo').map(m => '<option value="'+m.id+'">'+m.nome+'</option>').join('');
+    aoEscolherMotorista();
+    document.getElementById('nv-origem').value = 'Pato Branco/PR';
+    document.getElementById('nv-destino').value = 'Curitiba/PR';
+    document.getElementById('nv-cliente').value = '';
+    document.getElementById('nv-carga').value = '';
+    document.getElementById('nv-frete').value = '5.500,00';
+    atualizarSugestaoAdiantamento();
+    abrirModal('modal-nova-viagem');
+  }
+
+  function salvarNovaViagem(){
+    const motoristaId = parseInt(document.getElementById('nv-motorista').value);
+    const m = motoristas.find(m=>m.id===motoristaId);
+    viagens.unshift({
+      id: proximoIdViagem++,
+      motoristaId: motoristaId,
+      origem: document.getElementById('nv-origem').value,
+      destino: document.getElementById('nv-destino').value,
+      cliente: document.getElementById('nv-cliente').value || 'Não informado',
+      carga: document.getElementById('nv-carga').value || 'Não informado',
+      data: formatDateBR(document.getElementById('nv-data').value),
+      status: 'programada',
+      freteBase: parseNum(document.getElementById('nv-frete').value),
+      kmRodado: null, combustivelStatus: null, combustivelValor: 0, despesas: 0,
+      comissaoPct: m.remuneracao === 'comissionado' ? m.comissao : 0,
+      adiantamentoDefinido: parseNum(document.getElementById('nv-adiantamento').value),
+      adiantamentoGasto: 0, acertado: false,
+      lancamentosGestor: [], complementosMotorista: []
+    });
+    fecharModal('modal-nova-viagem');
+    renderViagens();
+  }
+
+  let viagemDetalheAtual = null;
+  let tipoLancamentoAtual = 'Diária de espera';
+
+  function abrirDetalheViagem(id){
+    viagemDetalheAtual = id;
+    renderDetalheViagem();
+    abrirModal('modal-detalhe-viagem');
+  }
+
+  function renderDetalheViagem(){
+    const v = viagens.find(v=>v.id===viagemDetalheAtual);
+    const c = calcularViagem(v);
+    const m = motoristas.find(m=>m.id===v.motoristaId);
+    document.getElementById('dv-titulo').textContent = v.origem + ' → ' + v.destino;
+
+    let html = '';
+    html += '<div class="subtle-box"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;"><span style="color:var(--text-secondary);">Motorista</span><b>' + m.nome + '</b></div>';
+    html += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;"><span style="color:var(--text-secondary);">Veículo</span><b>' + m.veiculo + '</b></div>';
+    html += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;"><span style="color:var(--text-secondary);">Cliente</span><b>' + v.cliente + '</b></div>';
+    html += '<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--text-secondary);">Status</span>' + statusBadge(v.status) + '</div></div>';
+
+    html += '<div class="trip-grid" style="margin-bottom:16px;">';
+    html += '<div class="cell"><p class="l">Frete Total</p><p class="v">' + formatBRL(c.freteTotal) + '</p></div>';
+    html += '<div class="cell"><p class="l">Combustível</p><p class="v">' + formatBRL(c.combustivelValor) + '</p>' + (badgeCombustivel(c.combustivelStatusCalc) ? '<p style="margin:4px 0 0;">' + badgeCombustivel(c.combustivelStatusCalc) + '</p>' : '') + '</div>';
+    html += '<div class="cell"><p class="l">Comissão</p><p class="v">' + formatBRL(c.comissao) + '</p></div>';
+    html += '<div class="cell"><p class="l">Despesas</p><p class="v">' + formatBRL(v.despesas) + '</p></div>';
+    html += '<div class="cell ' + (c.margemPct>=30?'highlight':(c.margemPct<10?'highlight low':'')) + '"><p class="l">Margem</p><p class="v">' + c.margemPct.toFixed(1) + '%</p></div>';
+    html += '</div>';
+
+    // Bloco adiantamento
+    const sug = sugerirAdiantamento(v.origem, v.destino);
+    html += '<h3 class="section-title">Adiantamento</h3>';
+    html += '<div class="locked-block"><div class="row"><span class="lock-label"><i data-feather="trending-up"></i>Sugerido</span><span class="value">' + (sug ? formatBRL(sug.media) : 'Sem histórico') + '</span></div></div>';
+    html += '<div class="field-row"><div class="field"><label>Valor definido (R$)</label><input type="text" id="dv-adiantamento" value="' + v.adiantamentoDefinido.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '" ' + (v.status==='finalizada'?'disabled':'') + '></div>'
+      + '<div class="field" style="display:flex;align-items:flex-end;">' + (v.status!=='finalizada' ? '<button class="btn btn-outline" style="width:100%;" onclick="salvarAjusteAdiantamento()">Salvar ajuste</button>' : '') + '</div></div>';
+
+    // Bloco lançamentos do gestor
+    html += '<h3 class="section-title">Lançamentos da viagem</h3>';
+    const todos = [
+      ...v.lancamentosGestor.map(l => ({origem:'Lançado pela gestão', desc:l.tipo + (l.obs ? ' · ' + l.obs : ''), valor:l.valor})),
+      ...v.complementosMotorista.map(cm => ({origem:'Lançado pelo motorista', desc:'Carga complementar', valor:cm.valor}))
+    ];
+    if(todos.length === 0){
+      html += '<div class="empty-box">Nenhum lançamento adicional ainda.</div>';
+    } else {
+      html += todos.map(t => '<div class="lancamento-item"><span class="tag">' + t.origem + '</span><span class="desc">' + t.desc + '</span><span class="val">' + formatBRL(t.valor) + '</span></div>').join('');
+    }
+
+    if(v.status !== 'finalizada'){
+      html += '<div class="subtle-box" style="margin-top:10px;">';
+      html += '<div class="field"><label>Tipo</label><div class="segmented segmented-3-cols" style="grid-template-columns:repeat(4,1fr);" id="dv-tipo-lancamento">'
+        + ['Diária de espera','Pedágio adicional','Reentrega','Outro'].map(t => '<div class="' + (t===tipoLancamentoAtual?'selected':'') + '" onclick="selecionarTipoLancamento(this)">' + t + '</div>').join('') + '</div></div>';
+      html += '<div class="field-row"><div class="field"><label>Valor (R$)</label><input type="text" id="dv-lanc-valor" placeholder="0,00"></div><div class="field"><label>Data</label><input type="date" id="dv-lanc-data" value="2026-09-21"></div></div>';
+      html += '<div class="field"><label>Observação (opcional)</label><input type="text" id="dv-lanc-obs" placeholder="Opcional"></div>';
+      html += '<button class="btn btn-outline" style="width:100%;" onclick="adicionarLancamentoGestor()"><i data-feather="plus"></i>Lançar valor adicional</button>';
+      html += '</div>';
+    }
+
+    // Prestação de contas
+    if(v.status === 'finalizada' && v.adiantamentoDefinido > 0){
+      const saldo = v.adiantamentoDefinido - v.adiantamentoGasto;
+      const label = saldo > 0 ? 'a devolver pelo motorista' : (saldo < 0 ? 'a reembolsar ao motorista' : 'sem saldo a acertar');
+      html += '<h3 class="section-title" style="margin-top:18px;">Prestação de contas do adiantamento</h3>';
+      html += '<div class="subtle-box"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;"><span>Adiantamento</span><b>' + formatBRL(v.adiantamentoDefinido) + '</b></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:10px;"><span>Gasto pelo motorista</span><b>' + formatBRL(v.adiantamentoGasto) + '</b></div>';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:14px;font-weight:600;">Saldo: ' + formatBRL(Math.abs(saldo)) + ' ' + label + '</span>';
+      html += v.acertado ? '<span class="badge badge-success"><i data-feather="check"></i>Acertado</span>' : '<button class="btn btn-primary btn-sm" onclick="marcarAcertado()">Marcar como acertado</button>';
+      html += '</div></div>';
+    }
+
+    document.getElementById('dv-conteudo').innerHTML = html;
+    refreshIcons();
+  }
+
+  function selecionarTipoLancamento(el){
+    document.querySelectorAll('#dv-tipo-lancamento div').forEach(d=>d.classList.remove('selected'));
+    el.classList.add('selected');
+    tipoLancamentoAtual = el.textContent;
+  }
+
+  function adicionarLancamentoGestor(){
+    const v = viagens.find(v=>v.id===viagemDetalheAtual);
+    const valor = parseNum(document.getElementById('dv-lanc-valor').value);
+    if(valor <= 0){ alert('Informe um valor maior que zero.'); return; }
+    v.lancamentosGestor.push({tipo: tipoLancamentoAtual, valor: valor, data: formatDateBR(document.getElementById('dv-lanc-data').value), obs: document.getElementById('dv-lanc-obs').value});
+    renderDetalheViagem();
+    renderViagens();
+  }
+
+  function salvarAjusteAdiantamento(){
+    const v = viagens.find(v=>v.id===viagemDetalheAtual);
+    v.adiantamentoDefinido = parseNum(document.getElementById('dv-adiantamento').value);
+    renderDetalheViagem();
+  }
+
+  function marcarAcertado(){
+    const v = viagens.find(v=>v.id===viagemDetalheAtual);
+    v.acertado = true;
+    renderDetalheViagem();
+    renderTotalAdiantamentosAbertos();
+  }
+
+  function renderTotalAdiantamentosAbertos(){
+    const total = viagens.filter(v => v.status==='finalizada' && !v.acertado)
+      .reduce((s,v)=> s + Math.abs(v.adiantamentoDefinido - v.adiantamentoGasto), 0);
+    const el = document.getElementById('total-adiantamentos-abertos');
+    if(el) el.textContent = formatBRL(total);
+  }
+
+  // ---------- MOTORISTAS ----------
+  function renderMotoristas(){
+    const tbody = document.getElementById('tabela-motoristas');
+    tbody.innerHTML = motoristas.map((m,i) => {
+      const dias = diasAte(m.cnhValidade);
+      let cnhBadge = formatDateBR(m.cnhValidade.split('-').reverse().join('/').split('/').reverse().join('-')) === '' ? '' : '';
+      const validadeFmt = m.cnhValidade.split('-').reverse().join('/');
+      let badgeCnh = '';
+      if(dias < 0) badgeCnh = ' <span class="badge badge-danger"><i data-feather="alert-triangle"></i>Vencida</span>';
+      else if(dias <= 30) badgeCnh = ' <span class="badge badge-warning"><i data-feather="alert-triangle"></i>' + dias + 'd</span>';
+      return '<tr class="' + (i%2?'zebra':'') + '">'
+        + '<td><div class="avatar-chip"><span class="dot">' + m.nome.charAt(0) + '</span>' + m.nome + '</div></td>'
+        + '<td>' + m.veiculo + '</td>'
+        + '<td>' + (m.remuneracao==='comissionado' ? '<span class="badge badge-neutral">Comissionado · ' + m.comissao + '%</span>' : '<span class="badge badge-neutral">Assalariado</span>') + '</td>'
+        + '<td>' + validadeFmt + badgeCnh + '</td>'
+        + '<td>' + (m.status==='Ativo' ? '<span class="badge badge-success">Ativo</span>' : '<span class="badge badge-neutral">Inativo</span>') + '</td>'
+        + '<td><button class="btn btn-outline btn-sm" onclick="abrirModalMotorista(' + m.id + ')"><i data-feather="edit-2"></i>Editar</button></td>'
+        + '</tr>';
+    }).join('');
+    refreshIcons();
+  }
+
+  let motoristaEditandoId = null;
+
+  function selecionarRemuneracao(el, tipo){
+    document.querySelectorAll('#mot-remuneracao-grupo div').forEach(d=>d.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('mot-campo-comissao').style.display = tipo === 'comissionado' ? 'block' : 'none';
+    document.getElementById('mot-campo-salario').style.display = tipo === 'assalariado' ? 'block' : 'none';
+  }
+
+  function abrirModalMotorista(id){
+    motoristaEditandoId = id || null;
+    const m = id ? motoristas.find(m=>m.id===id) : null;
+    document.getElementById('mot-titulo').textContent = m ? 'Editar motorista' : 'Novo motorista';
+    document.getElementById('mot-nome').value = m ? m.nome : '';
+    document.getElementById('mot-cnh-validade').value = m ? m.cnhValidade : '';
+    document.getElementById('mot-comissao').value = m ? m.comissao : 14;
+    document.getElementById('mot-cpf').value = '';
+    document.getElementById('mot-telefone').value = '';
+    document.getElementById('mot-cnh').value = '';
+    const tipo = m ? m.remuneracao : 'comissionado';
+    document.querySelectorAll('#mot-remuneracao-grupo div').forEach(d => d.classList.toggle('selected', d.textContent.toLowerCase().startsWith(tipo==='comissionado'?'comiss':'assal')));
+    document.getElementById('mot-campo-comissao').style.display = tipo === 'comissionado' ? 'block' : 'none';
+    document.getElementById('mot-campo-salario').style.display = tipo === 'assalariado' ? 'block' : 'none';
+    abrirModal('modal-motorista');
+  }
+
+  function salvarMotorista(){
+    const tipo = document.querySelector('#mot-remuneracao-grupo .selected').textContent.startsWith('Comiss') ? 'comissionado' : 'assalariado';
+    const dados = {
+      nome: document.getElementById('mot-nome').value || 'Sem nome',
+      veiculo: document.getElementById('mot-veiculo').value,
+      remuneracao: tipo,
+      comissao: parseNum(document.getElementById('mot-comissao').value),
+      cnhValidade: document.getElementById('mot-cnh-validade').value || '2027-01-01',
+      status: document.getElementById('mot-status').value
+    };
+    if(motoristaEditandoId){
+      Object.assign(motoristas.find(m=>m.id===motoristaEditandoId), dados);
+    } else {
+      motoristas.push(Object.assign({id: Math.max(...motoristas.map(m=>m.id))+1}, dados));
+    }
+    fecharModal('modal-motorista');
+    renderMotoristas();
+  }
+
+  // ---------- MANUTENÇÃO / SEGMENTADOS GENÉRICOS ----------
+  function selecionarSegmento(el){
+    Array.from(el.parentElement.children).forEach(d=>d.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function abrirModalManutencao(){ abrirModal('modal-manutencao'); }
+
+  // ---------- PNEUS ----------
+  function mostrarPneu(el, nome, info){
+    const box = document.getElementById('detalhe-pneu');
+    box.style.display = 'block';
+    box.innerHTML = '<p style="margin:0;font-size:13px;font-weight:600;">' + nome + '</p><p style="margin:4px 0 0;font-size:12px;color:var(--text-secondary);">' + info + '</p>';
+  }
+
+  // ---------- VEÍCULOS / COMBUSTÍVEL (consumo médio e apuração — ver especificacao_revisada_gestao_frotas.md, seção 5c) ----------
+  function preencherSelectVeiculos(id){
+    const sel = document.getElementById(id);
+    sel.innerHTML = veiculos.map(v => '<option value="' + v.placa + '">' + v.placa + ' — ' + v.modelo + '</option>').join('');
+  }
+
+  function renderInfoVeiculo(){
+    const sel = document.getElementById('pneus-veiculo-select');
+    if(!sel.options.length) preencherSelectVeiculos('pneus-veiculo-select');
+    const veic = veiculos.find(v => v.placa === sel.value) || veiculos[0];
+    document.getElementById('info-veiculo-grid').innerHTML =
+      '<div class="cell"><p class="l">Modelo</p><p class="v" style="font-size:13px;">' + veic.modelo + '</p></div>' +
+      '<div class="cell"><p class="l">Km atual</p><p class="v" style="font-size:13px;">' + veic.kmAtual.toLocaleString('pt-BR') + ' km</p></div>' +
+      '<div class="cell"><p class="l">Status</p><p class="v" style="font-size:13px;">' + veic.status + '</p></div>' +
+      '<div class="cell highlight"><p class="l">Consumo médio</p><p class="v" style="font-size:13px;">' + veic.consumoMedio.toFixed(2) + ' km/L</p></div>';
+    refreshIcons();
+  }
+
+  function abrirModalTanqueCheio(){
+    preencherSelectVeiculos('tc-veiculo');
+    const atual = document.getElementById('pneus-veiculo-select').value;
+    if(atual) document.getElementById('tc-veiculo').value = atual;
+    document.getElementById('tc-km').value = '';
+    document.getElementById('tc-litros').value = '';
+    document.getElementById('tc-valor').value = '';
+    abrirModal('modal-tanque-cheio');
+  }
+
+  function registrarTanqueCheio(){
+    const placa = document.getElementById('tc-veiculo').value;
+    const veic = veiculos.find(v => v.placa === placa);
+    const kmAtual = parseNum(document.getElementById('tc-km').value);
+    const litros = parseNum(document.getElementById('tc-litros').value);
+    const valorTotal = parseNum(document.getElementById('tc-valor').value);
+    if(!kmAtual || !litros || !valorTotal){ alert('Preencha km, litros e valor total.'); return; }
+
+    veic.precoRef = valorTotal / litros;
+
+    if(veic.ultimoKmTanqueCheio){
+      const kmJanela = kmAtual - veic.ultimoKmTanqueCheio;
+      const consumoJanela = kmJanela / litros;
+      veic.consumoMedio = (veic.consumoMedio * 4 + consumoJanela) / 5; // média móvel das últimas 5 janelas (aprox.)
+
+      const motoristaIds = motoristas.filter(m => m.veiculo.startsWith(placa)).map(m => m.id);
+      const alvo = viagens.filter(v => motoristaIds.includes(v.motoristaId) && v.status === 'finalizada' && v.combustivelStatus !== 'apurado');
+      const kmTotalAlvo = alvo.reduce((s, v) => s + (v.kmRodado || 0), 0);
+      if(kmTotalAlvo > 0){
+        alvo.forEach(v => {
+          v.combustivelValor = valorTotal * (v.kmRodado / kmTotalAlvo);
+          v.combustivelStatus = 'apurado';
+        });
+      }
+      alert('Janela de ' + kmJanela.toLocaleString('pt-BR') + ' km fechada. Consumo médio do ' + placa + ' atualizado para ' + veic.consumoMedio.toFixed(2) + ' km/L. ' + alvo.length + ' viagem(ns) tiveram o combustível apurado (deixaram de ser "estimado").');
+    } else {
+      alert('Primeira referência de tanque cheio registrada para ' + placa + '. As próximas viagens já usam o consumo médio do cadastro; a apuração retroativa passa a valer a partir do próximo fechamento.');
+    }
+
+    veic.kmAtual = kmAtual;
+    veic.ultimoKmTanqueCheio = kmAtual;
+    fecharModal('modal-tanque-cheio');
+    renderInfoVeiculo();
+    renderViagens();
+  }
+
+  window.addEventListener('DOMContentLoaded', function(){
+    renderViagens();
+    renderMotoristas();
+    renderTotalAdiantamentosAbertos();
+    renderInfoVeiculo();
+    refreshIcons();
+  });
+</script>
+</body>
+</html>

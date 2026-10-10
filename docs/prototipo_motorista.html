@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protótipo — App do Motorista · Garbin Transportes</title>
+<script src="https://unpkg.com/feather-icons"></script>
+<style>
+  :root{
+    --primary:#0066FF;
+    --primary-dark:#0C447C;
+    --chip-bg:#EFF6FF;
+    --success:#00B87C;
+    --success-text:#175C3A;
+    --success-bg:#E1F5EE;
+    --warning-bg:#FAEEDA;
+    --warning-text:#633806;
+    --warning-strong:#854F0B;
+    --danger:#A32D2D;
+    --danger-bg:#FCEBEB;
+    --danger-text:#791F1F;
+    --dark:#1E293B;
+    --bg:#F8FAFC;
+    --border:#E2E8F0;
+    --text:#1E293B;
+    --text-secondary:#64748B;
+    --text-muted:#94A3B8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:#EEF1F5;
+    color:var(--text);
+    padding:24px 16px 64px;
+  }
+  .page-head{max-width:900px;margin:0 auto 20px;}
+  .page-head h1{font-size:19px;font-weight:600;margin:0 0 4px;}
+  .page-head p{font-size:13px;color:var(--text-secondary);margin:0;line-height:1.5;}
+  .jump-nav{
+    max-width:900px;margin:16px auto 0;display:flex;gap:8px;flex-wrap:wrap;
+  }
+  .mode-toggle{
+    display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text);
+    margin-top:12px;cursor:pointer;
+  }
+  .mode-toggle input{width:16px;height:16px;}
+  .hidden-mode{display:none !important;}
+  .jump-nav button{
+    background:#fff;border:1px solid var(--border);border-radius:8px;
+    padding:8px 14px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;
+  }
+  .jump-nav button.current{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .stage{
+    max-width:900px;margin:24px auto 0;display:flex;justify-content:center;
+  }
+  .phone{
+    width:360px;background:#0f172a;border-radius:32px;padding:10px;
+    box-shadow:0 20px 40px rgba(15,23,42,0.25);
+  }
+  .phone-screen{
+    background:var(--bg);border-radius:24px;overflow:hidden;min-height:700px;
+    display:flex;flex-direction:column;
+  }
+  .notch{width:70px;height:5px;background:#334155;border-radius:3px;margin:8px auto 4px;}
+  .screen{display:none;flex-direction:column;flex:1;}
+  .screen.active{display:flex;}
+  .app-header{
+    background:var(--dark);padding:14px 16px;display:flex;align-items:center;
+    gap:10px;color:#fff;
+  }
+  .app-header.two-line{align-items:flex-start;justify-content:space-between;}
+  .app-header .back{cursor:pointer;display:flex;}
+  .app-header .title{font-size:15px;font-weight:600;}
+  .app-header .sub{font-size:10px;color:#94A3B8;margin:0 0 1px;}
+  .icon-btn{
+    width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.12);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;border:none;
+  }
+  .icon-btn svg{width:15px;height:15px;}
+  .content{padding:16px;flex:1;overflow-y:auto;}
+  .chip-strip{padding:12px 16px 14px;background:var(--chip-bg);}
+  .chip-strip .commission{
+    display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--primary-dark);
+    cursor:pointer;background:none;border:none;padding:0;font-family:inherit;
+  }
+  .chip-strip .commission svg{width:14px;height:14px;}
+  .chip-strip .vehicle{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--text-secondary);}
+  .chip-strip .vehicle svg{width:14px;height:14px;}
+  h2.section-title{font-size:13px;font-weight:600;margin:0 0 8px;color:var(--text);}
+  .trip-card{
+    background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer;
+  }
+  .trip-card .route{font-size:13px;font-weight:600;margin:0;}
+  .trip-card .meta{font-size:11px;color:var(--text-secondary);margin:2px 0 0;}
+  .trip-card svg{width:18px;height:18px;color:var(--text-muted);}
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    border-radius:10px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;border:none;width:100%;
+    font-family:inherit;
+  }
+  .btn svg{width:17px;height:17px;}
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-outline{background:#fff;border:1px solid var(--primary);color:var(--primary);}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .btn-ghost{background:none;color:var(--text-secondary);font-weight:600;font-size:13px;padding:10px;}
+  .link-mini{
+    display:flex;align-items:center;gap:3px;font-size:12px;color:var(--primary);font-weight:600;cursor:pointer;background:none;border:none;font-family:inherit;
+  }
+  .link-mini svg{width:14px;height:14px;}
+  .empty-box{
+    background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;
+    text-align:center;font-size:12px;color:var(--text-muted);
+  }
+  .list-item{
+    background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;
+  }
+  .list-item .route{font-size:13px;font-weight:600;margin:0;}
+  .list-item .meta{font-size:11px;color:var(--text-secondary);margin:2px 0 0;}
+  .list-item .value{font-size:14px;font-weight:600;color:var(--success-text);}
+  .list-item .value-label{font-size:10px;color:var(--text-secondary);margin:0;text-align:right;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:11px;font-weight:600;margin-bottom:4px;}
+  .field input,.field select,.field textarea{
+    width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;
+    font-size:13px;font-family:inherit;color:var(--text);background:#fff;
+  }
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .locked-block{
+    background:var(--chip-bg);border-radius:10px;padding:12px 14px;margin:6px 0 14px;
+  }
+  .locked-block .row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--primary-dark);}
+  .locked-block .row + .row{margin-top:6px;}
+  .locked-block .row .lock-label{display:flex;align-items:center;gap:5px;}
+  .locked-block .row .lock-label svg{width:13px;height:13px;}
+  .locked-block .value{font-weight:600;font-size:13px;}
+  .locked-block .caption{font-size:11px;color:var(--text-secondary);margin:8px 0 0;}
+  .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .divider{height:1px;background:var(--border);margin:12px 0;}
+  .metric-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .metric-card{background:#F1F5F9;border-radius:10px;padding:12px;}
+  .metric-card .label{font-size:11px;color:var(--text-secondary);margin:0;}
+  .metric-card .value{font-size:18px;font-weight:600;margin:4px 0 0;}
+  .metric-highlight{
+    background:#F1F5F9;border-radius:10px;padding:14px;margin-top:10px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .trend{
+    display:flex;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--success-text);
+    background:var(--success-bg);padding:4px 8px;border-radius:999px;
+  }
+  .trend svg{width:13px;height:13px;}
+  .info-strip{
+    background:#F1F5F9;border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;font-size:12px;
+  }
+  .info-strip span{display:block;}
+  .info-strip b{font-size:13px;display:block;margin-top:2px;}
+  .advance-strip{
+    display:flex;align-items:center;gap:8px;background:#F1F5F9;border-radius:10px;
+    padding:9px 14px;font-size:11px;color:var(--text-secondary);margin-top:8px;
+  }
+  .advance-strip svg{width:14px;height:14px;color:var(--primary);flex-shrink:0;}
+  .advance-strip b{color:var(--text);font-weight:600;}
+  .quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 10px;}
+  .suggestion-strip{
+    display:flex;align-items:center;gap:8px;background:#FEF9EE;border:1px solid #F5E6C8;
+    border-radius:8px;padding:8px 12px;font-size:11px;color:var(--text-secondary);margin-top:10px;
+  }
+  .suggestion-strip svg{width:14px;height:14px;color:#B9852F;flex-shrink:0;}
+  .suggestion-strip b{color:var(--text);}
+  .stars-mini{margin-left:auto;color:#D4A017;font-size:12px;letter-spacing:1px;flex-shrink:0;}
+  .stars{display:flex;gap:4px;margin:4px 0 14px;}
+  .stars span{font-size:24px;color:var(--border);cursor:pointer;line-height:1;}
+  .stars span.active{color:#D4A017;}
+  .filter-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;}
+  .filter-chips button{
+    flex-shrink:0;background:#fff;border:1px solid var(--border);border-radius:999px;
+    padding:6px 12px;font-size:11px;font-weight:600;color:var(--text-secondary);cursor:pointer;font-family:inherit;
+  }
+  .filter-chips button.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .reg-item{
+    background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;
+    display:flex;align-items:center;gap:10px;margin-bottom:8px;
+  }
+  .reg-item svg{width:17px;height:17px;color:var(--primary);flex-shrink:0;}
+  .reg-item .label{font-size:12px;font-weight:600;margin:0;}
+  .reg-item .valor{margin-left:auto;font-size:12px;font-weight:600;color:var(--text-secondary);flex-shrink:0;}
+  .tab-btn{
+    background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 8px;
+    display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    cursor:pointer;color:var(--text);
+  }
+  .tab-btn svg{width:20px;height:20px;color:var(--primary);}
+  .tab-btn.active-tab{background:var(--chip-bg);border-color:var(--primary);color:var(--primary);}
+  .tab-btn.full{grid-column:span 2;flex-direction:row;justify-content:space-between;}
+  .tab-btn .left{display:flex;align-items:center;gap:8px;}
+  .badge-pending{font-size:10px;font-weight:600;color:var(--danger-text);background:var(--danger-bg);padding:3px 8px;border-radius:999px;}
+  .warning-caption{
+    font-size:11px;color:var(--warning-strong);text-align:center;display:flex;align-items:center;
+    justify-content:center;gap:4px;margin:6px 0 0;
+  }
+  .warning-caption svg{width:13px;height:13px;}
+  .panel{display:none;margin-top:12px;}
+  .panel.open{display:block;}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .panel-head p{margin:0;font-size:14px;font-weight:600;}
+  .panel-head svg{width:16px;height:16px;color:var(--text-secondary);cursor:pointer;}
+  .segmented{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .segmented.segmented-3{grid-template-columns:1fr 1fr 1fr;gap:6px;}
+  .segmented.segmented-3 div{padding:8px 4px;font-size:10.5px;}
+  .segmented div{
+    border-radius:8px;padding:9px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;
+    border:1px solid var(--border);color:var(--text);
+  }
+  .segmented div.selected{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;}
+  .checkbox-row .box{
+    width:16px;height:16px;border:1.5px solid var(--primary);border-radius:4px;background:var(--primary);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .checkbox-row .box svg{width:11px;height:11px;color:#fff;}
+  .attach-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .attach-btn{
+    border-radius:8px;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;
+    font-size:12px;font-weight:600;cursor:pointer;
+  }
+  .attach-btn.primary{background:var(--chip-bg);border:1px solid var(--primary);color:var(--primary);}
+  .attach-btn.secondary{background:#fff;border:1px solid var(--border);color:var(--text);}
+  .attach-btn svg{width:16px;height:16px;}
+  .attach-status{font-size:11px;color:var(--success-text);margin:8px 0 0;display:none;align-items:center;gap:5px;}
+  .attach-status.shown{display:flex;}
+  .attach-status svg{width:13px;height:13px;}
+  .info-caption{font-size:11px;color:var(--text-muted);display:flex;align-items:flex-start;gap:5px;margin:8px 0 0;}
+  .info-caption svg{width:14px;height:14px;margin-top:1px;flex-shrink:0;}
+  .bottom-nav{
+    display:flex;justify-content:space-around;padding:12px 0 8px;border-top:1px solid var(--border);
+    background:#fff;
+  }
+  .nav-item{
+    display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;
+    color:var(--text-muted);cursor:pointer;background:none;border:none;font-family:inherit;
+  }
+  .nav-item svg{width:20px;height:20px;}
+  .nav-item.active{color:var(--primary);}
+  .home-indicator{width:120px;height:4px;background:#CBD5E1;border-radius:3px;margin:8px auto 10px;}
+  .amber-banner{background:var(--warning-bg);color:var(--warning-text);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:12px;}
+  select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 10px center;background-size:14px;}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>Protótipo navegável — App do motorista</h1>
+  <p>Clique nos elementos como faria no app (cards, botões, atalhos) para seguir o fluxo real, ou use os atalhos abaixo para pular direto para qualquer tela. Sem backend — é só para revisar hierarquia, fluxo e campos.</p>
+  <label class="mode-toggle">
+    <input type="checkbox" id="toggle-assalariado" onchange="alternarModoRemuneracao(this.checked)">
+    Simular motorista assalariado (sem comissão)
+  </label>
+</div>
+
+<div class="jump-nav" id="jumpNav">
+  <button onclick="showScreen('home')">Início</button>
+  <button onclick="showScreen('confirmar')">Confirmar viagem</button>
+  <button onclick="showScreen('nova-viagem')">Cadastrar viagem</button>
+  <button onclick="showScreen('historico')">Histórico</button>
+  <button onclick="showScreen('andamento')">Viagem em andamento</button>
+</div>
+
+<div class="stage">
+<div class="phone">
+<div class="phone-screen">
+<div class="notch"></div>
+
+<!-- ===================== HOME ===================== -->
+<div class="screen active" id="home">
+  <div class="app-header">
+    <div>
+      <p class="sub">Garbin transportes</p>
+      <div class="title">Olá, Motorista Teste</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:6px;">
+      <button class="icon-btn" title="Histórico" onclick="showScreen('historico')"><i data-feather="clock"></i></button>
+      <button class="icon-btn" title="Sair"><i data-feather="log-out"></i></button>
+    </div>
+  </div>
+  <div class="chip-strip">
+    <button class="commission" id="home-chip" onclick="showScreen('historico')"><i data-feather="percent"></i>14% comissão · R$ 1.400,00 este mês</button>
+    <div class="vehicle"><i data-feather="truck"></i>ABC-1D23 · Volvo FH 540 · 702.000 km</div>
+  </div>
+  <div class="content">
+    <h2 class="section-title">Próximas viagens</h2>
+    <div class="trip-card" onclick="showScreen('confirmar')">
+      <div>
+        <p class="route">Pato Branco/PR → Curitiba/PR</p>
+        <p class="meta">Amanhã · Volvo FH 540</p>
+      </div>
+      <i data-feather="chevron-right"></i>
+    </div>
+    <div class="trip-card" onclick="showScreen('confirmar')">
+      <div>
+        <p class="route">Curitiba/PR → Guarapuava/PR</p>
+        <p class="meta">Sex, 18/09 · Volvo FH 540</p>
+      </div>
+      <i data-feather="chevron-right"></i>
+    </div>
+    <div style="margin-top:10px;">
+      <button class="btn btn-outline" onclick="showScreen('nova-viagem')"><i data-feather="plus"></i>Cadastrar nova viagem</button>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-item active"><i data-feather="home"></i>Início</button>
+    <button class="nav-item" onclick="showScreen('historico')"><i data-feather="list"></i>Viagens</button>
+    <button class="nav-item"><i data-feather="user"></i>Perfil</button>
+  </div>
+  <div class="home-indicator"></div>
+</div>
+
+<!-- ===================== CONFIRMAR ===================== -->
+<div class="screen" id="confirmar">
+  <div class="app-header">
+    <span class="back" onclick="showScreen('home')"><i data-feather="arrow-left"></i></span>
+    <span class="title">Confirmar viagem</span>
+  </div>
+  <div class="content">
+    <div class="card">
+      <p style="margin:0 0 12px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px;"><i data-feather="map-pin" style="width:17px;height:17px;color:var(--primary);"></i>Pato Branco/PR → Curitiba/PR</p>
+      <div class="divider"></div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Data</span><span style="font-weight:600;">15/09/2026</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Veículo</span><span style="font-weight:600;">ABC-1D23 — Volvo FH 540</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Cliente</span><span style="font-weight:600;">Não informado</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Carga</span><span style="font-weight:600;">Carga seca, paletizada</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Valor do frete</span><span style="font-weight:600;">R$ 5.500,00</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Adiantamento</span><span style="font-weight:600;">R$ 500,00</span></div>
+      </div>
+      <div class="locked-block only-comissionado">
+        <div class="row"><span class="lock-label"><i data-feather="lock"></i>Comissão do motorista</span><span class="value">14,00%</span></div>
+        <div class="row"><span>Valor estimado</span><span class="value">R$ 770,00</span></div>
+      </div>
+    </div>
+    <div class="suggestion-strip">
+      <i data-feather="coffee"></i>
+      <span>Parada frequente nesta rota: <b>Restaurante do Zé</b></span>
+      <span class="stars-mini">★★★★<span style="color:var(--border);">★</span></span>
+    </div>
+    <div style="margin-top:14px;">
+      <button class="btn btn-primary" onclick="showScreen('andamento')"><i data-feather="play"></i>Confirmar e iniciar viagem</button>
+    </div>
+    <button class="btn btn-ghost" onclick="showScreen('nova-viagem')" style="margin:0 auto;"><i data-feather="edit-2"></i>Editar informações</button>
+  </div>
+</div>
+
+<!-- ===================== NOVA VIAGEM ===================== -->
+<div class="screen" id="nova-viagem">
+  <div class="app-header">
+    <span class="back" onclick="showScreen('home')"><i data-feather="arrow-left"></i></span>
+    <span class="title">Cadastrar viagem</span>
+  </div>
+  <div class="content">
+    <div class="field-row">
+      <div class="field"><label>Data</label><input type="date" value="2026-09-15"></div>
+      <div class="field"><label>Veículo</label>
+        <select><option>ABC-1D23 — Volvo FH 540</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Cliente / embarcador (opcional)</label><input type="text" placeholder="Não informado"></div>
+    <div class="field-row">
+      <div class="field"><label>Origem</label><input type="text" value="Pato Branco/PR"></div>
+      <div class="field"><label>Destino</label><input type="text" value="Curitiba/PR"></div>
+    </div>
+    <div class="field"><label>Carga</label><input type="text" value="Carga seca, paletizada"></div>
+    <div class="field"><label>Valor do frete (R$)</label><input type="text" id="valor-frete" value="5.500,00" oninput="atualizarComissao()"></div>
+    <div class="field"><label>Adiantamento (R$)</label><input type="text" id="valor-adiantamento-form" value="500,00"></div>
+    <div class="locked-block only-comissionado">
+      <div class="row"><span class="lock-label"><i data-feather="lock"></i>Comissão do motorista</span><span class="value">14,00%</span></div>
+      <div class="row"><span>Valor estimado</span><span class="value" id="comissao-calc">R$ 770,00</span></div>
+      <p class="caption">Definida no cadastro do motorista. Atualiza sozinho conforme o valor do frete.</p>
+    </div>
+    <div class="locked-block only-assalariado hidden-mode">
+      <p class="caption" style="margin:0;">Este motorista recebe salário fixo — sem comissão por viagem.</p>
+    </div>
+    <div class="field"><label>Observações (opcional)</label><textarea rows="2" placeholder="Opcional"></textarea></div>
+    <button class="btn btn-outline" style="margin-bottom:10px;" onclick="alert('Viagem salva como programada. Ela aparecerá em Próximas viagens no Início.'); showScreen('home');">Salvar para depois</button>
+    <button class="btn btn-primary" onclick="iniciarViagemComAdiantamento()"><i data-feather="play"></i>Confirmar e iniciar viagem</button>
+  </div>
+</div>
+
+<!-- ===================== HISTORICO ===================== -->
+<div class="screen" id="historico">
+  <div class="app-header">
+    <span class="back" onclick="showScreen('home')"><i data-feather="arrow-left"></i></span>
+    <span class="title">Minhas viagens</span>
+  </div>
+  <div class="content">
+    <button class="btn-outline" style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text);width:auto;">
+      <i data-feather="calendar" style="width:15px;height:15px;color:var(--text-secondary);"></i>Setembro 2026<i data-feather="chevron-down" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+    </button>
+    <div class="metric-row" style="margin-top:14px;">
+      <div class="metric-card"><p class="label">Viagens no mês</p><p class="value">1</p></div>
+      <div class="metric-card"><p class="label">Km rodados</p><p class="value">2.000 km</p></div>
+    </div>
+    <div class="metric-highlight">
+      <div>
+        <p style="margin:0;font-size:11px;color:var(--text-secondary);">Comissão no mês</p>
+        <p style="margin:4px 0 0;font-size:20px;font-weight:600;">R$ 1.400,00</p>
+      </div>
+      <span class="trend"><i data-feather="arrow-up-right"></i>+12%</span>
+    </div>
+    <h2 class="section-title" style="margin-top:16px;">Viagens finalizadas</h2>
+    <div class="list-item">
+      <div>
+        <p class="route">Pato Branco → Curitiba</p>
+        <p class="meta">13/09/2026, 20:40 · 2.000 km</p>
+      </div>
+      <div>
+        <p class="value-label">Comissão</p>
+        <p class="value">R$ 1.400,00</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== VIAGEM EM ANDAMENTO ===================== -->
+<div class="screen" id="andamento">
+  <div class="app-header">
+    <span class="back" onclick="showScreen('home')"><i data-feather="arrow-left"></i></span>
+    <span class="title">Viagem em andamento</span>
+  </div>
+  <div class="content">
+    <p style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px;"><i data-feather="map-pin" style="width:17px;height:17px;color:var(--primary);"></i>Pato Branco, PR → Salvador, BA</p>
+    <p style="margin:4px 0 14px;font-size:12px;color:var(--text-secondary);">Dinheiro · iniciada em 14/09, 22:19</p>
+    <div class="info-strip">
+      <span>Km inicial<b>705.000</b></span>
+      <span>Frete<b id="frete-total">R$ 25.000,00</b></span>
+      <span class="only-comissionado">Comissão<b id="comissao-total">R$ 3.500,00</b></span>
+    </div>
+    <div class="advance-strip">
+      <i data-feather="credit-card"></i>
+      <span>Adiantamento <b id="adiantamento-recebido">R$ 500,00</b> · gasto <b id="adiantamento-gasto">R$ 0,00</b> · saldo <b id="adiantamento-saldo">R$ 500,00</b></span>
+    </div>
+
+    <div class="quick-actions">
+      <div class="tab-btn" id="tab-abastecimento-panel" onclick="togglePanel('abastecimento-panel')"><i data-feather="droplet"></i>Abastecimento</div>
+      <div class="tab-btn" id="tab-despesa-panel" onclick="togglePanel('despesa-panel')"><i data-feather="file-text"></i>Despesa</div>
+      <div class="tab-btn" id="tab-parada-panel" onclick="togglePanel('parada-panel')"><i data-feather="coffee"></i>Parada</div>
+      <div class="tab-btn" id="tab-complemento-panel" onclick="togglePanel('complemento-panel')"><i data-feather="package"></i>Carga extra</div>
+      <div class="tab-btn full" id="tab-documentos-panel" onclick="togglePanel('documentos-panel')">
+        <span class="left"><i data-feather="paperclip"></i>Documentos</span>
+        <span class="badge-pending" id="badge-pendente">1 pendente</span>
+      </div>
+    </div>
+
+    <button class="btn btn-danger" onclick="finalizarViagem()"><i data-feather="flag"></i>Finalizar viagem</button>
+    <p class="warning-caption" id="aviso-canhoto"><i data-feather="alert-triangle"></i>Falta anexar: canhoto</p>
+
+    <!-- PAINEL ABASTECIMENTO -->
+    <div class="panel" id="abastecimento-panel">
+      <div class="card">
+        <div class="panel-head"><p>Novo abastecimento</p><i data-feather="x" onclick="togglePanel('abastecimento-panel')"></i></div>
+        <div class="field-row">
+          <div class="field"><label>Data</label><input type="date" value="2026-09-14"></div>
+          <div class="field"><label>Km</label><input type="text" value="705.000"></div>
+        </div>
+        <div class="field"><label>Posto</label><input type="text" value="Posto Ipiranga BR-116"></div>
+        <div class="field"><label>Combustível</label>
+          <select><option>Diesel S10</option><option>Diesel S500</option><option>Arla 32</option></select>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Litros</label><input type="text" id="litros" value="420,50" oninput="atualizarTotalAbastecimento()"></div>
+          <div class="field"><label>Preço/litro (R$)</label><input type="text" id="preco-litro" value="6,19" oninput="atualizarTotalAbastecimento()"></div>
+        </div>
+        <div class="locked-block">
+          <div class="row"><span>Total</span><span class="value" id="total-abastecimento">R$ 2.602,90</span></div>
+        </div>
+        <div class="field"><label>Forma de pagamento</label>
+          <div class="segmented segmented-3" id="pagamento-abastecimento-grupo">
+            <div onclick="selecionarFormaPagamento(this)">Adiantamento</div>
+            <div class="selected" onclick="selecionarFormaPagamento(this)">Cartão empresa</div>
+            <div onclick="selecionarFormaPagamento(this)">Próprio bolso</div>
+          </div>
+        </div>
+        <div class="checkbox-row"><div class="box"><i data-feather="check"></i></div>Tanque cheio</div>
+        <div class="field"><label>Comprovante</label>
+          <div class="attach-row">
+            <div class="attach-btn primary" onclick="tirarFoto('foto-abastecimento')"><i data-feather="camera"></i>Tirar foto</div>
+            <div class="attach-btn secondary"><i data-feather="upload"></i>Anexar arquivo</div>
+          </div>
+          <p class="attach-status" id="foto-abastecimento"><i data-feather="check-circle"></i>Comprovante anexado</p>
+        </div>
+        <button class="btn btn-primary" style="margin-top:6px;" onclick="salvarAbastecimento()">Salvar abastecimento</button>
+      </div>
+    </div>
+
+    <!-- PAINEL DESPESA -->
+    <div class="panel" id="despesa-panel">
+      <div class="card">
+        <div class="panel-head"><p>Nova despesa</p><i data-feather="x" onclick="togglePanel('despesa-panel')"></i></div>
+        <div class="field"><label>Data</label><input type="date" value="2026-09-14"></div>
+        <div class="field"><label>Categoria</label>
+          <select><option>Alimentação</option><option>Pedágio</option><option>Estacionamento</option></select>
+        </div>
+        <div class="field"><label>Valor (R$)</label><input type="text" id="valor-despesa" value="85,90"></div>
+        <div class="field"><label>Forma de pagamento</label>
+          <div class="segmented segmented-3" id="pagamento-despesa-grupo">
+            <div class="selected" onclick="selecionarFormaPagamento(this)">Adiantamento</div>
+            <div onclick="selecionarFormaPagamento(this)">Cartão empresa</div>
+            <div onclick="selecionarFormaPagamento(this)">Próprio bolso</div>
+          </div>
+        </div>
+        <div class="field"><label>Local / estabelecimento</label><input type="text" placeholder="Restaurante, posto..."></div>
+        <div class="field"><label>Comprovante</label>
+          <div class="attach-row">
+            <div class="attach-btn primary" onclick="tirarFoto('foto-despesa')"><i data-feather="camera"></i>Tirar foto</div>
+            <div class="attach-btn secondary"><i data-feather="upload"></i>Anexar arquivo</div>
+          </div>
+          <p class="attach-status" id="foto-despesa"><i data-feather="check-circle"></i>Comprovante anexado</p>
+          <p class="info-caption"><i data-feather="info"></i>O comprovante é salvo automaticamente nos documentos desta viagem.</p>
+        </div>
+        <button class="btn btn-primary" style="margin-top:6px;" onclick="salvarDespesa()">Salvar despesa</button>
+      </div>
+    </div>
+
+    <!-- PAINEL PARADA -->
+    <div class="panel" id="parada-panel">
+      <div class="card">
+        <div class="panel-head"><p>Nova parada</p><i data-feather="x" onclick="togglePanel('parada-panel')"></i></div>
+        <div class="field"><label>Tipo de parada</label>
+          <div class="segmented" id="tipo-parada-grupo">
+            <div class="selected" onclick="selecionarTipoParada(this)">Pernoite</div>
+            <div onclick="selecionarTipoParada(this)">Almoço</div>
+            <div onclick="selecionarTipoParada(this)">Descanso</div>
+            <div onclick="selecionarTipoParada(this)">Outro</div>
+          </div>
+        </div>
+        <div class="field"><label>Local</label><input type="text" id="local-parada" placeholder="Ex.: Restaurante do Zé — BR-116 km 230"></div>
+        <div class="field">
+          <label>Avaliação</label>
+          <div class="stars" id="estrelas-parada">
+            <span onclick="avaliarParada(1)">☆</span>
+            <span onclick="avaliarParada(2)">☆</span>
+            <span onclick="avaliarParada(3)">☆</span>
+            <span onclick="avaliarParada(4)">☆</span>
+            <span onclick="avaliarParada(5)">☆</span>
+          </div>
+        </div>
+        <div class="field"><label>Comentário (opcional)</label><input type="text" id="comentario-parada" placeholder="Ex.: Estacionamento seguro, banheiro limpo"></div>
+        <p class="info-caption"><i data-feather="info"></i>Sua avaliação ajuda a sugerir essa parada em próximas viagens pela mesma rota.</p>
+        <button class="btn btn-primary" style="margin-top:6px;" onclick="salvarParada()">Salvar parada</button>
+      </div>
+    </div>
+
+    <!-- PAINEL CARGA COMPLEMENTAR -->
+    <div class="panel" id="complemento-panel">
+      <div class="card">
+        <div class="panel-head"><p>Nova carga complementar</p><i data-feather="x" onclick="togglePanel('complemento-panel')"></i></div>
+        <p class="info-caption" style="margin:-4px 0 12px;"><i data-feather="info"></i>Some ao valor do frete e recalcula a comissão automaticamente.</p>
+        <div class="field"><label>Data</label><input type="date" value="2026-09-14"></div>
+        <div class="field"><label>Cliente / embarcador da carga adicional</label><input type="text" placeholder="Ex.: Comercial Ponta Grossa"></div>
+        <div class="field-row">
+          <div class="field"><label>Local de coleta</label><input type="text" placeholder="Ex.: Ponta Grossa/PR"></div>
+          <div class="field"><label>Local de entrega</label><input type="text" placeholder="Se diferente do destino da viagem"></div>
+        </div>
+        <div class="field"><label>Peso / volume (opcional)</label><input type="text" placeholder="Ex.: 2 paletes, 800 kg"></div>
+        <div class="field"><label>Valor (R$)</label><input type="text" id="valor-complemento" value="800,00"></div>
+        <div class="field"><label>Descrição (opcional)</label><input type="text" placeholder="Ex.: mais 2 paletes embarcados em Ponta Grossa"></div>
+        <div class="field"><label>Comprovante</label>
+          <div class="attach-row">
+            <div class="attach-btn primary" onclick="tirarFoto('foto-complemento')"><i data-feather="camera"></i>Tirar foto</div>
+            <div class="attach-btn secondary"><i data-feather="upload"></i>Anexar arquivo</div>
+          </div>
+          <p class="attach-status" id="foto-complemento"><i data-feather="check-circle"></i>Comprovante anexado</p>
+          <p class="info-caption"><i data-feather="info"></i>O comprovante é salvo automaticamente nos documentos desta viagem.</p>
+        </div>
+        <button class="btn btn-primary" style="margin-top:6px;" onclick="salvarComplemento()">Salvar carga complementar</button>
+      </div>
+    </div>
+
+    <!-- PAINEL DOCUMENTOS -->
+    <div class="panel" id="documentos-panel">
+      <div class="card">
+        <div class="panel-head"><p>Documentos da viagem</p><i data-feather="x" onclick="togglePanel('documentos-panel')"></i></div>
+        <div class="amber-banner"><b>Canhoto:</b> obrigatório para finalizar a viagem.</div>
+        <div class="field"><label>Tipo de documento</label>
+          <select><option>Canhoto — obrigatório</option><option>Nota fiscal</option><option>Outro</option></select>
+        </div>
+        <div class="field"><label>Arquivo</label>
+          <div class="attach-row">
+            <div class="attach-btn primary" onclick="tirarFoto('foto-documento')"><i data-feather="camera"></i>Tirar foto</div>
+            <div class="attach-btn secondary"><i data-feather="upload"></i>Anexar arquivo</div>
+          </div>
+          <p class="attach-status" id="foto-documento"><i data-feather="check-circle"></i>Arquivo anexado</p>
+        </div>
+        <p class="info-caption" style="margin-bottom:12px;"><i data-feather="info"></i>Formatos aceitos: JPG, PNG, WEBP e PDF · máximo 10MB.</p>
+        <button class="btn btn-primary" onclick="enviarDocumento()">Enviar documento</button>
+      </div>
+    </div>
+
+    <!-- PAINEL CONFERÊNCIA FINAL -->
+    <div class="panel" id="finalizacao-panel">
+      <div class="card">
+        <div class="panel-head"><p>Conferência final</p><i data-feather="x" onclick="togglePanel('finalizacao-panel')"></i></div>
+        <div class="only-comissionado">
+          <div class="metric-row">
+            <div class="metric-card"><p class="label">Frete</p><p class="value" id="conf-frete">R$ 25.000,00</p></div>
+            <div class="metric-card"><p class="label">Combustível</p><p class="value">R$ 3.100,00</p></div>
+          </div>
+          <p class="info-caption" id="conf-complemento-nota" style="display:none;margin:6px 0 10px;"></p>
+          <div class="metric-row" style="margin-top:10px;">
+            <div class="metric-card"><p class="label">Despesas</p><p class="value">R$ 170,00</p></div>
+            <div class="metric-card"><p class="label">Comissão</p><p class="value" id="conf-comissao">R$ 3.500,00</p></div>
+          </div>
+          <div class="metric-highlight" style="background:var(--success-bg);margin-top:12px;">
+            <div>
+              <p style="margin:0;font-size:11px;color:var(--text-secondary);">Resultado operacional estimado</p>
+              <p style="margin:4px 0 0;font-size:20px;font-weight:600;color:var(--success-text);" id="conf-resultado">R$ 18.230,00</p>
+            </div>
+            <span class="trend" id="conf-percentual"><i data-feather="arrow-up-right"></i>72,9%</span>
+          </div>
+        </div>
+        <div class="metric-highlight" id="bloco-adiantamento-final" style="background:#F1F5F9;margin-top:12px;">
+          <div>
+            <p style="margin:0;font-size:11px;color:var(--text-secondary);">Adiantamento: <b id="conf-adiantamento-recebido">R$ 500,00</b> recebido · <b id="conf-adiantamento-gasto">R$ 0,00</b> gasto</p>
+            <p style="margin:4px 0 0;font-size:18px;font-weight:600;" id="conf-adiantamento-saldo-label">Saldo: R$ 500,00 a devolver</p>
+          </div>
+        </div>
+        <div class="field-row" style="margin-top:16px;">
+          <div class="field">
+            <label>Km inicial</label>
+            <div class="locked-block" style="margin:0;padding:10px 12px;"><span class="value" style="font-size:13px;">705.000</span></div>
+          </div>
+          <div class="field"><label>Km final</label><input type="text" value="706.850"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Data / hora de chegada</label><input type="text" value="15/09/2026, 10:32"></div>
+          <div class="field"><label>Local de chegada</label><input type="text" value="Salvador, BA"></div>
+        </div>
+        <div class="field"><label>Observações finais</label><textarea rows="2" placeholder="Opcional"></textarea></div>
+        <div class="amber-banner" style="background:var(--success-bg);color:var(--success-text);"><i data-feather="check-circle" style="width:13px;height:13px;vertical-align:-2px;margin-right:4px;"></i><b>Canhoto anexado.</b> A documentação obrigatória está completa.</div>
+        <button class="btn btn-danger" onclick="confirmarFinalizacao()"><i data-feather="flag"></i>Confirmar finalização</button>
+      </div>
+    </div>
+
+    <div style="margin-top:18px;">
+      <h2 class="section-title">Registros da viagem</h2>
+      <div class="filter-chips" id="filtro-chips">
+        <button class="active" onclick="filtrarRegistros('todos', this)">Todos</button>
+        <button onclick="filtrarRegistros('abastecimento', this)">Abastecimento</button>
+        <button onclick="filtrarRegistros('despesa', this)">Despesa</button>
+        <button onclick="filtrarRegistros('parada', this)">Parada</button>
+        <button onclick="filtrarRegistros('carga', this)">Carga extra</button>
+      </div>
+      <div id="lista-registros">
+        <div class="empty-box">Nenhum lançamento registrado ainda.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+</div>
+
+<script>
+  let documentoPendente = true;
+  const freteBase = 25000;
+  const combustivelTotal = 3100;
+  const despesasTotal = 170;
+  const comissaoPercentual = 0.14;
+  let complementosTotal = 0;
+  let registros = [];
+  let filtroAtual = 'todos';
+  let estrelaAtual = 0;
+  let tipoParadaAtual = 'Pernoite';
+  let adiantamentoRecebido = 500;
+  let gastoComAdiantamento = 0;
+  let modoAssalariado = false;
+
+  function refreshIcons(){ if(window.feather){ feather.replace(); } }
+
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.jump-nav button').forEach(function(b){ b.classList.remove('current'); });
+    refreshIcons();
+  }
+
+  function togglePanel(id){
+    const el = document.getElementById(id);
+    const wasOpen = el.classList.contains('open');
+    document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('open'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active-tab'); });
+    if(!wasOpen){
+      el.classList.add('open');
+      const tab = document.getElementById('tab-' + id);
+      if(tab) tab.classList.add('active-tab');
+    }
+    refreshIcons();
+  }
+
+  function parseNum(v){
+    const limpo = String(v).replace(/[^0-9.,-]/g, '');
+    return parseFloat(limpo.replace(/\./g,'').replace(',', '.')) || 0;
+  }
+  function formatBRL(v){
+    return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  function atualizarComissao(){
+    const frete = parseNum(document.getElementById('valor-frete').value);
+    document.getElementById('comissao-calc').textContent = formatBRL(frete * 0.14);
+  }
+
+  function atualizarTotalAbastecimento(){
+    const litros = parseNum(document.getElementById('litros').value);
+    const preco = parseNum(document.getElementById('preco-litro').value);
+    document.getElementById('total-abastecimento').textContent = formatBRL(litros * preco);
+  }
+
+  function selecionarFormaPagamento(el){
+    const pai = el.parentElement;
+    pai.querySelectorAll('div').forEach(function(d){ d.classList.remove('selected'); });
+    el.classList.add('selected');
+  }
+
+  function tirarFoto(statusId){
+    document.getElementById(statusId).classList.add('shown');
+    refreshIcons();
+  }
+
+  function recalcularViagem(){
+    const freteTotal = freteBase + complementosTotal;
+    const comissaoValor = freteTotal * comissaoPercentual;
+    const resultado = freteTotal - combustivelTotal - despesasTotal - comissaoValor;
+    const percentual = freteTotal > 0 ? (resultado / freteTotal * 100) : 0;
+
+    document.getElementById('frete-total').textContent = formatBRL(freteTotal);
+    document.getElementById('comissao-total').textContent = formatBRL(comissaoValor);
+    document.getElementById('conf-frete').textContent = formatBRL(freteTotal);
+    document.getElementById('conf-comissao').textContent = formatBRL(comissaoValor);
+    document.getElementById('conf-resultado').textContent = formatBRL(resultado);
+    document.getElementById('conf-percentual').innerHTML = '<i data-feather="arrow-up-right"></i>' + percentual.toLocaleString('pt-BR', {maximumFractionDigits:1}) + '%';
+
+    const nota = document.getElementById('conf-complemento-nota');
+    if(complementosTotal > 0){
+      nota.style.display = 'flex';
+      nota.innerHTML = '<i data-feather="info"></i>Inclui ' + formatBRL(complementosTotal) + ' de carga complementar.';
+    } else {
+      nota.style.display = 'none';
+    }
+    refreshIcons();
+  }
+
+  const ICONES_TIPO = {abastecimento:'droplet', despesa:'file-text', complemento:'package', parada:'coffee'};
+
+  function adicionarRegistro(tipo, label, valor){
+    registros.unshift({tipo:tipo, label:label, valor:valor});
+    renderRegistros();
+  }
+
+  function renderRegistros(){
+    const lista = registros.filter(function(r){ return filtroAtual === 'todos' || r.tipo === filtroAtual; });
+    const container = document.getElementById('lista-registros');
+    if(lista.length === 0){
+      container.innerHTML = '<div class="empty-box">Nenhum lançamento registrado ainda.</div>';
+    } else {
+      container.innerHTML = lista.map(function(r){
+        return '<div class="reg-item"><i data-feather="' + ICONES_TIPO[r.tipo] + '"></i><p class="label">' + r.label + '</p><span class="valor">' + (r.valor || '') + '</span></div>';
+      }).join('');
+    }
+    refreshIcons();
+  }
+
+  function filtrarRegistros(tipo, botao){
+    filtroAtual = tipo;
+    document.querySelectorAll('#filtro-chips button').forEach(function(b){ b.classList.remove('active'); });
+    botao.classList.add('active');
+    renderRegistros();
+  }
+
+  function selecionarTipoParada(el){
+    document.querySelectorAll('#tipo-parada-grupo div').forEach(function(d){ d.classList.remove('selected'); });
+    el.classList.add('selected');
+    tipoParadaAtual = el.textContent;
+  }
+
+  function avaliarParada(valor){
+    estrelaAtual = valor;
+    document.querySelectorAll('#estrelas-parada span').forEach(function(s, i){
+      s.textContent = (i < valor) ? '★' : '☆';
+      s.classList.toggle('active', i < valor);
+    });
+  }
+
+  function salvarParada(){
+    const local = document.getElementById('local-parada').value || 'Local não informado';
+    const estrelasTexto = estrelaAtual > 0 ? '★'.repeat(estrelaAtual) : 'sem avaliação';
+    adicionarRegistro('parada', tipoParadaAtual + ' · ' + local, estrelasTexto);
+    document.getElementById('local-parada').value = '';
+    document.getElementById('comentario-parada').value = '';
+    avaliarParada(0);
+    togglePanel('parada-panel');
+  }
+
+  function formaPagamentoSelecionada(grupoId){
+    const el = document.querySelector('#' + grupoId + ' .selected');
+    return el ? el.textContent : '';
+  }
+
+  function atualizarFaixaAdiantamento(){
+    const saldo = adiantamentoRecebido - gastoComAdiantamento;
+    document.getElementById('adiantamento-recebido').textContent = formatBRL(adiantamentoRecebido);
+    document.getElementById('adiantamento-gasto').textContent = formatBRL(gastoComAdiantamento);
+    document.getElementById('adiantamento-saldo').textContent = formatBRL(saldo);
+    document.getElementById('conf-adiantamento-recebido').textContent = formatBRL(adiantamentoRecebido);
+    document.getElementById('conf-adiantamento-gasto').textContent = formatBRL(gastoComAdiantamento);
+    const label = document.getElementById('conf-adiantamento-saldo-label');
+    if(saldo > 0){
+      label.textContent = 'Saldo: ' + formatBRL(saldo) + ' a devolver à empresa';
+    } else if(saldo < 0){
+      label.textContent = 'Saldo: ' + formatBRL(Math.abs(saldo)) + ' a reembolsar ao motorista';
+    } else {
+      label.textContent = 'Sem saldo a acertar';
+    }
+  }
+
+  function iniciarViagemComAdiantamento(){
+    adiantamentoRecebido = parseNum(document.getElementById('valor-adiantamento-form').value);
+    atualizarFaixaAdiantamento();
+    showScreen('andamento');
+  }
+
+  function alternarModoRemuneracao(checked){
+    modoAssalariado = checked;
+    document.querySelectorAll('.only-comissionado').forEach(function(el){ el.classList.toggle('hidden-mode', checked); });
+    document.querySelectorAll('.only-assalariado').forEach(function(el){ el.classList.toggle('hidden-mode', !checked); });
+    const chip = document.getElementById('home-chip');
+    chip.innerHTML = checked
+      ? '<i data-feather="truck"></i>4 viagens · 2.400 km este mês'
+      : '<i data-feather="percent"></i>14% comissão · R$ 1.400,00 este mês';
+    refreshIcons();
+  }
+
+  function salvarComplemento(){
+    const valor = parseNum(document.getElementById('valor-complemento').value);
+    complementosTotal += valor;
+    adicionarRegistro('complemento', 'Carga complementar', formatBRL(valor));
+    recalcularViagem();
+    togglePanel('complemento-panel');
+  }
+
+  function salvarAbastecimento(){
+    const total = parseNum(document.getElementById('total-abastecimento').textContent);
+    if(formaPagamentoSelecionada('pagamento-abastecimento-grupo') === 'Adiantamento'){
+      gastoComAdiantamento += total;
+      atualizarFaixaAdiantamento();
+    }
+    adicionarRegistro('abastecimento', 'Abastecimento · 420,50 L', formatBRL(total));
+    togglePanel('abastecimento-panel');
+  }
+
+  function salvarDespesa(){
+    const valor = parseNum(document.getElementById('valor-despesa').value);
+    if(formaPagamentoSelecionada('pagamento-despesa-grupo') === 'Adiantamento'){
+      gastoComAdiantamento += valor;
+      atualizarFaixaAdiantamento();
+    }
+    adicionarRegistro('despesa', 'Despesa · Alimentação', formatBRL(valor));
+    togglePanel('despesa-panel');
+  }
+
+  function enviarDocumento(){
+    documentoPendente = false;
+    document.getElementById('badge-pendente').style.display = 'none';
+    document.getElementById('aviso-canhoto').style.display = 'none';
+    togglePanel('documentos-panel');
+  }
+
+  function finalizarViagem(){
+    if(documentoPendente){
+      alert('É necessário anexar o canhoto antes de finalizar a viagem.');
+      togglePanel('documentos-panel');
+      return;
+    }
+    togglePanel('finalizacao-panel');
+  }
+
+  function confirmarFinalizacao(){
+    showScreen('historico');
+  }
+
+  window.addEventListener('DOMContentLoaded', function(){
+    refreshIcons();
+  });
+</script>
+</body>
+</html>
