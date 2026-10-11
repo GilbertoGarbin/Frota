@@ -39,7 +39,7 @@ npx supabase gen types typescript --linked --schema public > src/db/database.typ
 |---|---|
 | Painel web | Vercel, deploy automático a cada push na `main` (`vercel.json`: `npx expo export -p web` → `dist/`) |
 | APK de teste | `eas build -p android --profile preview` (baixa o APK pelo link que o EAS mostra) |
-| Correção sem reinstalar | `eas update --channel preview --message "..."` (só mudanças de JavaScript) |
+| Correção sem reinstalar | `eas update --channel preview --environment preview --message "..."` (só mudanças de JavaScript) |
 | Play Store | `eas build -p android --profile production` (gera o `.aab`) |
 | Backup do banco | GitHub Actions, toda semana (`.github/workflows/backup.yml`; precisa do segredo `SUPABASE_DB_URL`) |
 
