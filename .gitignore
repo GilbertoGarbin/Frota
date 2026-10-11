@@ -52,3 +52,6 @@ example
 !.env.production
 
 supabase/.temp/
+
+# APK gerado pelo build-local.bat (vai para o GitHub como release, nao como arquivo do repositorio)
+/APP/

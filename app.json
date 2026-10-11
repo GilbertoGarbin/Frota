@@ -55,6 +55,16 @@
         {
           "locationWhenInUsePermission": "Permitir que o Frota registre o local das paradas da viagem."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "buildArchs": [
+              "arm64-v8a"
+            ]
+          }
+        }
       ]
     ],
     "experiments": {
@@ -72,7 +82,10 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/46f34f61-dba3-495f-bef2-9541ea7a89b3"
+      "url": "https://u.expo.dev/46f34f61-dba3-495f-bef2-9541ea7a89b3",
+      "requestHeaders": {
+        "expo-channel-name": "preview"
+      }
     }
   }
 }
