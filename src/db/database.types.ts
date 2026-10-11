@@ -48,7 +48,7 @@ export type Database = {
           posto?: string | null
           preco_litro: number
           tanque_cheio?: boolean
-          tenant_id: string
+          tenant_id?: string
           total?: number | null
           veiculo_id: string
           viagem_id?: string | null
@@ -170,7 +170,7 @@ export type Database = {
           local_entrega?: string | null
           origem_lancamento: string
           peso_volume?: string | null
-          tenant_id: string
+          tenant_id?: string
           tipo: string
           valor: number
           viagem_id: string
@@ -210,6 +210,63 @@ export type Database = {
           },
         ]
       }
+      custos_fixos: {
+        Row: {
+          atualizado_em: string
+          categoria: string | null
+          criado_em: string
+          criado_por: string | null
+          descricao: string
+          fim: string | null
+          id: string
+          inicio: string
+          tenant_id: string
+          valor_mensal: number
+          veiculo_id: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          categoria?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          descricao: string
+          fim?: string | null
+          id?: string
+          inicio?: string
+          tenant_id?: string
+          valor_mensal: number
+          veiculo_id?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          categoria?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          descricao?: string
+          fim?: string | null
+          id?: string
+          inicio?: string
+          tenant_id?: string
+          valor_mensal?: number
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custos_fixos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custos_fixos_tenant_id_veiculo_id_fkey"
+            columns: ["tenant_id", "veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
       despesas: {
         Row: {
           atualizado_em: string
@@ -239,7 +296,7 @@ export type Database = {
           id?: string
           local?: string | null
           observacoes?: string | null
-          tenant_id: string
+          tenant_id?: string
           valor: number
           viagem_id: string
         }
@@ -295,7 +352,7 @@ export type Database = {
           criado_por?: string | null
           enviado_em?: string
           id?: string
-          tenant_id: string
+          tenant_id?: string
           tipo: string
           viagem_id: string
         }
@@ -387,6 +444,88 @@ export type Database = {
             columns: ["tenant_id", "veiculo_id"]
             isOneToOne: false
             referencedRelation: "veiculos"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
+      manutencoes: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          criado_por: string | null
+          data: string
+          descricao: string | null
+          id: string
+          km: number | null
+          km_proxima: number | null
+          nota_fiscal_path: string | null
+          oficina: string | null
+          pago: boolean
+          proxima_em_km: number | null
+          tenant_id: string
+          tipo: string
+          valor: number
+          veiculo_id: string
+          viagem_id: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          descricao?: string | null
+          id?: string
+          km?: number | null
+          km_proxima?: number | null
+          nota_fiscal_path?: string | null
+          oficina?: string | null
+          pago?: boolean
+          proxima_em_km?: number | null
+          tenant_id?: string
+          tipo: string
+          valor?: number
+          veiculo_id: string
+          viagem_id?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          descricao?: string | null
+          id?: string
+          km?: number | null
+          km_proxima?: number | null
+          nota_fiscal_path?: string | null
+          oficina?: string | null
+          pago?: boolean
+          proxima_em_km?: number | null
+          tenant_id?: string
+          tipo?: string
+          valor?: number
+          veiculo_id?: string
+          viagem_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manutencoes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manutencoes_tenant_id_veiculo_id_fkey"
+            columns: ["tenant_id", "veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "manutencoes_tenant_id_viagem_id_fkey"
+            columns: ["tenant_id", "viagem_id"]
+            isOneToOne: false
+            referencedRelation: "viagens"
             referencedColumns: ["tenant_id", "id"]
           },
         ]
@@ -486,7 +625,7 @@ export type Database = {
           local_nome: string
           longitude?: number | null
           motorista_id: string
-          tenant_id: string
+          tenant_id?: string
           tipo: string
           viagem_id: string
         }
@@ -526,6 +665,66 @@ export type Database = {
             columns: ["tenant_id", "viagem_id"]
             isOneToOne: false
             referencedRelation: "viagens"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
+      pneus: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          eixo: number
+          estado: string
+          id: string
+          km_instalacao: number | null
+          lado: string
+          marca: string | null
+          observacao: string | null
+          posicao: string
+          tenant_id: string
+          veiculo_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          eixo: number
+          estado?: string
+          id?: string
+          km_instalacao?: number | null
+          lado: string
+          marca?: string | null
+          observacao?: string | null
+          posicao?: string
+          tenant_id?: string
+          veiculo_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          eixo?: number
+          estado?: string
+          id?: string
+          km_instalacao?: number | null
+          lado?: string
+          marca?: string | null
+          observacao?: string | null
+          posicao?: string
+          tenant_id?: string
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pneus_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pneus_tenant_id_veiculo_id_fkey"
+            columns: ["tenant_id", "veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
             referencedColumns: ["tenant_id", "id"]
           },
         ]
@@ -671,6 +870,7 @@ export type Database = {
           data_prevista: string
           destino: string
           forma_pagamento_frete: string | null
+          gasto_proprio_bolso: number
           id: string
           iniciada_em: string | null
           km_final: number | null
@@ -707,6 +907,7 @@ export type Database = {
           data_prevista?: string
           destino: string
           forma_pagamento_frete?: string | null
+          gasto_proprio_bolso?: number
           id?: string
           iniciada_em?: string | null
           km_final?: number | null
@@ -718,7 +919,7 @@ export type Database = {
           origem: string
           resultado_operacional?: number | null
           status?: string
-          tenant_id: string
+          tenant_id?: string
           total_despesas?: number
           valor_adiantamento?: number
           valor_frete?: number
@@ -743,6 +944,7 @@ export type Database = {
           data_prevista?: string
           destino?: string
           forma_pagamento_frete?: string | null
+          gasto_proprio_bolso?: number
           id?: string
           iniciada_em?: string | null
           km_final?: number | null
@@ -790,6 +992,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      alertas_gestor: {
+        Args: never
+        Returns: {
+          destino: string
+          gravidade: string
+          mensagem: string
+          referencia_id: string
+        }[]
+      }
       ativar_aparelho: {
         Args: { p_codigo: string; p_cpf: string }
         Returns: boolean
@@ -799,6 +1010,38 @@ export type Database = {
         Returns: string
       }
       criar_viagem_motorista: {
+        Args: {
+          p_carga?: string
+          p_cliente?: string
+          p_data_prevista?: string
+          p_destino: string
+          p_id: string
+          p_observacoes?: string
+          p_origem: string
+          p_valor_frete: number
+          p_veiculo_id: string
+        }
+        Returns: undefined
+      }
+      desempenho_por_veiculo: {
+        Args: { p_fim: string; p_inicio: string }
+        Returns: {
+          combustivel: number
+          comissoes: number
+          despesas: number
+          faturamento: number
+          km_rodado: number
+          manutencoes: number
+          margem_percentual: number
+          modelo: string
+          placa: string
+          resultado: number
+          veiculo_id: string
+          viagens: number
+          viagens_combustivel_estimado: number
+        }[]
+      }
+      editar_viagem_motorista: {
         Args: {
           p_carga?: string
           p_cliente?: string
@@ -844,6 +1087,41 @@ export type Database = {
           tenant_nome: string
         }[]
       }
+      parada_sugerida: {
+        Args: { p_viagem_id: string }
+        Returns: {
+          local_nome: string
+          media_estrelas: number
+          vezes: number
+        }[]
+      }
+      resumo_financeiro: {
+        Args: { p_fim: string; p_inicio: string }
+        Returns: {
+          adiantamento_a_devolver: number
+          adiantamento_a_reembolsar: number
+          adiantamentos_abertos: number
+          combustivel: number
+          comissoes: number
+          custos_fixos: number
+          custos_operacionais: number
+          despesas: number
+          faturamento: number
+          km_rodado: number
+          manutencoes: number
+          resultado: number
+          viagens: number
+          viagens_combustivel_estimado: number
+        }[]
+      }
+      resumo_motorista: {
+        Args: { p_fim: string; p_inicio: string }
+        Returns: {
+          comissao: number
+          km_rodado: number
+          viagens: number
+        }[]
+      }
       revogar_aparelho: { Args: { p_motorista_id: string }; Returns: undefined }
       sugerir_adiantamento: {
         Args: { p_destino: string; p_origem: string }
@@ -866,7 +1144,9 @@ export type Database = {
           data_hora_chegada: string
           data_prevista: string
           destino: string
+          editavel: boolean
           forma_pagamento_frete: string
+          gasto_proprio_bolso: number
           id: string
           iniciada_em: string
           km_final: number

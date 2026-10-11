@@ -506,6 +506,147 @@ test('ativação do aparelho do motorista por CPF + código', async () => {
   assert.equal(g.motorista_id, null);
 });
 
+test('relatórios do gestor: resumo, desempenho por placa e alertas', async () => {
+  // Tenant novo, para os números não dependerem dos outros testes
+  const gestorC = await uuid();
+  await db.query('insert into auth.users (id) values ($1)', [gestorC]);
+  await como(gestorC, () => q(`select criar_tenant('Transportes C')`));
+  const c = (fn) => como(gestorC, fn);
+  const hoje = (await um(`select (now() at time zone 'America/Sao_Paulo')::date::text as d`)).d;
+
+  const vc = await c(async () => (await um(
+    `insert into veiculos (placa, modelo, consumo_medio_informado, km_atual) values ('CCC0C00', 'Volvo FH', 2.5, 1000) returning id`)).id);
+  const mc = await c(async () => (await um(
+    `insert into motoristas (nome, cpf, comissao_percentual, cnh_validade) values ('Marcelo', '44444444444', 10, current_date + 12) returning id`)).id);
+  await c(() => q(`insert into motoristas (nome, cpf, cnh_validade) values ('Vencido', '55555555555', current_date - 1)`));
+
+  await c(() => q(
+    `insert into abastecimentos (veiculo_id, km, litros, preco_litro, tanque_cheio, forma_pagamento) values ($1, 1000, 100, 6, true, 'cartao_empresa')`, [vc]));
+  const viagem = await c(async () => (await um(
+    `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, valor_adiantamento, status, km_inicial, km_final, data_hora_chegada)
+     values ($1, $2, 'A', 'B', 5000, 300, 'finalizada', 1000, 1500, now()) returning id`, [mc, vc])).id);
+  await c(() => q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'Pedágio', 120, 'adiantamento')`, [viagem]));
+  await c(() => q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'Almoço', 40, 'proprio_bolso')`, [viagem]));
+  await c(() => q(`insert into complementos (viagem_id, valor, tipo) values ($1, 500, 'diaria_espera')`, [viagem]));
+  await c(() => q(
+    `insert into manutencoes (veiculo_id, tipo, descricao, valor, km, proxima_em_km) values ($1, 'preventiva', 'troca de óleo', 480, 1000, 800)`, [vc]));
+  await c(() => q(`insert into custos_fixos (descricao, valor_mensal) values ('Seguro', 1000), ('Rastreador', 150.50)`));
+  await c(() => q(`insert into custos_fixos (descricao, valor_mensal, inicio, fim) values ('Encerrado', 999, '2020-01-01', '2020-12-31')`));
+  await c(() => q(`insert into pneus (veiculo_id, eixo, lado, estado) values ($1, 2, 'direito', 'atencao'), ($1, 1, 'esquerdo', 'bom')`, [vc]));
+
+  const v = await c(() => um('select * from viagens where id = $1', [viagem]));
+  assert.equal(Number(v.valor_frete_total), 5500);
+  assert.equal(Number(v.comissao_valor), 550);
+  assert.equal(Number(v.combustivel_valor), 1200); // 500 km ÷ 2,5 × 6 (estimado)
+  assert.equal(Number(v.gasto_proprio_bolso), 40);
+  assert.equal(Number(v.adiantamento_saldo), 180);
+
+  const r = await c(() => um('select * from resumo_financeiro($1, $1)', [hoje]));
+  assert.equal(Number(r.faturamento), 5500);
+  assert.equal(Number(r.combustivel), 1200);
+  assert.equal(Number(r.despesas), 160);
+  assert.equal(Number(r.comissoes), 550);
+  assert.equal(Number(r.manutencoes), 480);
+  assert.equal(Number(r.custos_operacionais), 2390);
+  assert.equal(Number(r.custos_fixos), 1150.5);
+  assert.equal(Number(r.resultado), 1959.5);
+  assert.equal(Number(r.km_rodado), 500);
+  assert.equal(r.viagens, 1);
+  assert.equal(r.viagens_combustivel_estimado, 1);
+  assert.equal(r.adiantamentos_abertos, 1);
+  assert.equal(Number(r.adiantamento_a_devolver), 180);
+  assert.equal(Number(r.adiantamento_a_reembolsar), 0);
+
+  // período sem nada: tudo zero, mas o adiantamento em aberto continua aparecendo
+  const vazio = await c(() => um(`select * from resumo_financeiro('2020-06-01', '2020-06-30')`));
+  assert.equal(Number(vazio.faturamento), 0);
+  assert.equal(Number(vazio.custos_fixos), 999);
+  assert.equal(vazio.adiantamentos_abertos, 1);
+
+  const d = await c(() => q('select * from desempenho_por_veiculo($1, $1)', [hoje]));
+  assert.equal(d.length, 1);
+  assert.equal(d[0].placa, 'CCC0C00');
+  assert.equal(Number(d[0].resultado), 3110); // 5500 − 1200 − 550 − 160 − 480
+  assert.equal(Number(d[0].margem_percentual), 56.5);
+
+  const alertas = await c(() => q('select * from alertas_gestor() order by mensagem'));
+  const textos = alertas.map((a) => `${a.destino}/${a.gravidade}: ${a.mensagem}`);
+  assert.deepEqual(textos, [
+    'motoristas/aviso: Motorista Marcelo: CNH vence em 12 dia(s).',
+    'motoristas/perigo: Motorista Vencido: CNH vencida.',
+    'pneus/aviso: Pneu eixo 2 direito (CCC0C00): precisa de atenção.',
+    'manutencoes/aviso: Veículo CCC0C00: troca de óleo a 300 km do limite.',
+  ]);
+
+  // outro tenant e motorista não enxergam nada disso
+  const rb = await como(gestorB, () => um('select * from resumo_financeiro($1, $1)', [hoje]));
+  assert.equal(Number(rb.faturamento), 0);
+  assert.equal(Number(rb.custos_fixos), 0);
+  assert.equal((await como(gestorB, () => q('select * from alertas_gestor()'))).length, 0);
+  assert.equal((await como(gestorB, () => q('select id from manutencoes'))).length, 0);
+  assert.equal((await como(gestorB, () => q('select id from custos_fixos'))).length, 0);
+  assert.equal((await como(gestorB, () => q('select id from pneus'))).length, 0);
+  await assert.rejects(como(gestorB, () => q(`insert into pneus (veiculo_id, eixo, lado) values ($1, 3, 'direito')`, [vc])));
+});
+
+test('motorista: resumo do mês, edição da própria viagem e parada sugerida', async () => {
+  const gestorD = await uuid();
+  const aparelho = await uuid();
+  for (const id of [gestorD, aparelho]) await db.query('insert into auth.users (id) values ($1)', [id]);
+  const tenantD = await como(gestorD, async () => (await um(`select criar_tenant('Transportes D') as id`)).id);
+  const g = (fn) => como(gestorD, fn);
+  const m = (fn) => comoAparelho(aparelho, fn);
+  const hoje = (await um(`select (now() at time zone 'America/Sao_Paulo')::date::text as d`)).d;
+
+  const vd = await g(async () => (await um(`insert into veiculos (placa, modelo) values ('DDD0D00', 'Iveco') returning id`)).id);
+  const md = await g(async () => (await um(
+    `insert into motoristas (nome, cpf, comissao_percentual) values ('Davi', '66666666666', 12) returning id`)).id);
+  await db.query(`insert into usuarios (id, tenant_id, papel, motorista_id) values ($1, $2, 'motorista', $3)`, [aparelho, tenantD, md]);
+
+  // viagem antiga na mesma rota, com parada avaliada
+  const antiga = await g(async () => (await um(
+    `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, status, km_inicial, km_final, data_hora_chegada)
+     values ($1, $2, 'Curitiba', 'Pato Branco', 2000, 'finalizada', 0, 400, now()) returning id`, [md, vd])).id);
+  await g(() => q(
+    `insert into paradas (viagem_id, tipo, local_nome, avaliacao_estrelas) values
+     ($1, 'almoco', 'Restaurante do Zé', 4), ($1, 'pernoite', 'Posto Ruim', 1)`, [antiga]));
+
+  const resumo = await m(() => um('select * from resumo_motorista($1, $1)', [hoje]));
+  assert.equal(resumo.viagens, 1);
+  assert.equal(Number(resumo.km_rodado), 400);
+  assert.equal(Number(resumo.comissao), 240);
+
+  // o motorista cadastra, edita e só então inicia
+  const nova = await uuid();
+  await m(() => q(`select criar_viagem_motorista($1, $2, ' curitiba', 'PATO BRANCO ', 1000)`, [nova, vd]));
+  let v = await m(() => um('select * from viagens_do_motorista() where id = $1', [nova]));
+  assert.equal(v.editavel, true);
+  assert.equal(Number(v.valor_adiantamento), 0);
+  await m(() => q(`select editar_viagem_motorista($1, $2, 'Curitiba', 'Pato Branco', 1500, current_date, 'Cliente Y')`, [nova, vd]));
+  v = await m(() => um('select * from viagens_do_motorista() where id = $1', [nova]));
+  assert.equal(Number(v.valor_frete), 1500);
+  assert.equal(Number(v.comissao_valor), 180);
+  assert.equal(v.cliente, 'Cliente Y');
+
+  const sugestao = await m(() => q('select * from parada_sugerida($1)', [nova]));
+  assert.equal(sugestao.length, 1);
+  assert.equal(sugestao[0].local_nome, 'Restaurante do Zé');
+  assert.equal(Number(sugestao[0].media_estrelas), 4);
+
+  // viagem criada pelo gestor não é editável pelo motorista
+  const doGestor = await g(async () => (await um(
+    `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete) values ($1, $2, 'X', 'Y', 900) returning id`, [md, vd])).id);
+  assert.equal((await m(() => um('select editavel from viagens_do_motorista() where id = $1', [doGestor]))).editavel, false);
+  await assert.rejects(m(() => q(`select editar_viagem_motorista($1, $2, 'X', 'Y', 1)`, [doGestor, vd])), /Só é possível editar/);
+
+  // depois de iniciar, não edita mais
+  await m(() => q('select iniciar_viagem($1, 400)', [nova]));
+  await assert.rejects(m(() => q(`select editar_viagem_motorista($1, $2, 'X', 'Y', 1)`, [nova, vd])), /Só é possível editar/);
+
+  // outro tenant não recebe sugestão desta viagem
+  assert.equal((await como(gestorA, () => q('select * from parada_sugerida($1)', [nova]))).length, 0);
+});
+
 test('visitante sem login não acessa nada', async () => {
   await como(null, async () => {
     await assert.rejects(q('select id from viagens'), /permission denied/);
