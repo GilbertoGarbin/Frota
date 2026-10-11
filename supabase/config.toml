@@ -4,8 +4,8 @@ project_id = "frota"
 
 [auth]
 # Para onde o link do e-mail de confirmação leva (painel publicado na Vercel)
-site_url = "https://frota-cyan.vercel.app"
-additional_redirect_urls = ["https://frota-cyan.vercel.app/**", "http://localhost:8081/**"]
+site_url = "https://g2frota.vercel.app"
+additional_redirect_urls = ["https://g2frota.vercel.app/**", "https://frota-cyan.vercel.app/**", "http://localhost:8081/**"]
 # O aparelho do motorista entra com uma sessão anônima e a vincula ao motorista
 # por CPF + código (ver migration ativacao_motorista).
 enable_anonymous_sign_ins = true
