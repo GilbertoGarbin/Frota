@@ -5,7 +5,8 @@ import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { Tela } from '@/components/ui/tela';
-import { entrar, mensagemDeErro } from '@/services/auth.service';
+import { entrar } from '@/services/auth.service';
+import { mensagemDeErro } from '@/utils/erros';
 
 export default function Entrar() {
   const router = useRouter();

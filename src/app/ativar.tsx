@@ -6,7 +6,8 @@ import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { Tela } from '@/components/ui/tela';
 import { useSessao } from '@/context/SessaoContext';
-import { ativarAparelho, mensagemDeErro } from '@/services/auth.service';
+import { ativarAparelho } from '@/services/auth.service';
+import { mensagemDeErro } from '@/utils/erros';
 import { apagarPin } from '@/services/pin.service';
 import { cpfValido, formatarCpf, soDigitos } from '@/utils/cpf';
 

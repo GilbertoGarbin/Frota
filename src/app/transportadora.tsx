@@ -5,7 +5,8 @@ import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { Tela } from '@/components/ui/tela';
 import { useSessao } from '@/context/SessaoContext';
-import { criarTransportadora, mensagemDeErro } from '@/services/auth.service';
+import { criarTransportadora } from '@/services/auth.service';
+import { mensagemDeErro } from '@/utils/erros';
 
 // Primeiro acesso do gestor: a conta existe, mas ainda não pertence a uma transportadora.
 export default function Transportadora() {

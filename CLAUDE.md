@@ -103,6 +103,19 @@ num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer e
   é tabela derivada — nunca gravar nela.
 - Arquivos: bucket privado `comprovantes`, caminho `{tenant_id}/{viagem_id}/{uuid}.{ext}`.
 - Nova tabela = `tenant_id` + FK composta `(tenant_id, x_id)` + RLS + teste de isolamento.
+- Tipos do banco em `src/db/database.types.ts` (gerado — não editar). Depois de aplicar uma migration:
+  `npx supabase gen types typescript --linked --schema public > src/db/database.types.ts`
+  (salvar em UTF-8 sem BOM).
+
+## Painel do gestor
+
+- Casca com menu lateral escuro em `src/app/gestor/_layout.tsx` (vira faixa no topo abaixo de 900 px).
+  Item novo no menu = entrada em `MENU` + arquivo em `src/app/gestor/`.
+- Cada tela usa `Pagina` (`src/components/gestor/pagina.tsx`), `Tabela`, `Selo`, `Segmentado`, `Campo`
+  e `Botao` de `src/components/ui/`. Lista e formulário ficam no mesmo arquivo de rota; o formulário
+  substitui a lista enquanto está aberto.
+- Dados: `useCarregar(funcaoDoService)`; acesso ao Supabase só em `src/services/*.service.ts`.
+- Entrada e exibição pt-BR em `src/utils/formato.ts`; erros do banco traduzidos em `src/utils/erros.ts`.
 
 ## Ambiente
 

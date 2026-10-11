@@ -5,7 +5,8 @@ import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { Tela } from '@/components/ui/tela';
-import { cadastrar, mensagemDeErro } from '@/services/auth.service';
+import { cadastrar } from '@/services/auth.service';
+import { mensagemDeErro } from '@/utils/erros';
 
 const SENHA_MIN = 8;
 
