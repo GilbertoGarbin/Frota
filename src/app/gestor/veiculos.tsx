@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 
 import { Pagina } from '@/components/gestor/pagina';
+import { SecaoAbastecimento, SecaoPneus } from '@/components/gestor/veiculo-extras';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
@@ -67,8 +68,8 @@ export default function Veiculos() {
 
   return (
     <Pagina
-      titulo="Veículos"
-      subtitulo="Caminhões da frota."
+      titulo="Veículos & Pneus"
+      subtitulo="Caminhões da frota. Abra um veículo para ver pneus e registrar abastecimento."
       acao={<Botao titulo="+ Novo veículo" compacto onPress={() => setEditando(null)} />}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {veiculos ? (
@@ -93,6 +94,8 @@ function FormVeiculo({ veiculo, aoFechar }: { veiculo: Veiculo | null; aoFechar:
   const [consumo, setConsumo] = useState(formatarDecimal(veiculo?.consumo_medio_informado));
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  // um abastecimento registrado aqui muda o consumo do veículo: a lista precisa recarregar ao voltar
+  const [mudou, setMudou] = useState(false);
 
   async function aoSalvar() {
     const kmAtual = lerDecimal(km) ?? 0;
@@ -157,7 +160,13 @@ function FormVeiculo({ veiculo, aoFechar }: { veiculo: Veiculo | null; aoFechar:
         carregando={salvando}
         desativado={!placa.trim() || !modelo.trim()}
       />
-      <Botao titulo="Cancelar" variante="link" onPress={() => aoFechar(false)} />
+      <Botao titulo="Voltar" variante="link" onPress={() => aoFechar(mudou)} />
+      {veiculo ? (
+        <>
+          <SecaoPneus veiculoId={veiculo.id} />
+          <SecaoAbastecimento veiculo={veiculo} aoRegistrar={() => setMudou(true)} />
+        </>
+      ) : null}
     </Pagina>
   );
 }

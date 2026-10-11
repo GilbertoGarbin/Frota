@@ -5,15 +5,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useSessao } from '@/context/SessaoContext';
 
-// Menu da spec do gestor (seção 4). Itens sem rota ainda não foram construídos.
-const MENU: { rotulo: string; rota?: Href }[] = [
+// Menu da spec do gestor (seção 4).
+const MENU: { rotulo: string; rota: Href }[] = [
   { rotulo: 'Visão Geral', rota: '/gestor' },
-  { rotulo: 'Viagens' },
-  { rotulo: 'Veículos', rota: '/gestor/veiculos' },
+  { rotulo: 'Viagens', rota: '/gestor/viagens' },
+  { rotulo: 'Veículos & Pneus', rota: '/gestor/veiculos' },
   { rotulo: 'Motoristas', rota: '/gestor/motoristas' },
-  { rotulo: 'Manutenções' },
-  { rotulo: 'Custos Fixos' },
-  { rotulo: 'Financeiro' },
+  { rotulo: 'Manutenções', rota: '/gestor/manutencoes' },
+  { rotulo: 'Custos Fixos', rota: '/gestor/custos-fixos' },
+  { rotulo: 'Financeiro', rota: '/gestor/financeiro' },
 ];
 
 const LARGURA_DESKTOP = 900;

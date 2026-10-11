@@ -15,6 +15,59 @@ export function formatarDecimal(valor: number | null | undefined, casas = 2): st
   return valor.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
 }
 
+export function formatarMoeda(valor: number | null | undefined): string {
+  if (valor === null || valor === undefined) return '—';
+  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+export function formatarPercentual(valor: number | null | undefined, casas = 1): string {
+  if (valor === null || valor === undefined) return '—';
+  return `${formatarDecimal(valor, casas)}%`;
+}
+
+// --- Meses (seletor de período) -------------------------------------------------
+const MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+export type Mes = { ano: number; mes: number }; // mes: 1 a 12
+
+const dois = (n: number) => String(n).padStart(2, '0');
+
+export function mesAtual(): Mes {
+  const hoje = new Date();
+  return { ano: hoje.getFullYear(), mes: hoje.getMonth() + 1 };
+}
+
+export function deslocarMes({ ano, mes }: Mes, delta: number): Mes {
+  const indice = ano * 12 + (mes - 1) + delta;
+  return { ano: Math.floor(indice / 12), mes: (indice % 12) + 1 };
+}
+
+export function rotuloMes({ ano, mes }: Mes): string {
+  return `${MESES[mes - 1]} ${ano}`;
+}
+
+/** Primeiro e último dia do mês, em ISO */
+export function periodoDoMes({ ano, mes }: Mes): { inicio: string; fim: string } {
+  const ultimoDia = new Date(Date.UTC(ano, mes, 0)).getUTCDate();
+  return { inicio: `${ano}-${dois(mes)}-01`, fim: `${ano}-${dois(mes)}-${dois(ultimoDia)}` };
+}
+
+/** Hoje, no fuso do aparelho, em ISO (aaaa-mm-dd) */
+export function hojeIso(): string {
+  const hoje = new Date();
+  return `${hoje.getFullYear()}-${dois(hoje.getMonth() + 1)}-${dois(hoje.getDate())}`;
+}
+
+/** Data e hora de um timestamp do servidor, no fuso do aparelho: "31/12/2026 14:30" */
+export function formatarDataHora(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${dois(d.getDate())}/${dois(d.getMonth() + 1)}/${d.getFullYear()} ${dois(d.getHours())}:${dois(d.getMinutes())}`;
+}
+
 export function formatarKm(valor: number | null | undefined): string {
   if (valor === null || valor === undefined) return '—';
   return `${valor.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km`;
