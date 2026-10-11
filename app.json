@@ -35,7 +35,21 @@
         }
       ],
       "expo-sqlite",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Permitir que o Frota use a câmera para fotografar comprovantes e documentos da viagem.",
+          "photosPermission": "Permitir que o Frota acesse suas fotos para anexar comprovantes e documentos da viagem.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Permitir que o Frota registre o local das paradas da viagem."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -236,16 +236,18 @@ function BlocoAdiantamento({ viagem, aoSalvar }: { viagem: Viagem; aoSalvar: (va
 
   return (
     <Secao titulo="Adiantamento">
-      <Indicador
-        rotulo="Valor sugerido"
-        tom="destaque"
-        valor={sugestao?.valor != null ? formatarMoeda(sugestao.valor) : 'Sem histórico nesta rota'}
-        detalhe={
-          sugestao?.valor != null
-            ? `Média de ${sugestao.quantidade} viagem(ns) em ${viagem.origem} → ${viagem.destino}`
-            : undefined
-        }
-      />
+      <Grade>
+        <Indicador
+          rotulo="Valor sugerido"
+          tom="destaque"
+          valor={sugestao?.valor != null ? formatarMoeda(sugestao.valor) : 'Sem histórico nesta rota'}
+          detalhe={
+            sugestao?.valor != null
+              ? `Média de ${sugestao.quantidade} viagem(ns) em ${viagem.origem} → ${viagem.destino}`
+              : undefined
+          }
+        />
+      </Grade>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {travado ? (
         <Text style={styles.texto}>Valor definido: {formatarMoeda(viagem.valor_adiantamento)}</Text>

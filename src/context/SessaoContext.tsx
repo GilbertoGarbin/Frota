@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, use, useCallback, useEffect, useState, type PropsWithChildren } from 'react';
 
+import { armazem } from '@/db/armazem';
 import { supabase } from '@/lib/supabase';
 import { buscarAcesso, sair as sairDoSupabase, type Acesso } from '@/services/auth.service';
 import { apagarPin } from '@/services/pin.service';
@@ -83,6 +84,7 @@ export function SessaoProvider({ children }: PropsWithChildren) {
 
   const sair = useCallback(async () => {
     await apagarPin();
+    await armazem.limpar(); // cópia local e fila do motorista não ficam para o próximo usuário do aparelho
     await sairDoSupabase();
   }, []);
 

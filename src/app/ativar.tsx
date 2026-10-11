@@ -6,6 +6,7 @@ import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { Tela } from '@/components/ui/tela';
 import { useSessao } from '@/context/SessaoContext';
+import { armazem } from '@/db/armazem';
 import { ativarAparelho } from '@/services/auth.service';
 import { mensagemDeErro } from '@/utils/erros';
 import { apagarPin } from '@/services/pin.service';
@@ -32,6 +33,7 @@ export default function Ativar() {
     try {
       if (await ativarAparelho(cpf, codigo)) {
         await apagarPin(); // aparelho recém-ativado sempre cria um PIN novo
+        await armazem.limpar(); // e não herda dados de outro motorista
         await recarregarAcesso();
         return;
       }

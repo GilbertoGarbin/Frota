@@ -117,6 +117,28 @@ num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer e
 - Dados: `useCarregar(funcaoDoService)`; acesso ao Supabase só em `src/services/*.service.ts`.
 - Entrada e exibição pt-BR em `src/utils/formato.ts`; erros do banco traduzidos em `src/utils/erros.ts`.
 
+## App do motorista
+
+- Telas em `src/app/motorista/` (Início, Viagens/histórico, Perfil, `viagem/[id]`, `nova-viagem`),
+  atrás do `PinPortao` e dentro do `MotoristaProvider` (`src/context/MotoristaContext.tsx`).
+- **A tela lê sempre da cópia local** (`src/db/armazem.ts` = SQLite no celular;
+  `armazem.web.ts` = localStorage, só para desenvolver no navegador). Nenhuma tela do motorista
+  chama o Supabase direto para gravar.
+- Toda ação grava no aparelho **e** entra na fila (`armazem.enfileirar`) antes de tentar a rede.
+  `enviarFila` (`src/services/motorista.service.ts`) envia na ordem e para no primeiro problema:
+  sem conexão → tenta de novo depois; servidor recusou → marca o erro e espera o motorista
+  (tentar de novo / descartar). Nunca pular item: a ordem importa (foto do canhoto antes de finalizar).
+- Com a fila vazia, `baixarDados` troca a cópia local pelo estado do servidor. Com fila pendente
+  não baixa, porque o aparelho está à frente do servidor.
+- Operações da fila são idempotentes: `upsert` com `ignoreDuplicates` por UUID gerado no aparelho,
+  funções `iniciar_viagem`/`finalizar_viagem`/`criar_viagem_motorista`, upload que trata "já existe" como sucesso.
+- Valores da viagem em andamento (frete, comissão, saldo do adiantamento) são recalculados no
+  aparelho por `viagemAoVivo`, em centavos inteiros (`src/utils/dinheiro.ts`). O servidor é quem vale.
+- Fotos: `src/services/anexo.service.ts` reduz para no máximo 1280 px / JPEG 0,6 e copia para a
+  pasta permanente do app. Foto de comprovante vira também um registro em `documentos`.
+- O motorista vê frete e a própria comissão; **nunca** combustível, margem ou resultado.
+- O envio só acontece com o app aberto (não há tarefa em segundo plano ainda).
+
 ## Ambiente
 
 - `.env.local` (fora do git) com `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY`; modelo em `.env.example`.
