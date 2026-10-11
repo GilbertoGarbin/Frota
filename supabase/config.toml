@@ -1,0 +1,8 @@
+# Configuração do projeto Supabase enviada com `npx supabase config push`.
+# Só o que está declarado aqui é alterado no servidor; o resto fica como está no painel.
+project_id = "frota"
+
+[auth]
+# O aparelho do motorista entra com uma sessão anônima e a vincula ao motorista
+# por CPF + código (ver migration ativacao_motorista).
+enable_anonymous_sign_ins = true

@@ -21,6 +21,9 @@ const SUPABASE_STUB = `
   create function auth.uid() returns uuid language sql stable as $$
     select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
   $$;
+  create function auth.jwt() returns jsonb language sql stable as $$
+    select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb
+  $$;
   grant usage on schema auth to anon, authenticated, service_role;
 
   create schema storage;
@@ -53,16 +56,22 @@ const q = async (sql, params = []) => (await db.query(sql, params)).rows;
 const um = async (sql, params = []) => (await q(sql, params))[0];
 
 // Executa fn como um usuário logado (papel authenticated + auth.uid())
-async function como(uid, fn, papel = 'authenticated') {
+async function como(uid, fn, papel = 'authenticated', anonimo = false) {
   await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [uid ?? '']);
+  await db.query(`select set_config('request.jwt.claims', $1, false)`, [
+    JSON.stringify({ sub: uid, is_anonymous: anonimo }),
+  ]);
   await db.exec(`set role ${papel}`);
   try {
     return await fn();
   } finally {
     await db.exec('reset role');
     await db.query(`select set_config('request.jwt.claim.sub', '', false)`);
+    await db.query(`select set_config('request.jwt.claims', '', false)`);
   }
 }
+// Sessão anônima do Supabase Auth: é assim que o aparelho do motorista chega ao banco
+const comoAparelho = (uid, fn) => como(uid, fn, 'authenticated', true);
 
 const uuid = async () => (await um('select gen_random_uuid() as id')).id;
 
@@ -433,6 +442,68 @@ test('motorista inativo ou aparelho revogado perde o acesso', async () => {
     assert.equal((await q('select * from viagens_do_motorista()')).length, 0);
     assert.equal((await q('select id from veiculos')).length, 0);
   });
+});
+
+test('ativação do aparelho do motorista por CPF + código', async () => {
+  const m3 = await novoMotorista('Carlos', '33333333333', v3);
+  const aparelho1 = await uuid();
+  const aparelho2 = await uuid();
+  for (const id of [aparelho1, aparelho2]) await db.query('insert into auth.users (id) values ($1)', [id]);
+  const gerar = () => como(gestorA, async () => (await um('select gerar_codigo_ativacao($1) as c', [m3])).c);
+  const ativar = (aparelho, cpf, codigo) =>
+    comoAparelho(aparelho, async () => (await um('select ativar_aparelho($1, $2) as ok', [cpf, codigo])).ok);
+  const acesso = (aparelho) => comoAparelho(aparelho, () => q('select * from meu_acesso()'));
+
+  // só o gestor do próprio tenant gera código
+  await assert.rejects(como(gestorB, () => q('select gerar_codigo_ativacao($1)', [m3])), /não encontrado/);
+  await assert.rejects(comoAparelho(aparelho1, () => q('select gerar_codigo_ativacao($1)', [m3])), /gestor/);
+  // sessão anônima não cria transportadora nem enxerga nada antes de ativar
+  await assert.rejects(comoAparelho(aparelho1, () => q(`select criar_tenant('Golpe')`)), /e-mail e senha/);
+  assert.equal((await acesso(aparelho1)).length, 0);
+
+  let codigo = await gerar();
+  assert.match(codigo, /^[0-9]{6}$/);
+  const errado = codigo === '000000' ? '111111' : '000000';
+
+  // código errado ou CPF errado não ativa; 5 erros travam o código
+  assert.equal(await ativar(aparelho1, '99999999999', codigo), false);
+  for (let i = 0; i < 5; i++) assert.equal(await ativar(aparelho1, '333.333.333-33', errado), false);
+  assert.equal(await ativar(aparelho1, '333.333.333-33', codigo), false, 'travado após 5 erros');
+
+  // gestor gera outro: ativa (CPF com máscara, código de uso único)
+  codigo = await gerar();
+  assert.equal(await ativar(aparelho1, '333.333.333-33', codigo), true);
+  assert.equal(await ativar(aparelho2, '33333333333', codigo), false, 'código não vale duas vezes');
+  const a = (await acesso(aparelho1))[0];
+  assert.equal(a.papel, 'motorista');
+  assert.equal(a.tenant_id, tenantA);
+  assert.equal(a.tenant_nome, 'Transportes A');
+  assert.equal(a.nome, 'Carlos');
+  assert.equal(a.motorista_id, m3);
+
+  // ativar um segundo aparelho derruba o primeiro
+  assert.equal(await ativar(aparelho2, '33333333333', await gerar()), true);
+  assert.equal((await acesso(aparelho1)).length, 0);
+  assert.equal((await acesso(aparelho2)).length, 1);
+
+  // gestor revoga
+  await como(gestorA, () => q('select revogar_aparelho($1)', [m3]));
+  assert.equal((await acesso(aparelho2)).length, 0);
+  await comoAparelho(aparelho2, async () => {
+    assert.equal((await q('select id from veiculos')).length, 0);
+  });
+
+  // código expirado não vale
+  codigo = await gerar();
+  await db.query(`update ativacoes_motorista set expira_em = now() - interval '1 minute' where motorista_id = $1`, [m3]);
+  assert.equal(await ativar(aparelho2, '33333333333', codigo), false);
+
+  // a tabela de códigos não é legível por ninguém pela API
+  await assert.rejects(como(gestorA, () => q('select * from ativacoes_motorista')), /permission denied/);
+
+  const g = (await como(gestorA, () => q('select * from meu_acesso()')))[0];
+  assert.equal(g.papel, 'gestor');
+  assert.equal(g.motorista_id, null);
 });
 
 test('visitante sem login não acessa nada', async () => {

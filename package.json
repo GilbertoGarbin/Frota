@@ -8,12 +8,14 @@
     "@supabase/supabase-js": "^2.117.3",
     "expo": "~56.0.23",
     "expo-constants": "~56.0.27",
+    "expo-crypto": "~56.0.5",
     "expo-device": "~56.0.4",
     "expo-font": "~56.0.7",
     "expo-glass-effect": "~56.0.4",
     "expo-image": "~56.0.13",
     "expo-linking": "~56.0.18",
     "expo-router": "~56.2.21",
+    "expo-secure-store": "~56.0.4",
     "expo-splash-screen": "~56.0.15",
     "expo-sqlite": "~56.0.6",
     "expo-status-bar": "~56.0.4",
@@ -33,6 +35,8 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
     "@types/react": "~19.2.2",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~56.0.4",
     "typescript": "~6.0.3"
   },
   "scripts": {

@@ -1,24 +1,45 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Redirect } from 'expo-router';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-// Rota provisória — o Expo Router exige ao menos uma. Será substituída pelas telas reais.
+import { Aviso } from '@/components/ui/aviso';
+import { Botao } from '@/components/ui/botao';
+import { Tela } from '@/components/ui/tela';
+import { Cores } from '@/constants/tema';
+import { useSessao } from '@/context/SessaoContext';
+
+// Porta de entrada: manda cada estado de sessão para a tela dele.
 export default function Index() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Frota</Text>
-    </View>
-  );
+  const { estado, recarregarAcesso, sair } = useSessao();
+
+  switch (estado) {
+    case 'deslogado':
+      return <Redirect href="/entrar" />;
+    case 'ativacao':
+      return <Redirect href="/ativar" />;
+    case 'sem_transportadora':
+      return <Redirect href="/transportadora" />;
+    case 'gestor':
+      return <Redirect href="/gestor" />;
+    case 'motorista':
+      return <Redirect href="/motorista" />;
+    case 'sem_conexao':
+      return (
+        <Tela titulo="Sem conexão">
+          <Aviso tipo="erro">Não foi possível carregar sua conta. Verifique a internet.</Aviso>
+          <Botao titulo="Tentar de novo" onPress={recarregarAcesso} />
+          <Botao titulo="Sair" variante="link" onPress={sair} />
+        </Tela>
+      );
+    case 'carregando':
+      // logo após o login, enquanto o papel do usuário é consultado
+      return (
+        <View style={styles.centro}>
+          <ActivityIndicator size="large" color={Cores.primaria} />
+        </View>
+      );
+  }
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#1E293B',
-  },
+  centro: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Cores.fundo },
 });

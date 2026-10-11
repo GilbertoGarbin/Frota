@@ -71,8 +71,18 @@ supabase/        migrations e edge functions
 - Campos derivados (comissão, frete total, resultado operacional) nunca são editáveis na UI.
 
 ### Autenticação
-- Gestor: e-mail + senha (Supabase Auth).
-- Motorista: ativação do aparelho com CPF + código gerado pelo gestor; o PIN é só desbloqueio local, não é senha enviada pela rede.
+- Gestor: e-mail + senha (Supabase Auth). No primeiro acesso cadastra a transportadora (`criar_tenant`).
+- Motorista: o aparelho abre uma **sessão anônima** do Supabase Auth e a vincula ao motorista com
+  CPF + código de 6 dígitos gerado pelo gestor (`gerar_codigo_ativacao` → `ativar_aparelho`).
+  Um aparelho por motorista; `revogar_aparelho` derruba o acesso. Sem Edge Function.
+- O PIN é só desbloqueio local (hash com sal em `expo-secure-store`, `src/services/pin.service.ts`);
+  nunca é enviado ao servidor. 5 erros desvinculam o aparelho.
+- Estado da sessão e roteamento: `src/context/SessaoContext.tsx` + `Stack.Protected` em
+  `src/app/_layout.tsx`. Cada estado (`deslogado`, `ativacao`, `sem_transportadora`, `gestor`,
+  `motorista`) libera só as rotas dele; `src/app/index.tsx` redireciona. Telas do gestor ficam em
+  `src/app/gestor/`, as do motorista em `src/app/motorista/` (atrás do `PinPortao`).
+- O acesso (papel + transportadora) fica salvo no aparelho para o motorista abrir o app sem sinal.
+- Configuração de Auth do projeto: `supabase/config.toml` (`npx supabase config push`).
 
 ## Banco de dados
 
