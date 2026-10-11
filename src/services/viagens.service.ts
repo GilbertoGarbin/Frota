@@ -138,6 +138,11 @@ export async function lancarComplementoGestor(viagemId: string, dados: DadosComp
   if (error) throw error;
 }
 
+export async function atualizarComplementoGestor(id: string, dados: DadosComplementoGestor): Promise<void> {
+  const { error } = await supabase.from('complementos').update(dados).eq('id', id).eq('origem_lancamento', 'gestor');
+  if (error) throw error;
+}
+
 export async function excluirComplemento(id: string): Promise<void> {
   const { error } = await supabase.from('complementos').delete().eq('id', id);
   if (error) throw error;

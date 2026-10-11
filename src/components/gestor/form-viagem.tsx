@@ -32,6 +32,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
   const [origem, setOrigem] = useState(viagem?.origem ?? '');
   const [destino, setDestino] = useState(viagem?.destino ?? '');
   const [carga, setCarga] = useState(viagem?.carga ?? '');
+  const [pagamentoFrete, setPagamentoFrete] = useState(viagem?.forma_pagamento_frete ?? '');
   const [data, setData] = useState(formatarData(viagem?.data_prevista ?? hojeIso()));
   const [frete, setFrete] = useState(viagem ? formatarDecimal(viagem.valor_frete) : '');
   const [adiantamento, setAdiantamento] = useState(
@@ -95,6 +96,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
       origem: origem.trim(),
       destino: destino.trim(),
       carga: carga.trim() || null,
+      forma_pagamento_frete: pagamentoFrete.trim() || null,
       data_prevista: dataPrevista,
       valor_frete: valorFrete,
       valor_adiantamento: valorAdiantamento,
@@ -143,6 +145,13 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
         keyboardType="numeric"
         inputMode="decimal"
         placeholder="Ex.: 2.500,00"
+      />
+      <Campo
+        rotulo="Forma de pagamento do frete (opcional)"
+        ajuda="Como o cliente paga. Aparece para o motorista na viagem."
+        value={pagamentoFrete}
+        onChangeText={setPagamentoFrete}
+        placeholder="Ex.: à vista, faturado 30 dias"
       />
 
       {/* Valor calculado: chip claro, nunca com cara de campo (spec, seção 2) */}

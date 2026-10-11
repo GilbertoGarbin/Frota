@@ -22,6 +22,7 @@ import {
   TIPOS_MANUTENCAO,
   type Manutencao,
   type TipoManutencao,
+  type ViagemResumo,
 } from '@/services/gestao.service';
 import type { Veiculo } from '@/services/veiculos.service';
 import { urlDoArquivo } from '@/services/viagens.service';
@@ -71,6 +72,7 @@ export default function Manutencoes() {
       <FormManutencao
         manutencao={editando}
         veiculos={dados.veiculos}
+        viagens={dados.viagens}
         aoFechar={(salvou) => {
           setEditando(undefined);
           if (salvou) recarregar();
@@ -139,10 +141,18 @@ export default function Manutencoes() {
   );
 }
 
-type PropsForm = { manutencao: Manutencao | null; veiculos: Veiculo[]; aoFechar: (salvou: boolean) => void };
+type PropsForm = {
+  manutencao: Manutencao | null;
+  veiculos: Veiculo[];
+  viagens: ViagemResumo[];
+  aoFechar: (salvou: boolean) => void;
+};
 
-function FormManutencao({ manutencao: m, veiculos, aoFechar }: PropsForm) {
+const SEM_VIAGEM = 'nenhuma';
+
+function FormManutencao({ manutencao: m, veiculos, viagens, aoFechar }: PropsForm) {
   const [veiculoId, setVeiculoId] = useState(m?.veiculo_id ?? null);
+  const [viagemId, setViagemId] = useState(m?.viagem_id ?? SEM_VIAGEM);
   const [tipo, setTipo] = useState<TipoManutencao>((m?.tipo as TipoManutencao) ?? 'preventiva');
   const [descricao, setDescricao] = useState(m?.descricao ?? '');
   const [valor, setValor] = useState(m ? formatarDecimal(m.valor) : '');
@@ -159,8 +169,18 @@ function FormManutencao({ manutencao: m, veiculos, aoFechar }: PropsForm) {
 
   const opcoesVeiculo = veiculos.map((v) => ({ valor: v.id, rotulo: `${v.placa} · ${v.modelo}` }));
 
+  // viagens do veículo escolhido (as 5 mais recentes, mais a já vinculada)
+  const opcoesViagem = [
+    { valor: SEM_VIAGEM, rotulo: 'Nenhuma' },
+    ...viagens
+      .filter((v) => v.veiculo_id === veiculoId)
+      .filter((v, i) => i < 5 || v.id === m?.viagem_id)
+      .map((v) => ({ valor: v.id, rotulo: `${formatarData(v.data_prevista)} · ${v.origem} → ${v.destino}` })),
+  ];
+
   function aoEscolherVeiculo(id: string) {
     setVeiculoId(id);
+    setViagemId(SEM_VIAGEM); // viagem é sempre do mesmo veículo
     if (!km) setKm(formatarDecimal(veiculos.find((v) => v.id === id)?.km_atual ?? 0, 0));
   }
 
@@ -191,6 +211,7 @@ function FormManutencao({ manutencao: m, veiculos, aoFechar }: PropsForm) {
         // nota nova substitui a anterior; sem nota nova, mantém a que já estava
         nota_fiscal_path: nota && acesso ? await enviarNotaFiscal(acesso.tenantId, nota) : (m?.nota_fiscal_path ?? null),
         veiculo_id: veiculoId,
+        viagem_id: viagemId === SEM_VIAGEM ? null : viagemId,
         tipo,
         descricao: descricao.trim() || null,
         valor: valorLido,
@@ -213,6 +234,9 @@ function FormManutencao({ manutencao: m, veiculos, aoFechar }: PropsForm) {
         onChange={aoEscolherVeiculo}
         ajuda={veiculos.length === 0 ? 'Cadastre um veículo em “Veículos” primeiro.' : undefined}
       />
+      {veiculoId ? (
+        <Segmentado rotulo="Viagem relacionada (opcional)" opcoes={opcoesViagem} valor={viagemId} onChange={setViagemId} />
+      ) : null}
       <Segmentado rotulo="Tipo" opcoes={TIPOS_MANUTENCAO} valor={tipo} onChange={setTipo} />
       <Campo rotulo="Descrição" value={descricao} onChangeText={setDescricao} placeholder="Ex.: troca de óleo" />
       <Campo rotulo="Valor (R$)" value={valor} onChangeText={setValor} keyboardType="numeric" inputMode="decimal" />

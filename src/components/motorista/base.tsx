@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
+import { Icone, type NomeIcone } from '@/components/ui/icone';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useMotorista } from '@/context/MotoristaContext';
 import { anexarArquivo, tirarFoto, type Anexo } from '@/services/anexo.service';
@@ -40,10 +41,10 @@ export function TelaMotorista({ titulo, subtitulo, aoVoltar, acao, children }: P
   );
 }
 
-const ABAS: { rotulo: string; rota: Href; simbolo: string }[] = [
-  { rotulo: 'Início', rota: '/motorista', simbolo: '⌂' },
-  { rotulo: 'Viagens', rota: '/motorista/historico', simbolo: '☰' },
-  { rotulo: 'Perfil', rota: '/motorista/perfil', simbolo: '☺' },
+const ABAS: { rotulo: string; rota: Href; icone: NomeIcone }[] = [
+  { rotulo: 'Início', rota: '/motorista', icone: 'inicio' },
+  { rotulo: 'Viagens', rota: '/motorista/historico', icone: 'lista' },
+  { rotulo: 'Perfil', rota: '/motorista/perfil', icone: 'perfil' },
 ];
 
 /** Navegação inferior: Início · Viagens (histórico) · Perfil (spec do motorista, seção 4) */
@@ -63,7 +64,7 @@ export function BarraInferior() {
               accessibilityState={{ selected: ativa }}
               onPress={() => router.navigate(aba.rota)}
               style={styles.aba}>
-              <Text style={[styles.abaSimbolo, ativa && styles.abaAtiva]}>{aba.simbolo}</Text>
+              <Icone nome={aba.icone} tamanho={24} cor={ativa ? Cores.primaria : Cores.textoSuave} />
               <Text style={[styles.abaRotulo, ativa && styles.abaAtiva]}>{aba.rotulo}</Text>
             </Pressable>
           );
@@ -163,10 +164,10 @@ export function CampoAnexo({ rotulo, anexo, onChange }: { rotulo: string; anexo:
 export function ValorCalculado({ rotulo, valor, nota, trancado }: { rotulo: string; valor: string; nota?: string; trancado?: boolean }) {
   return (
     <View style={styles.calculado}>
-      <Text style={styles.calculadoRotulo}>
-        {trancado ? '🔒 ' : ''}
-        {rotulo}
-      </Text>
+      <View style={styles.calculadoLinha}>
+        {trancado ? <Icone nome="cadeado" tamanho={15} cor={Cores.primariaEscura} /> : null}
+        <Text style={styles.calculadoRotulo}>{rotulo}</Text>
+      </View>
       <Text style={styles.calculadoValor}>{valor}</Text>
       {nota ? <Text style={styles.calculadoNota}>{nota}</Text> : null}
     </View>
@@ -218,11 +219,11 @@ const styles = StyleSheet.create({
   barra: { backgroundColor: Cores.branco, borderTopWidth: 1, borderTopColor: Cores.borda },
   barraItens: { flexDirection: 'row', maxWidth: 520, width: '100%', alignSelf: 'center' },
   aba: { flex: 1, alignItems: 'center', paddingVertical: Espaco.sm, minHeight: 56, justifyContent: 'center' },
-  abaSimbolo: { fontSize: 20, color: Cores.textoSuave },
   abaRotulo: { fontSize: 12, color: Cores.textoSuave },
   abaAtiva: { color: Cores.primaria, fontWeight: '700' },
 
   calculado: { gap: 2, padding: Espaco.md, borderRadius: Raio.sm, backgroundColor: Cores.chipClaro },
+  calculadoLinha: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   calculadoRotulo: { fontSize: 13, fontWeight: '600', color: Cores.primariaEscura },
   calculadoValor: { fontSize: 20, fontWeight: '700', color: Cores.primariaEscura },
   calculadoNota: { fontSize: 12, color: Cores.primariaEscura },

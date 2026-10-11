@@ -11,6 +11,7 @@ import { Selo } from '@/components/ui/selo';
 import { Cores, Espaco } from '@/constants/tema';
 import { useCarregar } from '@/hooks/use-carregar';
 import {
+  atualizarComplementoGestor,
   atualizarViagem,
   carregarDetalheViagem,
   excluirComplemento,
@@ -113,6 +114,7 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         </Selo>
         {v.cliente ? <Text style={styles.suave}>Cliente: {v.cliente}</Text> : null}
         {v.carga ? <Text style={styles.suave}>Carga: {v.carga}</Text> : null}
+        {v.forma_pagamento_frete ? <Text style={styles.suave}>Pagamento do frete: {v.forma_pagamento_frete}</Text> : null}
       </View>
 
       <Grade>
@@ -191,6 +193,7 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         viagem={v}
         complementos={dados.complementos}
         aoLancar={(c) => executar(() => lancarComplementoGestor(v.id, c))}
+        aoAtualizar={(id, c) => executar(() => atualizarComplementoGestor(id, c))}
         aoExcluir={(id) => executar(() => excluirComplemento(id))}
       />
 
@@ -272,11 +275,14 @@ type PropsComplementos = {
   viagem: Viagem;
   complementos: Complemento[];
   aoLancar: (c: { tipo: TipoComplemento; valor: number; data: string; descricao: string | null }) => Promise<void>;
+  aoAtualizar: (id: string, c: { tipo: TipoComplemento; valor: number; data: string; descricao: string | null }) => Promise<void>;
   aoExcluir: (id: string) => Promise<void>;
 };
 
-function BlocoComplementos({ viagem, complementos, aoLancar, aoExcluir }: PropsComplementos) {
+function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcluir }: PropsComplementos) {
   const [aberto, setAberto] = useState(false);
+  // id do lançamento em edição; null = lançamento novo
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [tipo, setTipo] = useState<TipoComplemento>('diaria_espera');
   const [valor, setValor] = useState('');
   const [data, setData] = useState(formatarData(hojeIso()));
@@ -290,10 +296,27 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoExcluir }: PropsC
     if (v === null || Number.isNaN(v) || v <= 0) return setErro('Informe o valor.');
     if (!d) return setErro('Data inválida. Use dia/mês/ano.');
     setErro(null);
-    await aoLancar({ tipo, valor: v, data: d, descricao: descricao.trim() || null });
+    const dados = { tipo, valor: v, data: d, descricao: descricao.trim() || null };
+    if (editandoId) await aoAtualizar(editandoId, dados);
+    else await aoLancar(dados);
+    fechar();
+  }
+
+  function fechar() {
     setValor('');
     setDescricao('');
+    setEditandoId(null);
     setAberto(false);
+  }
+
+  function editar(c: Complemento) {
+    setEditandoId(c.id);
+    setTipo(c.tipo as TipoComplemento);
+    setValor(formatarDecimal(c.valor));
+    setData(formatarData(c.data));
+    setDescricao(c.descricao ?? '');
+    setErro(null);
+    setAberto(true);
   }
 
   return (
@@ -326,8 +349,8 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoExcluir }: PropsC
           />
           <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
           <View style={styles.linha}>
-            <Botao titulo="Lançar" compacto onPress={lancar} />
-            <Botao titulo="Cancelar" variante="link" compacto onPress={() => setAberto(false)} />
+            <Botao titulo={editandoId ? 'Salvar alteração' : 'Lançar'} compacto onPress={lancar} />
+            <Botao titulo="Cancelar" variante="link" compacto onPress={fechar} />
           </View>
         </View>
       ) : null}
@@ -351,6 +374,10 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoExcluir }: PropsC
             <Selo tipo={c.origem_lancamento === 'gestor' ? 'info' : 'neutro'}>
               {c.origem_lancamento === 'gestor' ? 'Lançado pela gestão' : 'Lançado pelo motorista'}
             </Selo>
+            {/* a carga complementar é do motorista: o gestor remove, mas não reescreve */}
+            {editavel && c.origem_lancamento === 'gestor' ? (
+              <Botao titulo="Editar" variante="link" compacto onPress={() => editar(c)} />
+            ) : null}
             {editavel ? <Botao titulo="Remover" variante="link" compacto onPress={() => aoExcluir(c.id)} /> : null}
           </View>
         ))

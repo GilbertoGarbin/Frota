@@ -23,6 +23,7 @@ import {
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { Icone, type NomeIcone } from '@/components/ui/icone';
 import { Selo } from '@/components/ui/selo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useMotorista } from '@/context/MotoristaContext';
@@ -80,6 +81,7 @@ export function ConfirmarViagem({ viagem }: Props) {
         {viagem.cliente ? <Dado rotulo="Cliente / embarcador" valor={viagem.cliente} /> : null}
         {viagem.carga ? <Dado rotulo="Carga" valor={viagem.carga} /> : null}
         <Dado rotulo="Valor do frete" valor={formatarMoeda(viagem.valor_frete_total)} />
+        {viagem.forma_pagamento_frete ? <Dado rotulo="Pagamento do frete" valor={viagem.forma_pagamento_frete} /> : null}
         <Dado rotulo="Adiantamento" valor={viagem.valor_adiantamento > 0 ? formatarMoeda(viagem.valor_adiantamento) : 'Sem adiantamento'} />
         {viagem.observacoes ? <Dado rotulo="Observações" valor={viagem.observacoes} /> : null}
       </Cartao>
@@ -143,32 +145,32 @@ const FILTROS: { valor: Filtro; rotulo: string }[] = [
   { valor: 'complementos', rotulo: 'Carga extra' },
 ];
 
-function resumoDoRegistro(r: Registro): { simbolo: string; titulo: string; detalhe: string; valor: string } | null {
+function resumoDoRegistro(r: Registro): { icone: NomeIcone; titulo: string; detalhe: string; valor: string } | null {
   switch (r.tabela) {
     case 'abastecimentos':
       return {
-        simbolo: '⛽',
+        icone: 'abastecimento',
         titulo: `Abastecimento${r.linha.tanque_cheio ? ' · tanque cheio' : ''}`,
         detalhe: `${formatarDecimal(r.linha.litros, 1)} L · ${formatarKm(r.linha.km)} · ${ROTULO_PAGAMENTO[r.linha.forma_pagamento as FormaPagamento]}`,
         valor: formatarMoeda(r.linha.total),
       };
     case 'despesas':
       return {
-        simbolo: '🧾',
+        icone: 'despesa',
         titulo: r.linha.categoria,
         detalhe: `${formatarData(r.linha.data)} · ${ROTULO_PAGAMENTO[r.linha.forma_pagamento as FormaPagamento]}`,
         valor: formatarMoeda(r.linha.valor),
       };
     case 'paradas':
       return {
-        simbolo: '🅿',
+        icone: 'parada',
         titulo: r.linha.local_nome,
         detalhe: `${r.linha.tipo}${r.linha.avaliacao_estrelas ? ` · ${'★'.repeat(r.linha.avaliacao_estrelas)}` : ''}`,
         valor: '',
       };
     case 'complementos':
       return {
-        simbolo: '📦',
+        icone: 'carga',
         titulo: r.linha.tipo === 'carga_complementar' ? 'Carga complementar' : 'Valor adicional (gestão)',
         detalhe: r.linha.cliente_carga_adicional ?? r.linha.descricao ?? formatarData(r.linha.data),
         valor: `+ ${formatarMoeda(r.linha.valor)}`,
@@ -205,7 +207,7 @@ function ListaRegistros({ registros }: { registros: Registro[] }) {
           const item = resumoDoRegistro(r);
           return item ? (
             <View key={r.linha.id} style={styles.registro}>
-              <Text style={styles.simbolo}>{item.simbolo}</Text>
+              <Icone nome={item.icone} cor={Cores.textoSuave} />
               <View style={styles.registroTexto}>
                 <Text style={em.texto}>{item.titulo}</Text>
                 <Text style={em.suave}>
@@ -225,11 +227,11 @@ function ListaRegistros({ registros }: { registros: Registro[] }) {
 // ---------------------------------------------------------------------------
 // 5.5 Viagem em andamento
 // ---------------------------------------------------------------------------
-const ATALHOS: { painel: TipoPainel; rotulo: string; simbolo: string }[] = [
-  { painel: 'abastecimento', rotulo: 'Abastecimento', simbolo: '⛽' },
-  { painel: 'despesa', rotulo: 'Despesa', simbolo: '🧾' },
-  { painel: 'parada', rotulo: 'Parada', simbolo: '🅿' },
-  { painel: 'carga', rotulo: 'Carga extra', simbolo: '📦' },
+const ATALHOS: { painel: TipoPainel; rotulo: string; icone: NomeIcone }[] = [
+  { painel: 'abastecimento', rotulo: 'Abastecimento', icone: 'abastecimento' },
+  { painel: 'despesa', rotulo: 'Despesa', icone: 'despesa' },
+  { painel: 'parada', rotulo: 'Parada', icone: 'parada' },
+  { painel: 'carga', rotulo: 'Carga extra', icone: 'carga' },
 ];
 
 export function ViagemEmAndamento({ viagem: salva }: Props) {
@@ -260,7 +262,7 @@ export function ViagemEmAndamento({ viagem: salva }: Props) {
   return (
     <TelaMotorista
       titulo={`${viagem.origem} → ${viagem.destino}`}
-      subtitulo={`Iniciada em ${formatarDataHora(viagem.iniciada_em)}`}
+      subtitulo={`${viagem.forma_pagamento_frete ? `Frete: ${viagem.forma_pagamento_frete} · ` : ''}Iniciada em ${formatarDataHora(viagem.iniciada_em)}`}
       aoVoltar={() => router.back()}
       acao={<Selo tipo="aviso">Em andamento</Selo>}>
       <EstadoSincronizacao />
@@ -306,12 +308,12 @@ export function ViagemEmAndamento({ viagem: salva }: Props) {
           <View style={em.grade}>
             {ATALHOS.map((a) => (
               <Pressable key={a.painel} accessibilityRole="button" accessibilityLabel={a.rotulo} onPress={() => abrir(a.painel)} style={[styles.atalho, em.metade]}>
-                <Text style={styles.atalhoSimbolo}>{a.simbolo}</Text>
+                <Icone nome={a.icone} tamanho={24} cor={Cores.primaria} />
                 <Text style={styles.atalhoRotulo}>{a.rotulo}</Text>
               </Pressable>
             ))}
             <Pressable accessibilityRole="button" accessibilityLabel="Documentos" onPress={() => abrir('documentos')} style={[styles.atalho, styles.atalhoLargo]}>
-              <Text style={styles.atalhoSimbolo}>📄</Text>
+              <Icone nome="documento" tamanho={24} cor={Cores.primaria} />
               <Text style={styles.atalhoRotulo}>Documentos</Text>
               {canhotoOk ? null : <Selo tipo="perigo">1 pendente</Selo>}
             </Pressable>
@@ -405,7 +407,6 @@ const styles = StyleSheet.create({
     backgroundColor: Cores.branco,
   },
   atalhoLargo: { flexBasis: '100%' },
-  atalhoSimbolo: { fontSize: 22 },
   atalhoRotulo: { flex: 1, fontSize: 16, fontWeight: '600', color: Cores.texto },
   chip: {
     minHeight: 36,
@@ -427,7 +428,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Cores.borda,
   },
-  simbolo: { fontSize: 20, width: 28, textAlign: 'center' },
   registroTexto: { flex: 1, gap: 2 },
   registroValor: { fontSize: 15, fontWeight: '700', color: Cores.texto },
 });

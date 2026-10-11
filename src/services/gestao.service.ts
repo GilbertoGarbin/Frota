@@ -23,20 +23,28 @@ export type PosicaoPneu = 'unico' | 'externo' | 'interno';
 
 // --- Manutenções --------------------------------------------------------------
 
-export type TelaManutencoes = { manutencoes: Manutencao[]; veiculos: Veiculo[] };
+export type ViagemResumo = Pick<Tables<'viagens'>, 'id' | 'veiculo_id' | 'origem' | 'destino' | 'data_prevista'>;
+export type TelaManutencoes = { manutencoes: Manutencao[]; veiculos: Veiculo[]; viagens: ViagemResumo[] };
 
 export async function carregarTelaManutencoes(): Promise<TelaManutencoes> {
-  const [manutencoes, veiculos] = await Promise.all([
+  const [manutencoes, veiculos, viagens] = await Promise.all([
     supabase.from('manutencoes').select('*').order('data', { ascending: false }),
     listarVeiculos(),
+    // as mais recentes bastam para vincular uma manutenção a uma viagem
+    supabase
+      .from('viagens')
+      .select('id, veiculo_id, origem, destino, data_prevista')
+      .order('data_prevista', { ascending: false })
+      .limit(60),
   ]);
   if (manutencoes.error) throw manutencoes.error;
-  return { manutencoes: manutencoes.data, veiculos };
+  if (viagens.error) throw viagens.error;
+  return { manutencoes: manutencoes.data, veiculos, viagens: viagens.data };
 }
 
 export type DadosManutencao = Pick<
   TablesInsert<'manutencoes'>,
-  'veiculo_id' | 'tipo' | 'descricao' | 'valor' | 'data' | 'km' | 'proxima_em_km' | 'oficina' | 'pago' | 'nota_fiscal_path'
+  'veiculo_id' | 'tipo' | 'descricao' | 'valor' | 'data' | 'km' | 'proxima_em_km' | 'oficina' | 'pago' | 'nota_fiscal_path' | 'viagem_id'
 >;
 
 export async function salvarManutencao(id: string | null, dados: DadosManutencao): Promise<void> {
