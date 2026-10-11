@@ -1,5 +1,7 @@
 import type { Tables, TablesInsert } from '@/db/database.types';
+import { lerArquivo } from '@/lib/arquivo';
 import { supabase } from '@/lib/supabase';
+import type { Anexo } from '@/services/anexo.service';
 import { listarVeiculos, type Veiculo } from '@/services/veiculos.service';
 
 // Manutenções, custos fixos, pneus e relatórios do gestor.
@@ -34,7 +36,7 @@ export async function carregarTelaManutencoes(): Promise<TelaManutencoes> {
 
 export type DadosManutencao = Pick<
   TablesInsert<'manutencoes'>,
-  'veiculo_id' | 'tipo' | 'descricao' | 'valor' | 'data' | 'km' | 'proxima_em_km' | 'oficina' | 'pago'
+  'veiculo_id' | 'tipo' | 'descricao' | 'valor' | 'data' | 'km' | 'proxima_em_km' | 'oficina' | 'pago' | 'nota_fiscal_path'
 >;
 
 export async function salvarManutencao(id: string | null, dados: DadosManutencao): Promise<void> {
@@ -42,6 +44,16 @@ export async function salvarManutencao(id: string | null, dados: DadosManutencao
     ? await supabase.from('manutencoes').update(dados).eq('id', id)
     : await supabase.from('manutencoes').insert(dados);
   if (error) throw error;
+}
+
+/** Envia a nota fiscal para o bucket privado e devolve o caminho a gravar na manutenção. */
+export async function enviarNotaFiscal(tenantId: string, anexo: Anexo): Promise<string> {
+  const caminho = `${tenantId}/manutencoes/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${anexo.extensao}`;
+  const { error } = await supabase.storage
+    .from('comprovantes')
+    .upload(caminho, await lerArquivo(anexo.uri), { contentType: anexo.tipoConteudo });
+  if (error) throw error;
+  return caminho;
 }
 
 export async function excluirManutencao(id: string): Promise<void> {

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Linking } from 'react-native';
 
 import { Pagina } from '@/components/gestor/pagina';
+import { CampoAnexo } from '@/components/motorista/base';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
@@ -10,9 +11,12 @@ import { Segmentado } from '@/components/ui/segmentado';
 import { Selo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
 import { Cores } from '@/constants/tema';
+import { useSessao } from '@/context/SessaoContext';
 import { useCarregar } from '@/hooks/use-carregar';
+import type { Anexo } from '@/services/anexo.service';
 import {
   carregarTelaManutencoes,
+  enviarNotaFiscal,
   excluirManutencao,
   salvarManutencao,
   TIPOS_MANUTENCAO,
@@ -20,6 +24,7 @@ import {
   type TipoManutencao,
 } from '@/services/gestao.service';
 import type { Veiculo } from '@/services/veiculos.service';
+import { urlDoArquivo } from '@/services/viagens.service';
 import { somar } from '@/utils/dinheiro';
 import { mensagemDeErro } from '@/utils/erros';
 import {
@@ -146,6 +151,8 @@ function FormManutencao({ manutencao: m, veiculos, aoFechar }: PropsForm) {
   const [proxima, setProxima] = useState(m?.proxima_em_km != null ? formatarDecimal(m.proxima_em_km, 0) : '');
   const [oficina, setOficina] = useState(m?.oficina ?? '');
   const [pagamento, setPagamento] = useState<'pendente' | 'pago'>(m?.pago ? 'pago' : 'pendente');
+  const { acesso } = useSessao();
+  const [nota, setNota] = useState<Anexo | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [confirmandoExcluir, setConfirmandoExcluir] = useState(false);
@@ -179,8 +186,10 @@ function FormManutencao({ manutencao: m, veiculos, aoFechar }: PropsForm) {
     if (Number.isNaN(valorLido)) return setErro('Valor inválido.');
     if (Number.isNaN(kmLido) || Number.isNaN(proximaLida)) return setErro('Quilometragem inválida.');
     if (proximaLida !== null && kmLido === null) return setErro('Informe o km do veículo para programar a próxima manutenção.');
-    executar(() =>
+    executar(async () =>
       salvarManutencao(m?.id ?? null, {
+        // nota nova substitui a anterior; sem nota nova, mantém a que já estava
+        nota_fiscal_path: nota && acesso ? await enviarNotaFiscal(acesso.tenantId, nota) : (m?.nota_fiscal_path ?? null),
         veiculo_id: veiculoId,
         tipo,
         descricao: descricao.trim() || null,
@@ -227,6 +236,14 @@ function FormManutencao({ manutencao: m, veiculos, aoFechar }: PropsForm) {
       />
       <Campo rotulo="Oficina" value={oficina} onChangeText={setOficina} />
       <Segmentado rotulo="Pagamento" opcoes={PAGAMENTO} valor={pagamento} onChange={setPagamento} />
+      <CampoAnexo rotulo={m?.nota_fiscal_path ? 'Nota fiscal (anexar outra substitui a atual)' : 'Nota fiscal (opcional)'} anexo={nota} onChange={setNota} />
+      {m?.nota_fiscal_path ? (
+        <Botao
+          titulo="Abrir nota fiscal atual"
+          variante="link"
+          onPress={() => urlDoArquivo(m.nota_fiscal_path!).then(Linking.openURL, (e) => setErro(mensagemDeErro(e)))}
+        />
+      ) : null}
       <Botao titulo="Salvar manutenção" onPress={aoSalvar} carregando={salvando} />
       <Botao titulo="Cancelar" variante="link" onPress={() => aoFechar(false)} />
       {m ? (
