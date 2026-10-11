@@ -31,6 +31,7 @@
     "react-native-worklets": "0.8.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
   },
@@ -40,6 +41,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "expo export -p web",
+    "test:db": "node --test supabase/tests/banco.test.mjs",
     "lint": "expo lint"
   },
   "private": true

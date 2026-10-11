@@ -48,3 +48,5 @@ example
 .vercel
 .env*
 !.env.example
+
+supabase/.temp/

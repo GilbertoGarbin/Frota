@@ -74,6 +74,26 @@ supabase/        migrations e edge functions
 - Gestor: e-mail + senha (Supabase Auth).
 - Motorista: ativação do aparelho com CPF + código gerado pelo gestor; o PIN é só desbloqueio local, não é senha enviada pela rede.
 
+## Banco de dados
+
+Migrations em `supabase/migrations/` (aplicar em ordem). Testes em `supabase/tests/`, rodando
+num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer em migration.**
+
+- Identidade nas políticas RLS: `app.tenant_id()`, `app.eh_gestor()`, `app.motorista_id()`,
+  `app.viagem_do_motorista(id)`, `app.viagem_aberta_do_motorista(id)`. O schema `app` não é
+  exposto pela API; funções chamadas pelo app ficam em `public` e são usadas via `supabase.rpc`.
+- **Motorista não lê a tabela `viagens`** (ela tem combustível e margem). Usa
+  `viagens_do_motorista()`, `iniciar_viagem`, `finalizar_viagem`, `criar_viagem_motorista`.
+  Lançamentos (abastecimentos, despesas, complementos, paradas, documentos) ele grava direto,
+  com `insert ... on conflict (id) do nothing`, só enquanto a viagem está em andamento.
+- Derivados de `viagens` (frete total, comissão, despesas, gasto do adiantamento) são
+  recalculados por trigger a cada gravação; valor enviado pelo cliente é ignorado.
+- Combustível: `app.recalcular_combustivel(veiculo_id)` refaz janelas, rateio e estimativas do
+  veículo inteiro a partir dos dados gravados (ver comentário na migration). `janelas_consumo`
+  é tabela derivada — nunca gravar nela.
+- Arquivos: bucket privado `comprovantes`, caminho `{tenant_id}/{viagem_id}/{uuid}.{ext}`.
+- Nova tabela = `tenant_id` + FK composta `(tenant_id, x_id)` + RLS + teste de isolamento.
+
 ## Ambiente
 
 - `.env.local` (fora do git) com `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY`; modelo em `.env.example`.
