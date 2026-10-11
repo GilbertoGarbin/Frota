@@ -48,5 +48,7 @@ example
 .vercel
 .env*
 !.env.example
+# só valores públicos (URL e chave publishable) — ver o comentário no arquivo
+!.env.production
 
 supabase/.temp/

@@ -1,0 +1,42 @@
+# Backup semanal do banco (o plano gratuito do Supabase não tem backup automático).
+# Precisa do segredo SUPABASE_DB_URL no repositório:
+#   GitHub → Settings → Secrets and variables → Actions → New repository secret
+#   Valor: a "Connection string" (Session pooler) do projeto, em Supabase → Connect, com a senha do banco.
+# O arquivo fica em Actions → (execução) → Artifacts, por 90 dias.
+# Não inclui os arquivos do Storage (fotos de comprovantes).
+name: Backup do banco
+
+on:
+  schedule:
+    - cron: '0 6 * * 0' # domingos, 03h de Brasília
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Exportar papéis, estrutura e dados
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::Segredo SUPABASE_DB_URL não configurado (veja o comentário no topo deste arquivo)."
+            exit 1
+          fi
+          mkdir backup
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/papeis.sql --role-only
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/estrutura.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/dados.sql --use-copy --data-only
+          ls -lh backup
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backup-frota-${{ github.run_id }}
+          path: backup/
+          retention-days: 90
