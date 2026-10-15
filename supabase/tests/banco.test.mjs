@@ -18,7 +18,8 @@ const SUPABASE_STUB = `
 
   create schema auth;
   create table auth.users (
-    id uuid primary key, email text, last_sign_in_at timestamptz, is_anonymous boolean not null default false
+    -- tipos iguais aos do Supabase (email é varchar(255) lá)
+    id uuid primary key, email character varying(255), last_sign_in_at timestamptz, is_anonymous boolean not null default false
   );
   create function auth.uid() returns uuid language sql stable as $$
     select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
