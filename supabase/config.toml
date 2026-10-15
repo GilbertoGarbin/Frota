@@ -10,10 +10,12 @@ additional_redirect_urls = ["https://g2frota.vercel.app/**", "https://frota-cyan
 # sessão anônima, foi aposentada na migration contas_e_assinatura.
 enable_anonymous_sign_ins = false
 
-# E-mail de "Esqueci minha senha" em português
-[auth.email.template.recovery]
-subject = "Frota: criar senha nova"
-content_path = "./supabase/templates/recuperar-senha.html"
+# E-mail de "Esqueci minha senha" em português: supabase/templates/recuperar-senha.html.
+# O Supabase só aceita modelo próprio com um SMTP configurado (no grátis, sem SMTP, recusa).
+# Depois de configurar o SMTP, ativar com:
+# [auth.email.template.recovery]
+# subject = "Frota: criar senha nova"
+# content_path = "./supabase/templates/recuperar-senha.html"
 
 # Cria logins e redefine senhas (service_role). O token do usuário é conferido dentro da
 # função (auth.getUser), por isso a verificação automática de JWT fica desligada.
