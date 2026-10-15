@@ -3,7 +3,7 @@ import { createContext, use, useCallback, useEffect, useState, type PropsWithChi
 
 import { armazem } from '@/db/armazem';
 import { supabase } from '@/lib/supabase';
-import { buscarAcesso, sair as sairDoSupabase, souSuperadmin, type Acesso } from '@/services/auth.service';
+import { buscarAcesso, buscarPlataforma, sair as sairDoSupabase, type Acesso } from '@/services/auth.service';
 import { apagarPin } from '@/services/pin.service';
 
 export type EstadoSessao =
@@ -38,16 +38,22 @@ export function useSessao(): Sessao {
 // undefined = ainda não sabemos; null = sabemos que não há
 type Talvez<T> = T | null | undefined;
 
-type Consulta = { usuarioId: string; acesso: Acesso | null; superadmin: boolean; semConexao: boolean };
+type Consulta = {
+  usuarioId: string;
+  acesso: Acesso | null;
+  /** null = não é super admin */
+  plataforma: { primeiroAcesso: boolean } | null;
+  semConexao: boolean;
+};
 
 async function consultarAcesso(usuarioId: string): Promise<Consulta> {
   try {
     const acesso = await buscarAcesso(usuarioId);
     // Super admin não pertence a nenhuma transportadora
-    const superadmin = acesso ? false : await souSuperadmin();
-    return { usuarioId, acesso, superadmin, semConexao: false };
+    const plataforma = acesso ? null : await buscarPlataforma();
+    return { usuarioId, acesso, plataforma, semConexao: false };
   } catch {
-    return { usuarioId, acesso: null, superadmin: false, semConexao: true };
+    return { usuarioId, acesso: null, plataforma: null, semConexao: true };
   }
 }
 
@@ -96,7 +102,8 @@ export function SessaoProvider({ children }: PropsWithChildren) {
   else if (sessao === null) estado = 'deslogado';
   else if (acesso === undefined) estado = semConexao ? 'sem_conexao' : 'carregando';
   else if (acesso === null) {
-    if (consultaAtual?.superadmin) estado = 'plataforma';
+    const plataforma = consultaAtual?.plataforma;
+    if (plataforma) estado = plataforma.primeiroAcesso ? 'primeiro_acesso' : 'plataforma';
     // Aparelho ativado pelo código antigo (sessão anônima) e já sem acesso: entra com CPF e senha
     else if (sessao.user.is_anonymous) estado = 'deslogado';
     else estado = 'sem_transportadora';

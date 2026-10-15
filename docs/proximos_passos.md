@@ -36,17 +36,14 @@ Implementado e publicado em 14/10/2026. Leia antes a seção
   aparelho ativado pelo código antigo continuam funcionando até o admin criar o login deles
   em Usuários (isso desliga o aparelho antigo).
 
+- Super admin `beto.garbin@gmail.com` criado com senha temporária (migration
+  `superadmin_primeiro_acesso`: troca obrigatória no primeiro login).
+
 ## Pendente, nesta ordem
 
-1. Super admin: cadastrar-se pelo site com um e-mail que **não** seja o da Garbin (parar na
-   tela "Sua transportadora", sem preencher) e rodar no SQL Editor do Supabase:
-   ```sql
-   insert into public.plataforma_admins (usuario_id)
-   select id from auth.users where email = 'EMAIL_DO_SUPER_ADMIN';
-   ```
-2. Preencher `WHATSAPP_ASSINATURA` em `src/constants/assinatura.ts` (DDI + DDD + número, só
+1. Preencher `WHATSAPP_ASSINATURA` em `src/constants/assinatura.ts` (DDI + DDD + número, só
    dígitos). Enquanto estiver vazio, o botão "Assinar" fica escondido.
-3. Dar acesso aos motoristas da Garbin em Gestor > Usuários > "+ Acesso de motorista" e
+2. Dar acesso aos motoristas da Garbin em Gestor > Usuários > "+ Acesso de motorista" e
    passar o CPF e a senha temporária para cada um.
 
 ## Decisões já tomadas com o Gilberto

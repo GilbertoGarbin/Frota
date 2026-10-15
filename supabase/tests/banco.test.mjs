@@ -765,7 +765,7 @@ test('super admin: vê as empresas, os usuários e controla a assinatura', async
   const dono = await uuid();
   const admin = await uuid();
   await db.query('insert into auth.users (id, email) values ($1, $2), ($3, $4)', [dono, 'dono@frota.com', admin, 'g@g.com']);
-  await db.query('insert into plataforma_admins (usuario_id) values ($1)', [dono]);
+  await db.query('insert into plataforma_admins (usuario_id, primeiro_acesso) values ($1, true)', [dono]);
   const tenantG = await como(admin, async () => (await um(`select criar_tenant('Transportes G', 'Gil') as id`)).id);
 
   // ninguém além do super admin chama as funções da plataforma nem lê a tabela
@@ -778,9 +778,14 @@ test('super admin: vê as empresas, os usuários e controla a assinatura', async
   }
   await assert.rejects(como(admin, () => q('select * from plataforma_admins')), /permission denied/);
   assert.equal((await como(admin, () => um('select sou_superadmin() as s'))).s, false);
+  assert.equal((await como(admin, () => q('select * from minha_plataforma()'))).length, 0);
 
   await como(dono, async () => {
     assert.equal((await um('select sou_superadmin() as s')).s, true);
+    // senha temporária: obrigado a trocar no primeiro login
+    assert.equal((await um('select * from minha_plataforma()')).primeiro_acesso, true);
+    await q('select concluir_primeiro_acesso()');
+    assert.equal((await um('select * from minha_plataforma()')).primeiro_acesso, false);
     // super admin não pertence a nenhuma transportadora nem cria uma
     assert.equal((await q('select * from meu_acesso()')).length, 0);
     assert.equal((await q('select id from viagens')).length, 0);

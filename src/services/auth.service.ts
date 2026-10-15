@@ -59,10 +59,12 @@ export async function trocarSenha(nova: string): Promise<void> {
   if (erroRpc) throw erroRpc;
 }
 
-export async function souSuperadmin(): Promise<boolean> {
-  const { data, error } = await supabase.rpc('sou_superadmin');
+/** null = não é super admin; senão, se ainda está com a senha temporária */
+export async function buscarPlataforma(): Promise<{ primeiroAcesso: boolean } | null> {
+  const { data, error } = await supabase.rpc('minha_plataforma');
   if (error) throw error;
-  return data === true;
+  const linha = data?.[0];
+  return linha ? { primeiroAcesso: linha.primeiro_acesso } : null;
 }
 
 /** Devolve true se a conta já entrou; false se falta confirmar o e-mail. */

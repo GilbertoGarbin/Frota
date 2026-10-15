@@ -85,8 +85,9 @@ supabase/        migrations e edge functions
   `usuarios.primeiro_acesso` obriga a trocar no login seguinte (`trocar-senha.tsx`).
 - **Super admin** (dono do sistema): tabela `plataforma_admins` (fora dos tenants — a única sem
   `tenant_id`). Vê todas as transportadoras e usuários, redefine senhas e controla a assinatura em
-  `src/app/plataforma.tsx` (funções `plataforma_*`). Para criar: inserir o `auth.users.id` em
-  `plataforma_admins` pelo SQL Editor.
+  `src/app/plataforma.tsx` (funções `plataforma_*`). Para criar: criar o login no Auth com senha
+  temporária e inserir o `auth.users.id` em `plataforma_admins` com `primeiro_acesso = true`
+  (obriga a trocar a senha no primeiro login, via `minha_plataforma()`).
 - **Assinatura** por transportadora em `tenants` (`assinatura_status`, `trial_expira_em`, `pago_ate`,
   `carencia_dias`), como no FLUXO: PIX manual pelo WhatsApp (`src/constants/assinatura.ts`) e o super
   admin libera +30/+365 dias. Passada a carência, `app.tenant_id()` fica nulo e o RLS fecha tudo;

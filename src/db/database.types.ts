@@ -672,14 +672,17 @@ export type Database = {
       plataforma_admins: {
         Row: {
           criado_em: string
+          primeiro_acesso: boolean
           usuario_id: string
         }
         Insert: {
           criado_em?: string
+          primeiro_acesso?: boolean
           usuario_id: string
         }
         Update: {
           criado_em?: string
+          primeiro_acesso?: boolean
           usuario_id?: string
         }
         Relationships: []
@@ -1126,6 +1129,12 @@ export type Database = {
           primeiro_acesso: boolean
           tenant_id: string
           tenant_nome: string
+        }[]
+      }
+      minha_plataforma: {
+        Args: never
+        Returns: {
+          primeiro_acesso: boolean
         }[]
       }
       parada_sugerida: {
