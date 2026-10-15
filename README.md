@@ -14,8 +14,8 @@ cp .env.example .env.local   # URL e chave publishable do Supabase
 npm run web                  # abre em http://localhost:8081
 ```
 
-No navegador dá para usar os dois lados: o painel do gestor (e-mail e senha) e o app do motorista
-("Sou motorista — ativar este aparelho", com CPF + código gerado no painel).
+O login é um só (e-mail ou CPF + senha): o sistema abre o painel do gestor, a área do motorista ou a
+tela da plataforma (super admin) conforme a conta.
 
 ## Verificações
 
@@ -30,6 +30,7 @@ npm run test:db      # migrations, RLS e regras do banco num Postgres embutido (
 ```bash
 npx supabase db push                     # aplica as migrations novas de supabase/migrations/
 npx supabase config push                 # aplica supabase/config.toml (Auth)
+npx supabase functions deploy gerenciar-usuario   # Edge Function que cria logins e redefine senhas
 npx supabase gen types typescript --linked --schema public > src/db/database.types.ts
 ```
 

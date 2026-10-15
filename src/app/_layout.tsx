@@ -20,12 +20,12 @@ export default function RootLayout() {
 // Cada grupo de telas só existe no estado de sessão correspondente. Quando o estado muda,
 // o Expo Router volta para "index", que redireciona para a tela certa.
 function Navegacao() {
-  const { estado, anonimo } = useSessao();
+  const { estado } = useSessao();
   const [pronto, setPronto] = useState(false);
   if (!pronto && estado !== 'carregando') setPronto(true);
 
   // Só monta as rotas quando a sessão é conhecida pela primeira vez; assim um link direto
-  // para /cadastro ou /ativar não é desviado para o login enquanto o app abre.
+  // para /cadastro não é desviado para o login enquanto o app abre.
   if (!pronto) {
     return (
       <View style={styles.centro}>
@@ -41,14 +41,17 @@ function Navegacao() {
         <Stack.Screen name="entrar" />
         <Stack.Screen name="cadastro" />
       </Stack.Protected>
-      {/* A tela de ativação abre a sessão anônima no meio do envio: precisa continuar
-          montada enquanto o acesso dessa sessão é consultado ('carregando'). */}
-      <Stack.Protected
-        guard={estado === 'deslogado' || estado === 'ativacao' || (estado === 'carregando' && anonimo)}>
-        <Stack.Screen name="ativar" />
-      </Stack.Protected>
       <Stack.Protected guard={estado === 'sem_transportadora'}>
         <Stack.Screen name="transportadora" />
+      </Stack.Protected>
+      <Stack.Protected guard={estado === 'primeiro_acesso'}>
+        <Stack.Screen name="trocar-senha" />
+      </Stack.Protected>
+      <Stack.Protected guard={estado === 'assinatura_vencida'}>
+        <Stack.Screen name="assinatura" />
+      </Stack.Protected>
+      <Stack.Protected guard={estado === 'plataforma'}>
+        <Stack.Screen name="plataforma" />
       </Stack.Protected>
       <Stack.Protected guard={estado === 'gestor'}>
         <Stack.Screen name="gestor" />

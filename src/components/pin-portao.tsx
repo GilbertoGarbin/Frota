@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PropsWithChildren } from 'react';
-import { ActivityIndicator, AppState, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, AppState, Platform, StyleSheet, View } from 'react-native';
 
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
@@ -25,6 +25,12 @@ const BLOQUEIO_APOS_MS = 5 * 60 * 1000;
  * e para digitar a cada abertura ou após um tempo em segundo plano.
  */
 export function PinPortao({ children }: PropsWithChildren) {
+  // Na web o motorista entra com CPF e senha a cada sessão do navegador: PIN não faz sentido
+  if (Platform.OS === 'web') return children;
+  return <PinPortaoCelular>{children}</PinPortaoCelular>;
+}
+
+function PinPortaoCelular({ children }: PropsWithChildren) {
   const [existePin, setExistePin] = useState<boolean | null>(null);
   const [liberado, setLiberado] = useState(false);
   const saiuEm = useRef<number | null>(null);
@@ -128,7 +134,7 @@ function DigitarPin({ aoLiberar }: { aoLiberar: () => void }) {
       return;
     }
     if (resultado.restantes === 0) {
-      // PIN errado demais: desvincula o aparelho; o gestor precisa gerar outro código
+      // PIN errado demais: sai da conta; para voltar, entra de novo com CPF e senha
       await sair();
       return;
     }
@@ -147,10 +153,10 @@ function DigitarPin({ aoLiberar }: { aoLiberar: () => void }) {
       {confirmandoEsqueci ? (
         <>
           <Aviso tipo="erro">
-            Isso desvincula este aparelho. Para voltar a usar o app você vai precisar de um novo
-            código de ativação do gestor.
+            Isso sai da sua conta neste aparelho. Para voltar, entre de novo com seu CPF e senha e crie um
+            PIN novo.
           </Aviso>
-          <Botao titulo="Desvincular e ativar de novo" variante="contorno" onPress={sair} />
+          <Botao titulo="Sair e entrar de novo" variante="contorno" onPress={sair} />
           <Botao titulo="Cancelar" variante="link" onPress={() => setConfirmandoEsqueci(false)} />
         </>
       ) : (

@@ -669,6 +669,21 @@ export type Database = {
           },
         ]
       }
+      plataforma_admins: {
+        Row: {
+          criado_em: string
+          usuario_id: string
+        }
+        Insert: {
+          criado_em?: string
+          usuario_id: string
+        }
+        Update: {
+          criado_em?: string
+          usuario_id?: string
+        }
+        Relationships: []
+      }
       pneus: {
         Row: {
           atualizado_em: string
@@ -731,22 +746,34 @@ export type Database = {
       }
       tenants: {
         Row: {
+          assinatura_status: string
           atualizado_em: string
+          carencia_dias: number
           criado_em: string
           id: string
           nome: string
+          pago_ate: string | null
+          trial_expira_em: string | null
         }
         Insert: {
+          assinatura_status?: string
           atualizado_em?: string
+          carencia_dias?: number
           criado_em?: string
           id?: string
           nome: string
+          pago_ate?: string | null
+          trial_expira_em?: string | null
         }
         Update: {
+          assinatura_status?: string
           atualizado_em?: string
+          carencia_dias?: number
           criado_em?: string
           id?: string
           nome?: string
+          pago_ate?: string | null
+          trial_expira_em?: string | null
         }
         Relationships: []
       }
@@ -759,6 +786,7 @@ export type Database = {
           motorista_id: string | null
           nome: string | null
           papel: string
+          primeiro_acesso: boolean
           tenant_id: string
         }
         Insert: {
@@ -769,6 +797,7 @@ export type Database = {
           motorista_id?: string | null
           nome?: string | null
           papel: string
+          primeiro_acesso?: boolean
           tenant_id: string
         }
         Update: {
@@ -779,6 +808,7 @@ export type Database = {
           motorista_id?: string | null
           nome?: string | null
           papel?: string
+          primeiro_acesso?: boolean
           tenant_id?: string
         }
         Relationships: [
@@ -1005,6 +1035,7 @@ export type Database = {
         Args: { p_codigo: string; p_cpf: string }
         Returns: boolean
       }
+      concluir_primeiro_acesso: { Args: never; Returns: undefined }
       criar_tenant: {
         Args: { p_nome: string; p_nome_usuario?: string }
         Returns: string
@@ -1021,6 +1052,10 @@ export type Database = {
           p_valor_frete: number
           p_veiculo_id: string
         }
+        Returns: undefined
+      }
+      definir_acesso_usuario: {
+        Args: { p_ativo: boolean; p_usuario_id: string }
         Returns: undefined
       }
       desempenho_por_veiculo: {
@@ -1080,9 +1115,15 @@ export type Database = {
       meu_acesso: {
         Args: never
         Returns: {
+          assinatura_dias_carencia: number
+          assinatura_dias_restantes: number
+          assinatura_em_carencia: boolean
+          assinatura_liberada: boolean
+          assinatura_status: string
           motorista_id: string
           nome: string
           papel: string
+          primeiro_acesso: boolean
           tenant_id: string
           tenant_nome: string
         }[]
@@ -1093,6 +1134,42 @@ export type Database = {
           local_nome: string
           media_estrelas: number
           vezes: number
+        }[]
+      }
+      plataforma_assinatura: {
+        Args: { p_acao: string; p_dias?: number; p_tenant_id: string }
+        Returns: undefined
+      }
+      plataforma_empresas: {
+        Args: never
+        Returns: {
+          admin_email: string
+          admin_id: string
+          admin_nome: string
+          admin_ultimo_login: string
+          assinatura_dias_restantes: number
+          assinatura_liberada: boolean
+          assinatura_status: string
+          criado_em: string
+          nome: string
+          pago_ate: string
+          qtd_motoristas: number
+          qtd_usuarios: number
+          qtd_veiculos: number
+          tenant_id: string
+          trial_expira_em: string
+        }[]
+      }
+      plataforma_usuarios: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          ativo: boolean
+          id: string
+          login: string
+          nome: string
+          papel: string
+          primeiro_acesso: boolean
+          ultimo_login: string
         }[]
       }
       resumo_financeiro: {
@@ -1123,11 +1200,25 @@ export type Database = {
         }[]
       }
       revogar_aparelho: { Args: { p_motorista_id: string }; Returns: undefined }
+      sou_superadmin: { Args: never; Returns: boolean }
       sugerir_adiantamento: {
         Args: { p_destino: string; p_origem: string }
         Returns: {
           quantidade: number
           valor: number
+        }[]
+      }
+      usuarios_da_empresa: {
+        Args: never
+        Returns: {
+          ativo: boolean
+          id: string
+          login: string
+          motorista_id: string
+          nome: string
+          papel: string
+          primeiro_acesso: boolean
+          ultimo_login: string
         }[]
       }
       viagens_do_motorista: {

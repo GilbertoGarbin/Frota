@@ -14,7 +14,7 @@ type Registro = { sal: string; hash: string; erros: number };
 
 export type ResultadoPin =
   | { ok: true }
-  | { ok: false; restantes: number }; // restantes 0 = bloqueado, precisa reativar o aparelho
+  | { ok: false; restantes: number }; // restantes 0 = bloqueado, precisa entrar de novo com CPF e senha
 
 const hashDe = (sal: string, pin: string) =>
   Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, `${sal}:${pin}`);

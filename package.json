@@ -55,7 +55,7 @@
     "web": "expo start --web",
     "build:web": "expo export -p web",
     "test:db": "node --test supabase/tests/banco.test.mjs",
-    "lint": "expo lint"
+    "lint": "expo lint src"
   },
   "private": true
 }

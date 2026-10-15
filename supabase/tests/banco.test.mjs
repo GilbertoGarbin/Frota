@@ -17,7 +17,9 @@ const SUPABASE_STUB = `
   create role service_role nologin bypassrls;
 
   create schema auth;
-  create table auth.users (id uuid primary key);
+  create table auth.users (
+    id uuid primary key, email text, last_sign_in_at timestamptz, is_anonymous boolean not null default false
+  );
   create function auth.uid() returns uuid language sql stable as $$
     select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
   $$;
@@ -502,7 +504,7 @@ test('ativação do aparelho do motorista por CPF + código', async () => {
   await assert.rejects(como(gestorA, () => q('select * from ativacoes_motorista')), /permission denied/);
 
   const g = (await como(gestorA, () => q('select * from meu_acesso()')))[0];
-  assert.equal(g.papel, 'gestor');
+  assert.equal(g.papel, 'admin');
   assert.equal(g.motorista_id, null);
 });
 
@@ -652,4 +654,165 @@ test('visitante sem login não acessa nada', async () => {
     await assert.rejects(q('select id from viagens'), /permission denied/);
     await assert.rejects(q(`select criar_tenant('X')`), /permission denied/);
   }, 'anon');
+});
+
+test('contas: admin único por empresa, gestor, primeiro acesso e usuários da empresa', async () => {
+  const admin = await uuid();
+  const gestor = await uuid();
+  const mot = await uuid();
+  const estranho = await uuid();
+  for (const [id, email] of [[admin, 'admin@e.com'], [gestor, 'gestor@e.com'], [mot, '44444444444@motorista'], [estranho, 'x@x.com']]) {
+    await db.query('insert into auth.users (id, email) values ($1, $2)', [id, email]);
+  }
+  const tenantE = await como(admin, async () => (await um(`select criar_tenant('Transportes E', 'Ana') as id`)).id);
+
+  // quem cria a transportadora é o admin, com avaliação de 30 dias
+  const a = (await como(admin, () => q('select * from meu_acesso()')))[0];
+  assert.equal(a.papel, 'admin');
+  assert.equal(a.assinatura_status, 'trial');
+  assert.equal(a.assinatura_liberada, true);
+  assert.equal(a.assinatura_dias_restantes, 30);
+  assert.equal(a.primeiro_acesso, false);
+
+  // um admin só por empresa (a Edge Function grava com service_role; aqui, direto)
+  await assert.rejects(
+    db.query(`insert into usuarios (id, tenant_id, papel) values ($1, $2, 'admin')`, [gestor, tenantE]),
+    /usuarios_um_admin_por_tenant/,
+  );
+  await db.query(
+    `insert into usuarios (id, tenant_id, papel, nome, primeiro_acesso) values ($1, $2, 'gestor', 'Beto', true)`,
+    [gestor, tenantE],
+  );
+  const mE = await como(admin, async () =>
+    (await um(`insert into motoristas (nome, cpf) values ('Davi', '44444444444') returning id`)).id);
+  await db.query(
+    `insert into usuarios (id, tenant_id, papel, motorista_id, primeiro_acesso) values ($1, $2, 'motorista', $3, true)`,
+    [mot, tenantE, mE],
+  );
+
+  // gestor usa o painel, mas não gerencia usuários
+  await como(gestor, async () => {
+    assert.equal((await q('select id from motoristas')).length, 1);
+    await assert.rejects(q('select * from usuarios_da_empresa()'), /admin/);
+    await assert.rejects(q('select definir_acesso_usuario($1, false)', [mot]), /admin/);
+  });
+  // ninguém altera a própria assinatura pela API
+  await assert.rejects(
+    como(admin, () => q(`update tenants set assinatura_status = 'vitalicio' where id = $1`, [tenantE])),
+    /permission denied/,
+  );
+  await como(admin, () => q(`update tenants set nome = 'Transportes E Ltda' where id = $1`, [tenantE]));
+
+  // senha temporária: primeiro_acesso até trocar
+  assert.equal((await como(gestor, () => q('select * from meu_acesso()')))[0].primeiro_acesso, true);
+  await como(gestor, () => q('select concluir_primeiro_acesso()'));
+  assert.equal((await como(gestor, () => q('select * from meu_acesso()')))[0].primeiro_acesso, false);
+
+  // admin lista os usuários: e-mail para gestor, CPF para motorista
+  const lista = await como(admin, () => q('select * from usuarios_da_empresa()'));
+  assert.deepEqual(lista.map((u) => [u.papel, u.login]), [
+    ['admin', 'admin@e.com'],
+    ['gestor', 'gestor@e.com'],
+    ['motorista', '44444444444'],
+  ]);
+
+  // admin desliga e religa o motorista; não desliga a si mesmo; não mexe em outra empresa
+  await como(admin, () => q('select definir_acesso_usuario($1, false)', [mot]));
+  assert.equal((await como(mot, () => q('select * from meu_acesso()'))).length, 0);
+  await como(admin, () => q('select definir_acesso_usuario($1, true)', [mot]));
+  assert.equal((await como(mot, () => q('select * from meu_acesso()'))).length, 1);
+  await assert.rejects(como(admin, () => q('select definir_acesso_usuario($1, false)', [admin])), /admin/);
+  await assert.rejects(como(admin, () => q('select definir_acesso_usuario($1, false)', [loginM2])), /não encontrado/);
+
+  // usuário sem empresa não vê nada
+  assert.equal((await como(estranho, () => q('select * from meu_acesso()'))).length, 0);
+});
+
+test('assinatura: vencida fecha o acesso no servidor, com carência', async () => {
+  const admin = await uuid();
+  await db.query('insert into auth.users (id, email) values ($1, $2)', [admin, 'f@f.com']);
+  const tenantF = await como(admin, async () => (await um(`select criar_tenant('Transportes F') as id`)).id);
+  await como(admin, () => q(`insert into veiculos (placa, modelo) values ('FFF1F11', 'Volvo')`));
+  const veiculos = () => como(admin, () => q('select id from veiculos'));
+  const acesso = async () => (await como(admin, () => q('select * from meu_acesso()')))[0];
+
+  // avaliação vencida há 3 dias: ainda na carência (10 dias)
+  await db.query(`update tenants set trial_expira_em = now() - interval '3 days' where id = $1`, [tenantF]);
+  let a = await acesso();
+  assert.equal(a.assinatura_liberada, true);
+  assert.equal(a.assinatura_em_carencia, true);
+  assert.equal(a.assinatura_dias_restantes, 0);
+  assert.equal(a.assinatura_dias_carencia, 7);
+  assert.equal((await veiculos()).length, 1);
+
+  // passou da carência: meu_acesso ainda responde (para o aviso), o resto fecha
+  await db.query(`update tenants set trial_expira_em = now() - interval '11 days' where id = $1`, [tenantF]);
+  a = await acesso();
+  assert.equal(a.assinatura_liberada, false);
+  assert.equal((await veiculos()).length, 0);
+
+  // bloqueada também fecha; vitalícia libera
+  await db.query(`update tenants set assinatura_status = 'bloqueado' where id = $1`, [tenantF]);
+  assert.equal((await acesso()).assinatura_liberada, false);
+  await db.query(`update tenants set assinatura_status = 'vitalicio' where id = $1`, [tenantF]);
+  a = await acesso();
+  assert.equal(a.assinatura_liberada, true);
+  assert.equal(a.assinatura_dias_restantes, -1);
+  assert.equal((await veiculos()).length, 1);
+});
+
+test('super admin: vê as empresas, os usuários e controla a assinatura', async () => {
+  const dono = await uuid();
+  const admin = await uuid();
+  await db.query('insert into auth.users (id, email) values ($1, $2), ($3, $4)', [dono, 'dono@frota.com', admin, 'g@g.com']);
+  await db.query('insert into plataforma_admins (usuario_id) values ($1)', [dono]);
+  const tenantG = await como(admin, async () => (await um(`select criar_tenant('Transportes G', 'Gil') as id`)).id);
+
+  // ninguém além do super admin chama as funções da plataforma nem lê a tabela
+  for (const sql of [
+    'select * from plataforma_empresas()',
+    `select * from plataforma_usuarios('${tenantG}')`,
+    `select plataforma_assinatura('${tenantG}', 'vitalicio')`,
+  ]) {
+    await assert.rejects(como(admin, () => q(sql)), /plataforma/);
+  }
+  await assert.rejects(como(admin, () => q('select * from plataforma_admins')), /permission denied/);
+  assert.equal((await como(admin, () => um('select sou_superadmin() as s'))).s, false);
+
+  await como(dono, async () => {
+    assert.equal((await um('select sou_superadmin() as s')).s, true);
+    // super admin não pertence a nenhuma transportadora nem cria uma
+    assert.equal((await q('select * from meu_acesso()')).length, 0);
+    assert.equal((await q('select id from viagens')).length, 0);
+    await assert.rejects(q(`select criar_tenant('Minha')`), /plataforma/);
+
+    const empresas = await q('select * from plataforma_empresas()');
+    const g = empresas.find((e) => e.tenant_id === tenantG);
+    assert.equal(g.nome, 'Transportes G');
+    assert.equal(g.assinatura_status, 'trial');
+    assert.equal(g.admin_nome, 'Gil');
+    assert.equal(g.admin_email, 'g@g.com');
+    assert.equal(g.qtd_usuarios, 1);
+    assert.ok(empresas.length >= 5);
+
+    const usuarios = await q('select * from plataforma_usuarios($1)', [tenantG]);
+    assert.deepEqual(usuarios.map((u) => [u.papel, u.login]), [['admin', 'g@g.com']]);
+
+    await q(`select plataforma_assinatura($1, 'ativar', 30)`, [tenantG]);
+    let t = await um('select * from plataforma_empresas() where tenant_id = $1', [tenantG]);
+    assert.equal(t.assinatura_status, 'ativo');
+    assert.equal(t.assinatura_dias_restantes, 30);
+    // renovar antes de vencer soma ao período pago
+    await q(`select plataforma_assinatura($1, 'ativar', 365)`, [tenantG]);
+    t = await um('select * from plataforma_empresas() where tenant_id = $1', [tenantG]);
+    assert.equal(t.assinatura_dias_restantes, 395);
+
+    await q(`select plataforma_assinatura($1, 'bloquear')`, [tenantG]);
+    t = await um('select * from plataforma_empresas() where tenant_id = $1', [tenantG]);
+    assert.equal(t.assinatura_liberada, false);
+    await q(`select plataforma_assinatura($1, 'vitalicio')`, [tenantG]);
+    t = await um('select * from plataforma_empresas() where tenant_id = $1', [tenantG]);
+    assert.equal(t.assinatura_status, 'vitalicio');
+    await assert.rejects(q(`select plataforma_assinatura($1, 'apagar')`, [tenantG]), /inválida/);
+  });
 });

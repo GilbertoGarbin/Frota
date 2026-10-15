@@ -51,14 +51,14 @@ export default function Perfil() {
         <>
           <Aviso tipo="erro">
             {fila.length > 0
-              ? `Atenção: ${fila.length} envio(s) ainda não chegaram ao servidor e serão PERDIDOS. Para voltar a usar o app será preciso um novo código de ativação do gestor.`
-              : 'Para voltar a usar o app neste aparelho será preciso um novo código de ativação do gestor.'}
+              ? `Atenção: ${fila.length} envio(s) ainda não chegaram ao servidor e serão PERDIDOS. Para voltar, entre de novo com seu CPF e senha.`
+              : 'Para voltar, entre de novo com seu CPF e senha.'}
           </Aviso>
-          <Botao titulo="Desvincular este aparelho" variante="perigo" onPress={sair} />
+          <Botao titulo="Sair da conta" variante="perigo" onPress={sair} />
           <Botao titulo="Cancelar" variante="link" onPress={() => setConfirmando(false)} />
         </>
       ) : (
-        <Botao titulo="Desvincular este aparelho" variante="link" onPress={() => setConfirmando(true)} />
+        <Botao titulo="Sair da conta" variante="link" onPress={() => setConfirmando(true)} />
       )}
     </TelaMotorista>
   );

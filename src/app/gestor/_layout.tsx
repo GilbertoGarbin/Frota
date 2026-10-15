@@ -2,6 +2,7 @@ import { Slot, usePathname, useRouter, type Href } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FaixaAssinatura } from '@/components/gestor/faixa-assinatura';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useSessao } from '@/context/SessaoContext';
 
@@ -15,6 +16,8 @@ const MENU: { rotulo: string; rota: Href }[] = [
   { rotulo: 'Custos Fixos', rota: '/gestor/custos-fixos' },
   { rotulo: 'Financeiro', rota: '/gestor/financeiro' },
 ];
+// Só o admin da transportadora cadastra usuários
+const MENU_ADMIN: { rotulo: string; rota: Href }[] = [{ rotulo: 'Usuários', rota: '/gestor/usuarios' }];
 
 const LARGURA_DESKTOP = 900;
 
@@ -25,6 +28,7 @@ export default function GestorLayout() {
     <SafeAreaView style={[styles.raiz, largo && styles.raizLarga]}>
       <Menu largo={largo} />
       <View style={styles.conteudo}>
+        <FaixaAssinatura />
         <Slot />
       </View>
     </SafeAreaView>
@@ -37,7 +41,8 @@ function Menu({ largo }: { largo: boolean }) {
   const caminho = usePathname();
   const { acesso, sair } = useSessao();
 
-  const itens = MENU.map((item) => {
+  const menu = acesso?.papel === 'admin' ? [...MENU, ...MENU_ADMIN] : MENU;
+  const itens = menu.map((item) => {
     const ativo = item.rota === caminho;
     return (
       <Pressable
@@ -82,6 +87,7 @@ function Menu({ largo }: { largo: boolean }) {
       <View style={styles.rodape}>
         <Text style={styles.usuario} numberOfLines={1}>
           {acesso?.nome ?? ''}
+          {acesso ? ` · ${acesso.papel === 'admin' ? 'Admin' : 'Gestor'}` : ''}
         </Text>
         <Pressable accessibilityRole="button" onPress={sair} style={styles.item}>
           <Text style={styles.itemTexto}>Sair</Text>

@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -8,12 +9,11 @@ import { Campo } from '@/components/ui/campo';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Selo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
-import { Cores, Espaco, Raio } from '@/constants/tema';
+import { Cores, Espaco } from '@/constants/tema';
+import { useSessao } from '@/context/SessaoContext';
 import { useCarregar } from '@/hooks/use-carregar';
 import {
   carregarTelaMotoristas,
-  gerarCodigoAtivacao,
-  revogarAparelho,
   salvarMotorista,
   type ModeloRemuneracao,
   type Motorista,
@@ -53,8 +53,7 @@ export default function Motoristas() {
       <FormMotorista
         motorista={editando}
         veiculos={dados.veiculos}
-        temAparelho={editando ? dados.comAparelho.has(editando.id) : false}
-        aoMudarAparelho={recarregar}
+        temAcesso={editando ? dados.comAcesso.has(editando.id) : false}
         aoFechar={(salvou) => {
           setEditando(undefined);
           if (salvou) recarregar();
@@ -80,9 +79,9 @@ export default function Motoristas() {
     },
     { titulo: 'CNH — validade', flex: 1.5, celula: (m) => <ValidadeCnh iso={m.cnh_validade} /> },
     {
-      titulo: 'Aparelho',
+      titulo: 'App',
       celula: (m) =>
-        dados?.comAparelho.has(m.id) ? <Selo tipo="sucesso">Ativado</Selo> : <Selo tipo="neutro">Sem aparelho</Selo>,
+        dados?.comAcesso.has(m.id) ? <Selo tipo="sucesso">Com acesso</Selo> : <Selo tipo="neutro">Sem acesso</Selo>,
     },
     {
       titulo: 'Status',
@@ -127,12 +126,11 @@ function ValidadeCnh({ iso }: { iso: string | null }) {
 type PropsForm = {
   motorista: Motorista | null;
   veiculos: Veiculo[];
-  temAparelho: boolean;
-  aoMudarAparelho: () => void;
+  temAcesso: boolean;
   aoFechar: (salvou: boolean) => void;
 };
 
-function FormMotorista({ motorista, veiculos, temAparelho, aoMudarAparelho, aoFechar }: PropsForm) {
+function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) {
   const [nome, setNome] = useState(motorista?.nome ?? '');
   const [cpf, setCpf] = useState(formatarCpf(motorista?.cpf ?? ''));
   const [telefone, setTelefone] = useState(formatarTelefone(motorista?.telefone ?? ''));
@@ -196,7 +194,7 @@ function FormMotorista({ motorista, veiculos, temAparelho, aoMudarAparelho, aoFe
       <Campo rotulo="Nome completo" value={nome} onChangeText={setNome} autoComplete="name" />
       <Campo
         rotulo="CPF"
-        ajuda="O motorista usa o CPF para ativar o app no celular."
+        ajuda="O motorista entra no app (celular ou web) com o CPF e uma senha."
         value={cpf}
         onChangeText={(t) => setCpf(formatarCpf(t))}
         keyboardType="number-pad"
@@ -266,91 +264,25 @@ function FormMotorista({ motorista, veiculos, temAparelho, aoMudarAparelho, aoFe
       />
       <Botao titulo="Voltar" variante="link" onPress={() => aoFechar(false)} />
 
-      {motorista ? (
-        <AcessoAoApp motorista={motorista} temAparelho={temAparelho} aoMudar={aoMudarAparelho} />
-      ) : (
-        <Aviso tipo="info">Depois de salvar, abra o motorista de novo para gerar o código de ativação do app.</Aviso>
-      )}
+      <AcessoAoApp temAcesso={temAcesso} />
     </Pagina>
   );
 }
 
-type PropsAcesso = { motorista: Motorista; temAparelho: boolean; aoMudar: () => void };
-
-// Código de ativação e revogação do aparelho (decisao_stack_infra.md §2.4)
-function AcessoAoApp({ motorista, temAparelho, aoMudar }: PropsAcesso) {
-  const [codigo, setCodigo] = useState<string | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
-  const [ocupado, setOcupado] = useState(false);
-  const [confirmandoRevogar, setConfirmandoRevogar] = useState(false);
-
-  async function executar(acao: () => Promise<void>) {
-    setErro(null);
-    setOcupado(true);
-    try {
-      await acao();
-    } catch (e) {
-      setErro(mensagemDeErro(e));
-    }
-    setOcupado(false);
-  }
-
-  const aoGerar = () => executar(async () => setCodigo(await gerarCodigoAtivacao(motorista.id)));
-  const aoRevogar = () =>
-    executar(async () => {
-      await revogarAparelho(motorista.id);
-      setCodigo(null);
-      setConfirmandoRevogar(false);
-      aoMudar();
-    });
-
+// O login do motorista (CPF + senha) é criado pelo admin na tela Usuários.
+function AcessoAoApp({ temAcesso }: { temAcesso: boolean }) {
+  const router = useRouter();
+  const { acesso } = useSessao();
   return (
     <View style={styles.secao}>
       <Text style={styles.secaoTitulo}>Acesso ao app</Text>
-      {temAparelho ? (
-        <Selo tipo="sucesso">Aparelho ativado</Selo>
-      ) : (
-        <Selo tipo="neutro">Nenhum aparelho ativado</Selo>
-      )}
-      {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-
-      {motorista.status !== 'ativo' ? (
-        <Aviso tipo="info">Motorista inativo não acessa o app. Ative o cadastro para gerar um código.</Aviso>
-      ) : codigo ? (
-        <View style={styles.codigoCaixa}>
-          <Text style={styles.codigoRotulo}>Código de ativação</Text>
-          <Text accessibilityLabel={`Código ${codigo}`} style={styles.codigo}>
-            {codigo.slice(0, 3)} {codigo.slice(3)}
-          </Text>
-          <Text style={styles.codigoAjuda}>
-            Passe este código ao motorista. No celular, ele abre o app, toca em “Sou motorista” e informa o
-            CPF e o código. Vale 48 horas, só pode ser usado uma vez e não será mostrado de novo.
-          </Text>
-        </View>
-      ) : (
-        <Botao
-          titulo={temAparelho ? 'Gerar código para outro aparelho' : 'Gerar código de ativação'}
-          variante="contorno"
-          onPress={aoGerar}
-          carregando={ocupado}
-        />
-      )}
-      {temAparelho && !codigo && motorista.status === 'ativo' ? (
-        <Text style={styles.codigoAjuda}>Ativar outro aparelho desliga o atual.</Text>
-      ) : null}
-
-      {temAparelho ? (
-        confirmandoRevogar ? (
-          <>
-            <Aviso tipo="erro">
-              O motorista perde o acesso ao app neste aparelho na hora. Para voltar, será preciso um novo código.
-            </Aviso>
-            <Botao titulo="Revogar aparelho" variante="perigo" onPress={aoRevogar} carregando={ocupado} />
-            <Botao titulo="Cancelar" variante="link" onPress={() => setConfirmandoRevogar(false)} />
-          </>
-        ) : (
-          <Botao titulo="Revogar aparelho" variante="link" onPress={() => setConfirmandoRevogar(true)} />
-        )
+      {temAcesso ? <Selo tipo="sucesso">Com acesso</Selo> : <Selo tipo="neutro">Sem acesso</Selo>}
+      <Text style={styles.ajuda}>
+        O motorista entra com o CPF e uma senha. O admin da transportadora cria o acesso, redefine a senha ou
+        desliga o acesso na tela Usuários.
+      </Text>
+      {acesso?.papel === 'admin' ? (
+        <Botao titulo="Ir para Usuários" variante="contorno" onPress={() => router.navigate('/gestor/usuarios')} />
       ) : null}
     </View>
   );
@@ -366,8 +298,5 @@ const styles = StyleSheet.create({
     borderTopColor: Cores.borda,
   },
   secaoTitulo: { fontSize: 18, fontWeight: '700', color: Cores.texto },
-  codigoCaixa: { gap: Espaco.sm, padding: Espaco.lg, borderRadius: Raio.md, backgroundColor: Cores.chipClaro },
-  codigoRotulo: { fontSize: 13, fontWeight: '600', color: Cores.primariaEscura },
-  codigo: { fontSize: 36, fontWeight: '700', letterSpacing: 4, color: Cores.primariaEscura },
-  codigoAjuda: { fontSize: 13, lineHeight: 19, color: Cores.textoSuave },
+  ajuda: { fontSize: 13, lineHeight: 19, color: Cores.textoSuave },
 });

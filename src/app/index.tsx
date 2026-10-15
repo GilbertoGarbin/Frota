@@ -14,10 +14,14 @@ export default function Index() {
   switch (estado) {
     case 'deslogado':
       return <Redirect href="/entrar" />;
-    case 'ativacao':
-      return <Redirect href="/ativar" />;
     case 'sem_transportadora':
       return <Redirect href="/transportadora" />;
+    case 'plataforma':
+      return <Redirect href="/plataforma" />;
+    case 'primeiro_acesso':
+      return <Redirect href="/trocar-senha" />;
+    case 'assinatura_vencida':
+      return <Redirect href="/assinatura" />;
     case 'gestor':
       return <Redirect href="/gestor" />;
     case 'motorista':

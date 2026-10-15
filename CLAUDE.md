@@ -29,7 +29,8 @@ Mesma do projeto FLUXO (`D:\Projetos\FLUXO`), usado como referência de organiza
 - **expo-sqlite** — fila offline do motorista (novidade em relação ao FLUXO).
 - **Android:** APK via EAS Build; correções de JS via EAS Update.
 - **Web:** `npm run build:web` (`expo export -p web`), publicado na Vercel por deploy automático do GitHub.
-- Sem API/servidor separado no MVP.
+- Sem API/servidor separado no MVP. Única Edge Function: `gerenciar-usuario` (criar login e redefinir
+  senha precisam da `service_role`).
 
 ## Organização
 
@@ -70,17 +71,35 @@ supabase/        migrations e edge functions
 - O rateio é baseado em **km, não em ordem de chegada** — precisa ser determinístico e idempotente, porque um abastecimento pode sincronizar atrasado.
 - Campos derivados (comissão, frete total, resultado operacional) nunca são editáveis na UI.
 
-### Autenticação
-- Gestor: e-mail + senha (Supabase Auth). No primeiro acesso cadastra a transportadora (`criar_tenant`).
-- Motorista: o aparelho abre uma **sessão anônima** do Supabase Auth e a vincula ao motorista com
-  CPF + código de 6 dígitos gerado pelo gestor (`gerar_codigo_ativacao` → `ativar_aparelho`).
-  Um aparelho por motorista; `revogar_aparelho` derruba o acesso. Sem Edge Function.
-- O PIN é só desbloqueio local (hash com sal em `expo-secure-store`, `src/services/pin.service.ts`);
-  nunca é enviado ao servidor. 5 erros desvinculam o aparelho.
+### Autenticação e contas (migration `contas_e_assinatura`)
+- **Login único** (`src/app/entrar.tsx`): "E-mail ou CPF" + senha, na web e no app. O papel vem do
+  banco (`meu_acesso`), não da tela. Motorista não tem e-mail: o login dele no Supabase Auth é
+  `<cpf>@motorista.g2frota.vercel.app` (`DOMINIO_LOGIN_MOTORISTA`, igual no app e na Edge Function).
+- Papéis em `usuarios.papel`: **admin** (um por transportadora — índice `usuarios_um_admin_por_tenant`;
+  faz tudo), **gestor** (painel, sem gerenciar usuários), **motorista**. `app.eh_gestor()` vale para
+  admin e gestor; `app.eh_admin()` só para o admin.
+- **Cadastro pelo site** (`cadastro.tsx` → `transportadora.tsx` → `criar_tenant`): quem cria a
+  transportadora vira o admin, com 30 dias de avaliação.
+- O admin cria gestores (e-mail) e acessos de motorista (CPF) em `gestor/usuarios.tsx`, pela Edge
+  Function `supabase/functions/gerenciar-usuario`, sempre com **senha temporária**:
+  `usuarios.primeiro_acesso` obriga a trocar no login seguinte (`trocar-senha.tsx`).
+- **Super admin** (dono do sistema): tabela `plataforma_admins` (fora dos tenants — a única sem
+  `tenant_id`). Vê todas as transportadoras e usuários, redefine senhas e controla a assinatura em
+  `src/app/plataforma.tsx` (funções `plataforma_*`). Para criar: inserir o `auth.users.id` em
+  `plataforma_admins` pelo SQL Editor.
+- **Assinatura** por transportadora em `tenants` (`assinatura_status`, `trial_expira_em`, `pago_ate`,
+  `carencia_dias`), como no FLUXO: PIX manual pelo WhatsApp (`src/constants/assinatura.ts`) e o super
+  admin libera +30/+365 dias. Passada a carência, `app.tenant_id()` fica nulo e o RLS fecha tudo;
+  `meu_acesso` continua respondendo para o app mostrar `assinatura.tsx`.
+- A ativação antiga por código (`gerar_codigo_ativacao`/`ativar_aparelho`, sessão anônima) ficou só no
+  banco, sem tela; sessões anônimas estão desligadas em `supabase/config.toml`.
+- O PIN é só desbloqueio local no celular (hash com sal em `expo-secure-store`,
+  `src/services/pin.service.ts`); nunca é enviado ao servidor. 5 erros fazem sair da conta. Na web não há PIN.
 - Estado da sessão e roteamento: `src/context/SessaoContext.tsx` + `Stack.Protected` em
-  `src/app/_layout.tsx`. Cada estado (`deslogado`, `ativacao`, `sem_transportadora`, `gestor`,
-  `motorista`) libera só as rotas dele; `src/app/index.tsx` redireciona. Telas do gestor ficam em
-  `src/app/gestor/`, as do motorista em `src/app/motorista/` (atrás do `PinPortao`).
+  `src/app/_layout.tsx`. Cada estado (`deslogado`, `sem_transportadora`, `plataforma`,
+  `primeiro_acesso`, `assinatura_vencida`, `gestor`, `motorista`) libera só as rotas dele;
+  `src/app/index.tsx` redireciona. Telas do gestor ficam em `src/app/gestor/`, as do motorista em
+  `src/app/motorista/` (atrás do `PinPortao`).
 - O acesso (papel + transportadora) fica salvo no aparelho para o motorista abrir o app sem sinal.
 - Configuração de Auth do projeto: `supabase/config.toml` (`npx supabase config push`).
 
@@ -103,6 +122,8 @@ num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer e
   é tabela derivada — nunca gravar nela.
 - Arquivos: bucket privado `comprovantes`, caminho `{tenant_id}/{viagem_id}/{uuid}.{ext}`.
 - Nova tabela = `tenant_id` + FK composta `(tenant_id, x_id)` + RLS + teste de isolamento.
+- Edge Functions em `supabase/functions/` (Deno; fora do `tsc` e do ESLint do app). Deploy:
+  `npx supabase functions deploy <nome>`.
 - Tipos do banco em `src/db/database.types.ts` (gerado — não editar). Depois de aplicar uma migration:
   `npx supabase gen types typescript --linked --schema public > src/db/database.types.ts`
   (salvar em UTF-8 sem BOM).

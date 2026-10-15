@@ -23,22 +23,22 @@ export type DadosMotorista = Pick<
 export type TelaMotoristas = {
   motoristas: Motorista[];
   veiculos: Veiculo[];
-  /** ids dos motoristas que têm um aparelho ativado */
-  comAparelho: Set<string>;
+  /** ids dos motoristas que têm acesso ao app ligado */
+  comAcesso: Set<string>;
 };
 
 export async function carregarTelaMotoristas(): Promise<TelaMotoristas> {
-  const [motoristas, veiculos, aparelhos] = await Promise.all([
+  const [motoristas, veiculos, acessos] = await Promise.all([
     supabase.from('motoristas').select('*').order('nome'),
     listarVeiculos(),
     supabase.from('usuarios').select('motorista_id').eq('papel', 'motorista').eq('ativo', true),
   ]);
   if (motoristas.error) throw motoristas.error;
-  if (aparelhos.error) throw aparelhos.error;
+  if (acessos.error) throw acessos.error;
   return {
     motoristas: motoristas.data,
     veiculos,
-    comAparelho: new Set(aparelhos.data.flatMap((a) => (a.motorista_id ? [a.motorista_id] : []))),
+    comAcesso: new Set(acessos.data.flatMap((a) => (a.motorista_id ? [a.motorista_id] : []))),
   };
 }
 
@@ -49,14 +49,9 @@ export async function salvarMotorista(id: string | null, dados: DadosMotorista):
   if (error) throw error;
 }
 
-/** Gera (ou troca) o código de ativação. O código só existe nesta resposta: mostre na hora. */
-export async function gerarCodigoAtivacao(motoristaId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('gerar_codigo_ativacao', { p_motorista_id: motoristaId });
+/** Motoristas ativos, para escolher a quem dar acesso ao app. */
+export async function listarMotoristasAtivos(): Promise<Motorista[]> {
+  const { data, error } = await supabase.from('motoristas').select('*').eq('status', 'ativo').order('nome');
   if (error) throw error;
   return data;
-}
-
-export async function revogarAparelho(motoristaId: string): Promise<void> {
-  const { error } = await supabase.rpc('revogar_aparelho', { p_motorista_id: motoristaId });
-  if (error) throw error;
 }

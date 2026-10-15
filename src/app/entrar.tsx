@@ -8,18 +8,20 @@ import { Tela } from '@/components/ui/tela';
 import { entrar } from '@/services/auth.service';
 import { mensagemDeErro } from '@/utils/erros';
 
+// Login único: o sistema descobre pelo cadastro se é admin, gestor ou motorista (ver SessaoContext).
 export default function Entrar() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [login, setLogin] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   async function aoEntrar() {
+    if (!login.trim() || !senha) return;
     setErro(null);
     setEnviando(true);
     try {
-      await entrar(email, senha);
+      await entrar(login, senha);
       // a navegação acontece sozinha quando a sessão muda (ver _layout)
     } catch (e) {
       setErro(mensagemDeErro(e));
@@ -28,16 +30,17 @@ export default function Entrar() {
   }
 
   return (
-    <Tela titulo="Frota" subtitulo="Entre para gerenciar sua transportadora.">
+    <Tela titulo="Frota" subtitulo="Entre com seu e-mail ou CPF.">
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       <Campo
-        rotulo="E-mail"
-        value={email}
-        onChangeText={setEmail}
+        rotulo="E-mail ou CPF"
+        ajuda="Motorista: use o CPF e a senha que a transportadora passou."
+        value={login}
+        onChangeText={setLogin}
         autoCapitalize="none"
-        autoComplete="email"
+        autoCorrect={false}
+        autoComplete="username"
         keyboardType="email-address"
-        inputMode="email"
       />
       <Campo
         rotulo="Senha"
@@ -47,14 +50,12 @@ export default function Entrar() {
         autoComplete="current-password"
         onSubmitEditing={aoEntrar}
       />
+      <Botao titulo="Entrar" onPress={aoEntrar} carregando={enviando} desativado={!login.trim() || !senha} />
       <Botao
-        titulo="Entrar"
-        onPress={aoEntrar}
-        carregando={enviando}
-        desativado={!email.trim() || !senha}
+        titulo="Cadastrar minha transportadora"
+        variante="link"
+        onPress={() => router.push('/cadastro')}
       />
-      <Botao titulo="Criar conta de gestor" variante="contorno" onPress={() => router.push('/cadastro')} />
-      <Botao titulo="Sou motorista — ativar este aparelho" variante="link" onPress={() => router.push('/ativar')} />
     </Tela>
   );
 }

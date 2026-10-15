@@ -5,10 +5,9 @@ import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { Tela } from '@/components/ui/tela';
-import { cadastrar } from '@/services/auth.service';
+import { cadastrar, SENHA_MIN } from '@/services/auth.service';
 import { mensagemDeErro } from '@/utils/erros';
 
-const SENHA_MIN = 8;
 
 export default function Cadastro() {
   const router = useRouter();
@@ -51,7 +50,9 @@ export default function Cadastro() {
   }
 
   return (
-    <Tela titulo="Criar conta" subtitulo="Conta do gestor da transportadora.">
+    <Tela
+      titulo="Cadastrar transportadora"
+      subtitulo="Crie a conta de administrador e use grátis por 30 dias.">
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       <Campo rotulo="Seu nome" value={nome} onChangeText={setNome} autoComplete="name" />
       <Campo

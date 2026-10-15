@@ -3,26 +3,26 @@ import { createContext, use, useCallback, useEffect, useState, type PropsWithChi
 
 import { armazem } from '@/db/armazem';
 import { supabase } from '@/lib/supabase';
-import { buscarAcesso, sair as sairDoSupabase, type Acesso } from '@/services/auth.service';
+import { buscarAcesso, sair as sairDoSupabase, souSuperadmin, type Acesso } from '@/services/auth.service';
 import { apagarPin } from '@/services/pin.service';
 
 export type EstadoSessao =
   | 'carregando'
   | 'sem_conexao' // logado, mas sem internet e sem acesso salvo neste aparelho
   | 'deslogado'
-  | 'ativacao' // aparelho de motorista ainda não ativado (ou revogado)
-  | 'sem_transportadora' // gestor logado que ainda não cadastrou a transportadora
-  | 'gestor'
+  | 'sem_transportadora' // conta criada pelo site que ainda não cadastrou a transportadora
+  | 'plataforma' // super admin (dono do sistema)
+  | 'primeiro_acesso' // entrou com senha temporária: precisa trocar
+  | 'assinatura_vencida' // transportadora com avaliação/assinatura vencida ou bloqueada
+  | 'gestor' // admin ou gestor da transportadora (acesso.papel diz qual)
   | 'motorista';
 
 type Sessao = {
   estado: EstadoSessao;
-  /** Sessão anônima = aparelho de motorista (ativado ou em ativação). */
-  anonimo: boolean;
   acesso: Acesso | null;
   email: string | null;
   nomeCadastro: string | null;
-  /** Relê papel/transportadora no servidor (depois de criar a transportadora ou ativar o aparelho). */
+  /** Relê papel/transportadora no servidor (depois de criar a transportadora ou trocar a senha). */
   recarregarAcesso: () => Promise<void>;
   sair: () => Promise<void>;
 };
@@ -38,13 +38,16 @@ export function useSessao(): Sessao {
 // undefined = ainda não sabemos; null = sabemos que não há
 type Talvez<T> = T | null | undefined;
 
-type Consulta = { usuarioId: string; acesso: Acesso | null; semConexao: boolean };
+type Consulta = { usuarioId: string; acesso: Acesso | null; superadmin: boolean; semConexao: boolean };
 
 async function consultarAcesso(usuarioId: string): Promise<Consulta> {
   try {
-    return { usuarioId, acesso: await buscarAcesso(usuarioId), semConexao: false };
+    const acesso = await buscarAcesso(usuarioId);
+    // Super admin não pertence a nenhuma transportadora
+    const superadmin = acesso ? false : await souSuperadmin();
+    return { usuarioId, acesso, superadmin, semConexao: false };
   } catch {
-    return { usuarioId, acesso: null, semConexao: true };
+    return { usuarioId, acesso: null, superadmin: false, semConexao: true };
   }
 }
 
@@ -92,8 +95,14 @@ export function SessaoProvider({ children }: PropsWithChildren) {
   if (sessao === undefined) estado = 'carregando';
   else if (sessao === null) estado = 'deslogado';
   else if (acesso === undefined) estado = semConexao ? 'sem_conexao' : 'carregando';
-  else if (acesso === null) estado = sessao.user.is_anonymous ? 'ativacao' : 'sem_transportadora';
-  else estado = acesso.papel;
+  else if (acesso === null) {
+    if (consultaAtual?.superadmin) estado = 'plataforma';
+    // Aparelho ativado pelo código antigo (sessão anônima) e já sem acesso: entra com CPF e senha
+    else if (sessao.user.is_anonymous) estado = 'deslogado';
+    else estado = 'sem_transportadora';
+  } else if (acesso.primeiroAcesso) estado = 'primeiro_acesso';
+  else if (!acesso.assinatura.liberada) estado = 'assinatura_vencida';
+  else estado = acesso.papel === 'motorista' ? 'motorista' : 'gestor';
 
   const nomeCadastro = sessao?.user.user_metadata?.nome;
 
@@ -101,7 +110,6 @@ export function SessaoProvider({ children }: PropsWithChildren) {
     <SessaoContext
       value={{
         estado,
-        anonimo: sessao?.user.is_anonymous === true,
         acesso: acesso ?? null,
         email: sessao?.user.email ?? null,
         nomeCadastro: typeof nomeCadastro === 'string' ? nomeCadastro : null,
