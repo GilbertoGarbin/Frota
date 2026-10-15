@@ -10,6 +10,11 @@ additional_redirect_urls = ["https://g2frota.vercel.app/**", "https://frota-cyan
 # sessão anônima, foi aposentada na migration contas_e_assinatura.
 enable_anonymous_sign_ins = false
 
+# E-mail de "Esqueci minha senha" em português
+[auth.email.template.recovery]
+subject = "Frota: criar senha nova"
+content_path = "./supabase/templates/recuperar-senha.html"
+
 # Cria logins e redefine senhas (service_role). O token do usuário é conferido dentro da
 # função (auth.getUser), por isso a verificação automática de JWT fica desligada.
 [functions.gerenciar-usuario]

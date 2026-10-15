@@ -6,7 +6,8 @@ const MENSAGENS: [RegExp, string][] = [
   [/already registered|already been registered/i, 'Já existe uma conta com este e-mail.'],
   [/password should be at least/i, 'A senha precisa ter pelo menos 8 caracteres.'],
   [/unable to validate email|invalid email|email address .* is invalid/i, 'E-mail inválido.'],
-  [/rate limit|too many requests/i, 'Muitas tentativas. Aguarde alguns minutos e tente de novo.'],
+  [/rate limit|too many requests|for security purposes/i, 'Muitas tentativas. Aguarde alguns minutos e tente de novo.'],
+  [/auth session missing|jwt expired|token has expired|invalid jwt/i, 'O link expirou. Peça um link novo em "Esqueci minha senha".'],
   [/network|failed to fetch|fetch failed/i, 'Sem conexão. Verifique a internet e tente de novo.'],
   // Restrições do banco
   [/motoristas_tenant_id_cpf_key/, 'Já existe um motorista com este CPF.'],

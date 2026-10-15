@@ -37,9 +37,12 @@ function Navegacao() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      {/* aberta pelo link do e-mail, com ou sem sessão */}
+      <Stack.Screen name="redefinir-senha" />
       <Stack.Protected guard={estado === 'deslogado'}>
         <Stack.Screen name="entrar" />
         <Stack.Screen name="cadastro" />
+        <Stack.Screen name="esqueci-senha" />
       </Stack.Protected>
       <Stack.Protected guard={estado === 'sem_transportadora'}>
         <Stack.Screen name="transportadora" />

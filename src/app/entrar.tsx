@@ -30,7 +30,7 @@ export default function Entrar() {
   }
 
   return (
-    <Tela titulo="Frota" subtitulo="Entre com seu e-mail ou CPF.">
+    <Tela titulo="Entrar">
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       <Campo
         rotulo="E-mail ou CPF"
@@ -51,6 +51,7 @@ export default function Entrar() {
         onSubmitEditing={aoEntrar}
       />
       <Botao titulo="Entrar" onPress={aoEntrar} carregando={enviando} desativado={!login.trim() || !senha} />
+      <Botao titulo="Esqueci minha senha" variante="link" compacto onPress={() => router.push('/esqueci-senha')} />
       <Botao
         titulo="Cadastrar minha transportadora"
         variante="link"

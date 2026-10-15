@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 import { soDigitos } from '@/utils/cpf';
@@ -36,6 +37,10 @@ const chaveAcesso = (usuarioId: string) => `frota.acesso.${usuarioId}`;
 export const DOMINIO_LOGIN_MOTORISTA = 'motorista.g2frota.vercel.app';
 export const SENHA_MIN = 8;
 
+// Painel publicado: o link de "Esqueci minha senha" sempre abre no navegador
+const SITE = 'https://g2frota.vercel.app';
+
+
 /** E-mail (gestor e admin) ou CPF (motorista) → e-mail de login no Supabase Auth */
 export function emailDoLogin(login: string): string | null {
   const texto = login.trim().toLowerCase();
@@ -49,6 +54,41 @@ export async function entrar(login: string, senha: string): Promise<void> {
   if (!email) throw new Error('Digite seu e-mail ou o CPF com 11 números.');
   const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
   if (error) throw error;
+}
+
+/** Envia o e-mail com o link para criar uma senha nova (só para quem entra com e-mail). */
+export async function enviarLinkDeSenha(email: string): Promise<void> {
+  const origem = Platform.OS === 'web' ? window.location.origin : SITE;
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    redirectTo: `${origem}/redefinir-senha`,
+  });
+  if (error) throw error;
+}
+
+export type LinkDeSenha = { accessToken: string; refreshToken: string } | { erro: string } | null;
+
+/**
+ * Lê o link do e-mail de recuperação. O Supabase volta para /redefinir-senha com os tokens
+ * depois do "#" (ou com o erro, se o link expirou). null = a página foi aberta sem link.
+ */
+export function lerLinkDeSenha(hash: string): LinkDeSenha {
+  const p = new URLSearchParams(hash.replace(/^#/, ''));
+  if (p.get('error')) return { erro: 'Este link expirou ou já foi usado. Peça um link novo.' };
+  const accessToken = p.get('access_token');
+  const refreshToken = p.get('refresh_token');
+  if (p.get('type') !== 'recovery' || !accessToken || !refreshToken) return null;
+  return { accessToken, refreshToken };
+}
+
+/** Entra com o link do e-mail e grava a senha nova. */
+export async function redefinirSenhaPeloLink(
+  link: { accessToken: string; refreshToken: string },
+  nova: string,
+): Promise<void> {
+  const { error } = await supabase.auth.setSession({ access_token: link.accessToken, refresh_token: link.refreshToken });
+  if (error) throw error;
+  // também encerra uma senha temporária pendente
+  await trocarSenha(nova);
 }
 
 /** Troca a senha temporária pela definitiva e libera o uso do sistema. */
