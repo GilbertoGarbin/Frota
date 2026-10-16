@@ -6,6 +6,8 @@ import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { LinhaForm } from '@/components/ui/linha-form';
+import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Selo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
@@ -143,8 +145,9 @@ function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) 
   const [comissao, setComissao] = useState(motorista ? formatarDecimal(motorista.comissao_percentual) : '');
   const [salario, setSalario] = useState(formatarDecimal(motorista?.salario_fixo));
   const [status, setStatus] = useState<StatusMotorista>((motorista?.status as StatusMotorista) ?? 'ativo');
-  const [erro, setErro] = useState<string | null>(null);
+  const [mensagem, setMensagem] = useState<ConteudoMensagem | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const comissionado = modelo === 'comissionado';
 
   // Veículos ativos, mais o já vinculado (mesmo que tenha sido inativado depois)
   const opcoesVeiculo = [
@@ -156,17 +159,25 @@ function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) 
 
   async function aoSalvar() {
     const validade = lerData(cnhValidade);
-    const percentual = modelo === 'comissionado' ? lerDecimal(comissao) : 0;
-    const salarioFixo = modelo === 'assalariado' ? lerDecimal(salario) : null;
+    const percentual = comissionado ? lerDecimal(comissao) : 0;
+    const salarioFixo = comissionado ? null : lerDecimal(salario);
 
-    if (!cpfValido(cpf)) return setErro('CPF inválido. Confira os números.');
-    if (validade === undefined) return setErro('Validade da CNH inválida. Use dia/mês/ano.');
-    if (percentual === null || Number.isNaN(percentual) || percentual > 100) {
-      return setErro('Informe a comissão em %, de 0 a 100. Exemplo: 14');
+    const faltando = [
+      !nome.trim() && 'Nome completo',
+      !soDigitos(cpf) && 'CPF',
+      comissionado && !comissao.trim() && '% Comissão',
+    ].filter((item): item is string => !!item);
+    if (faltando.length > 0) {
+      return setMensagem({ titulo: 'Preencha os campos obrigatórios', itens: faltando });
     }
-    if (Number.isNaN(salarioFixo)) return setErro('Salário fixo inválido.');
+    const invalido = (texto: string) => setMensagem({ titulo: 'Confira o cadastro', texto });
+    if (!cpfValido(cpf)) return invalido('CPF inválido. Confira os números.');
+    if (validade === undefined) return invalido('Validade da CNH inválida. Use dia/mês/ano.');
+    if (percentual === null || Number.isNaN(percentual) || percentual > 100) {
+      return invalido('Informe a comissão em %, de 0 a 100. Exemplo: 14');
+    }
+    if (Number.isNaN(salarioFixo)) return invalido('Salário fixo inválido.');
 
-    setErro(null);
     setSalvando(true);
     try {
       await salvarMotorista(motorista?.id ?? null, {
@@ -183,44 +194,51 @@ function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) 
       });
       aoFechar(true);
     } catch (e) {
-      setErro(mensagemDeErro(e));
+      setMensagem({ titulo: 'Não foi possível salvar', texto: mensagemDeErro(e) });
       setSalvando(false);
     }
   }
 
   return (
-    <Pagina titulo={motorista ? motorista.nome : 'Novo motorista'} estreita>
-      {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-      <Campo rotulo="Nome completo" value={nome} onChangeText={setNome} autoComplete="name" />
-      <Campo
-        rotulo="CPF"
-        ajuda="O motorista entra no app (celular ou web) com o CPF e uma senha."
-        value={cpf}
-        onChangeText={(t) => setCpf(formatarCpf(t))}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        placeholder="000.000.000-00"
-        maxLength={14}
-      />
-      <Campo
-        rotulo="Telefone"
-        value={telefone}
-        onChangeText={(t) => setTelefone(formatarTelefone(t))}
-        keyboardType="phone-pad"
-        inputMode="tel"
-        placeholder="(00) 00000-0000"
-        maxLength={15}
-      />
-      <Campo rotulo="CNH — número" value={cnhNumero} onChangeText={setCnhNumero} keyboardType="number-pad" />
-      <Campo
-        rotulo="CNH — validade"
-        value={cnhValidade}
-        onChangeText={(t) => setCnhValidade(mascararData(t))}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        placeholder="dd/mm/aaaa"
-        maxLength={10}
-      />
+    <Pagina
+      titulo={motorista ? motorista.nome : 'Novo motorista'}
+      subtitulo="Campos com * são obrigatórios."
+      media>
+      <Mensagem mensagem={mensagem} aoFechar={() => setMensagem(null)} />
+      <LinhaForm minimo={280}>
+        <Campo rotulo="Nome completo *" value={nome} onChangeText={setNome} autoComplete="name" />
+        <Campo
+          rotulo="CPF *"
+          ajuda="O motorista entra no app (celular ou web) com o CPF e uma senha."
+          value={cpf}
+          onChangeText={(t) => setCpf(formatarCpf(t))}
+          keyboardType="number-pad"
+          inputMode="numeric"
+          placeholder="000.000.000-00"
+          maxLength={14}
+        />
+      </LinhaForm>
+      <LinhaForm minimo={200}>
+        <Campo
+          rotulo="Telefone"
+          value={telefone}
+          onChangeText={(t) => setTelefone(formatarTelefone(t))}
+          keyboardType="phone-pad"
+          inputMode="tel"
+          placeholder="(00) 00000-0000"
+          maxLength={15}
+        />
+        <Campo rotulo="CNH — número" value={cnhNumero} onChangeText={setCnhNumero} keyboardType="number-pad" />
+        <Campo
+          rotulo="CNH — validade"
+          value={cnhValidade}
+          onChangeText={(t) => setCnhValidade(mascararData(t))}
+          keyboardType="number-pad"
+          inputMode="numeric"
+          placeholder="dd/mm/aaaa"
+          maxLength={10}
+        />
+      </LinhaForm>
       <Segmentado
         rotulo="Veículo vinculado"
         opcoes={opcoesVeiculo}
@@ -228,27 +246,29 @@ function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) 
         onChange={setVeiculoId}
         ajuda={veiculos.length === 0 ? 'Cadastre os veículos em “Veículos” para vincular.' : undefined}
       />
-      <Segmentado rotulo="Modelo de remuneração" opcoes={MODELOS} valor={modelo} onChange={setModelo} />
-      {modelo === 'comissionado' ? (
-        <Campo
-          rotulo="% Comissão"
-          ajuda="Sobre o frete total de cada viagem. Mudar aqui não altera viagens já iniciadas."
-          value={comissao}
-          onChangeText={setComissao}
-          keyboardType="numeric"
-          inputMode="decimal"
-          placeholder="Ex.: 14"
-        />
-      ) : (
-        <Campo
-          rotulo="Salário fixo (R$)"
-          ajuda="Opcional. Ainda não é usado em nenhum cálculo."
-          value={salario}
-          onChangeText={setSalario}
-          keyboardType="numeric"
-          inputMode="decimal"
-        />
-      )}
+      <LinhaForm minimo={280}>
+        <Segmentado rotulo="Modelo de remuneração" opcoes={MODELOS} valor={modelo} onChange={setModelo} />
+        {comissionado ? (
+          <Campo
+            rotulo="% Comissão *"
+            ajuda="Sobre o frete total de cada viagem. Mudar aqui não altera viagens já iniciadas."
+            value={comissao}
+            onChangeText={setComissao}
+            keyboardType="numeric"
+            inputMode="decimal"
+            placeholder="Ex.: 14"
+          />
+        ) : (
+          <Campo
+            rotulo="Salário fixo (R$)"
+            ajuda="Opcional. Ainda não é usado em nenhum cálculo."
+            value={salario}
+            onChangeText={setSalario}
+            keyboardType="numeric"
+            inputMode="decimal"
+          />
+        )}
+      </LinhaForm>
       <Segmentado
         rotulo="Status"
         opcoes={STATUS}
@@ -256,13 +276,10 @@ function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) 
         onChange={setStatus}
         ajuda="Motorista inativo perde o acesso ao app."
       />
-      <Botao
-        titulo="Salvar"
-        onPress={aoSalvar}
-        carregando={salvando}
-        desativado={!nome.trim() || soDigitos(cpf).length !== 11}
-      />
-      <Botao titulo="Voltar" variante="link" onPress={() => aoFechar(false)} />
+      <View style={styles.botoes}>
+        <Botao titulo="Salvar" onPress={aoSalvar} carregando={salvando} />
+        <Botao titulo="Voltar" variante="link" onPress={() => aoFechar(false)} />
+      </View>
 
       <AcessoAoApp temAcesso={temAcesso} />
     </Pagina>
@@ -290,6 +307,7 @@ function AcessoAoApp({ temAcesso }: { temAcesso: boolean }) {
 
 const styles = StyleSheet.create({
   texto: { fontSize: 14, color: Cores.texto },
+  botoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
   secao: {
     gap: Espaco.md,
     marginTop: Espaco.lg,
