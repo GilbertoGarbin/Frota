@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Pagina } from '@/components/gestor/pagina';
@@ -6,6 +6,8 @@ import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
+import { LinhaForm } from '@/components/ui/linha-form';
+import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
 import { Seletor } from '@/components/ui/seletor';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import type { Motorista } from '@/services/motoristas.service';
@@ -40,7 +42,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
     viagem && viagem.valor_adiantamento > 0 ? formatarDecimal(viagem.valor_adiantamento) : '',
   );
   const [sugestao, setSugestao] = useState<Sugestao | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
+  const [mensagem, setMensagem] = useState<ConteudoMensagem | null>(null);
   const [salvando, setSalvando] = useState(false);
 
   const opcoesMotorista = motoristas
@@ -82,13 +84,21 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
     const dataPrevista = lerData(data);
     const valorFrete = lerDecimal(frete);
     const valorAdiantamento = lerDecimal(adiantamento) ?? 0;
-    if (!motoristaId) return setErro('Escolha o motorista.');
-    if (!veiculoId) return setErro('Escolha o veículo.');
-    if (!dataPrevista) return setErro('Data prevista inválida. Use dia/mês/ano.');
-    if (valorFrete === null || Number.isNaN(valorFrete)) return setErro('Informe o valor do frete.');
-    if (Number.isNaN(valorAdiantamento)) return setErro('Adiantamento inválido.');
+    const faltando = [
+      !motoristaId && 'Motorista',
+      !veiculoId && 'Veículo',
+      !origem.trim() && 'Origem',
+      !destino.trim() && 'Destino',
+      !data.trim() && 'Data prevista',
+      !frete.trim() && 'Valor do frete',
+    ].filter((item): item is string => !!item);
+    if (faltando.length > 0) return setMensagem({ titulo: 'Preencha os campos obrigatórios', itens: faltando });
+    const invalido = (texto: string) => setMensagem({ titulo: 'Confira a viagem', texto });
+    if (!dataPrevista) return invalido('Data prevista inválida. Use dia/mês/ano.');
+    if (valorFrete === null || Number.isNaN(valorFrete)) return invalido('Valor do frete inválido.');
+    if (Number.isNaN(valorAdiantamento)) return invalido('Adiantamento inválido.');
+    if (!motoristaId || !veiculoId) return;
 
-    setErro(null);
     setSalvando(true);
     const dados = {
       motorista_id: motoristaId,
@@ -107,98 +117,133 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
       else await criarViagem(dados);
       aoFechar(true);
     } catch (e) {
-      setErro(mensagemDeErro(e));
+      setMensagem({ titulo: 'Não foi possível salvar', texto: mensagemDeErro(e) });
       setSalvando(false);
     }
   }
 
   return (
-    <Pagina titulo={viagem ? 'Editar viagem' : 'Nova viagem'} estreita>
-      {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
+    <Pagina titulo={viagem ? 'Editar viagem' : 'Nova viagem'} media>
+      <Mensagem mensagem={mensagem} aoFechar={() => setMensagem(null)} />
       {opcoesMotorista.length === 0 ? (
         <Aviso tipo="info">Cadastre um motorista ativo em “Motoristas” antes de criar a viagem.</Aviso>
       ) : null}
-      <Seletor rotulo="Motorista" opcoes={opcoesMotorista} valor={motoristaId} onChange={aoEscolherMotorista} />
-      <Seletor
-        rotulo="Veículo"
-        opcoes={opcoesVeiculo}
-        valor={veiculoId}
-        onChange={setVeiculoId}
-        ajuda={opcoesVeiculo.length === 0 ? 'Cadastre um veículo ativo em “Veículos”.' : undefined}
-      />
-      <Campo rotulo="Cliente / embarcador (opcional)" value={cliente} onChangeText={setCliente} />
-      <Campo rotulo="Origem" value={origem} onChangeText={setOrigem} placeholder="Ex.: Curitiba" />
-      <Campo rotulo="Destino" value={destino} onChangeText={setDestino} placeholder="Ex.: Pato Branco" />
-      <Campo rotulo="Carga (opcional)" value={carga} onChangeText={setCarga} />
-      <CampoData
-        rotulo="Data prevista"
-        valor={data}
-        onChange={setData}
-      />
-      <Campo
-        rotulo="Valor do frete (R$)"
-        value={frete}
-        onChangeText={(t) => setFrete(mascararDecimal(t))}
-        keyboardType="numeric"
-        inputMode="decimal"
-        placeholder="Ex.: 2.500,00"
-      />
-      <Campo
-        rotulo="Forma de pagamento do frete (opcional)"
-        ajuda="Como o cliente paga. Aparece para o motorista na viagem."
-        value={pagamentoFrete}
-        onChangeText={setPagamentoFrete}
-        placeholder="Ex.: à vista, faturado 30 dias"
-      />
 
-      {/* Valor calculado: chip claro, nunca com cara de campo (spec, seção 2) */}
-      <View style={styles.sugestao}>
-        <Text style={styles.sugestaoRotulo}>Adiantamento sugerido</Text>
-        <Text style={styles.sugestaoValor}>
-          {!rota
-            ? 'Informe origem e destino.'
-            : !sugestaoDaRota
-              ? 'Calculando…'
-              : sugestaoDaRota.valor === null
-                ? 'Sem histórico nesta rota — defina o valor manualmente.'
-                : `${formatarMoeda(sugestaoDaRota.valor)} (média de ${sugestaoDaRota.quantidade} ${sugestaoDaRota.quantidade === 1 ? 'viagem' : 'viagens'} nesta rota)`}
-        </Text>
-        {sugestaoDaRota?.valor != null ? (
-          <Botao
-            titulo="Usar este valor"
-            variante="link"
-            compacto
-            onPress={() => setAdiantamento(formatarDecimal(sugestaoDaRota.valor))}
+      <Bloco titulo="Quem leva">
+        <LinhaForm minimo={260}>
+          <Seletor rotulo="Motorista *" opcoes={opcoesMotorista} valor={motoristaId} onChange={aoEscolherMotorista} />
+          <Seletor
+            rotulo="Veículo *"
+            opcoes={opcoesVeiculo}
+            valor={veiculoId}
+            onChange={setVeiculoId}
+            ajuda={
+              opcoesVeiculo.length === 0
+                ? 'Cadastre um veículo ativo em “Veículos”.'
+                : 'Ao escolher o motorista, o caminhão dele já vem marcado.'
+            }
           />
-        ) : null}
-      </View>
-      <Campo
-        rotulo="Adiantamento a definir (R$)"
-        ajuda="Valor que a empresa entrega ao motorista antes da viagem. Deixe vazio se não houver."
-        value={adiantamento}
-        onChangeText={(t) => setAdiantamento(mascararDecimal(t))}
-        keyboardType="numeric"
-        inputMode="decimal"
-      />
+        </LinhaForm>
+      </Bloco>
 
-      <Botao
-        titulo={viagem ? 'Salvar' : 'Salvar e atribuir'}
-        onPress={aoSalvar}
-        carregando={salvando}
-        desativado={!origem.trim() || !destino.trim() || !frete.trim()}
-      />
+      <Bloco titulo="Rota e carga">
+        <LinhaForm minimo={200}>
+          <Campo rotulo="Origem *" value={origem} onChangeText={setOrigem} placeholder="Ex.: Curitiba" />
+          <Campo rotulo="Destino *" value={destino} onChangeText={setDestino} placeholder="Ex.: Pato Branco" />
+          <CampoData rotulo="Data prevista *" valor={data} onChange={setData} />
+        </LinhaForm>
+        <LinhaForm minimo={260}>
+          <Campo rotulo="Cliente / embarcador (opcional)" value={cliente} onChangeText={setCliente} />
+          <Campo rotulo="Carga (opcional)" value={carga} onChangeText={setCarga} placeholder="Ex.: soja a granel" />
+        </LinhaForm>
+      </Bloco>
+
+      <Bloco titulo="Valores">
+        <LinhaForm minimo={260}>
+          <Campo
+            rotulo="Valor do frete (R$) *"
+            value={frete}
+            onChangeText={(t) => setFrete(mascararDecimal(t))}
+            keyboardType="numeric"
+            inputMode="decimal"
+            placeholder="Ex.: 2.500,00"
+          />
+          <Campo
+            rotulo="Forma de pagamento do frete (opcional)"
+            ajuda="Como o cliente paga. Aparece para o motorista na viagem."
+            value={pagamentoFrete}
+            onChangeText={setPagamentoFrete}
+            placeholder="Ex.: à vista, faturado 30 dias"
+          />
+        </LinhaForm>
+        <LinhaForm minimo={260}>
+          <Campo
+            rotulo="Adiantamento (R$)"
+            ajuda="Valor que a empresa entrega ao motorista antes da viagem. Deixe vazio se não houver."
+            value={adiantamento}
+            onChangeText={(t) => setAdiantamento(mascararDecimal(t))}
+            keyboardType="numeric"
+            inputMode="decimal"
+          />
+          {/* Valor calculado: chip claro, nunca com cara de campo (spec, seção 2) */}
+          <View style={styles.sugestao}>
+            <Text style={styles.sugestaoRotulo}>Adiantamento sugerido</Text>
+            <Text style={styles.sugestaoValor}>
+              {!rota
+                ? 'Informe origem e destino.'
+                : !sugestaoDaRota
+                  ? 'Calculando…'
+                  : sugestaoDaRota.valor === null
+                    ? 'Sem histórico nesta rota — defina o valor manualmente.'
+                    : `${formatarMoeda(sugestaoDaRota.valor)} (média de ${sugestaoDaRota.quantidade} ${sugestaoDaRota.quantidade === 1 ? 'viagem' : 'viagens'} nesta rota)`}
+            </Text>
+            {sugestaoDaRota?.valor != null ? (
+              <Botao
+                titulo="Usar este valor"
+                variante="link"
+                compacto
+                onPress={() => setAdiantamento(formatarDecimal(sugestaoDaRota.valor))}
+              />
+            ) : null}
+          </View>
+        </LinhaForm>
+      </Bloco>
+
+      <View style={styles.botoes}>
+        <Botao titulo={viagem ? 'Salvar' : 'Salvar e atribuir'} onPress={aoSalvar} carregando={salvando} />
+        <Botao titulo="Cancelar" variante="link" onPress={() => aoFechar(false)} />
+      </View>
       {viagem ? null : (
         <Text style={styles.nota}>
           A viagem é criada como “programada” e aparece em “Próximas viagens” no app do motorista. O km
           inicial não é pedido aqui — o motorista informa ao confirmar a saída.
         </Text>
       )}
-      <Botao titulo="Cancelar" variante="link" onPress={() => aoFechar(false)} />
     </Pagina>
   );
 }
 
+/** Grupo de campos com um título pequeno, para a tela não virar uma lista comprida de campos. */
+function Bloco({ titulo, children }: { titulo: string; children: ReactNode }) {
+  return (
+    <View style={styles.bloco}>
+      <Text style={styles.blocoTitulo}>{titulo}</Text>
+      {children}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  bloco: {
+    gap: Espaco.md,
+    padding: Espaco.lg,
+    borderWidth: 1,
+    borderColor: Cores.borda,
+    borderRadius: Raio.md,
+    backgroundColor: Cores.branco,
+  },
+  blocoTitulo: { fontSize: 13, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', color: Cores.textoSuave },
+  botoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
   sugestao: { gap: 2, padding: Espaco.md, borderRadius: Raio.sm, backgroundColor: Cores.chipClaro },
   sugestaoRotulo: { fontSize: 13, fontWeight: '600', color: Cores.primariaEscura },
   sugestaoValor: { fontSize: 14, color: Cores.primariaEscura },
