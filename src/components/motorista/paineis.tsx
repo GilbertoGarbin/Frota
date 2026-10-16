@@ -101,7 +101,7 @@ export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
   const precoLido = lerDecimal(preco);
   const total = litrosLidos && precoLido ? totalAbastecimento(litrosLidos, precoLido) : null;
 
-  function aplicarNota(lida: NotaLida, arquivo: Anexo | null) {
+  function aplicarNota(lida: NotaLida) {
     const { principal, extras: outros } = separarNota(lida);
     setNota(lida);
     setExtras(outros);
@@ -115,7 +115,6 @@ export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
       setPreco(formatarDecimal(principal.precoUnitario, 4));
       setCasasPreco(4);
     }
-    if (arquivo && !anexo) setAnexo(arquivo);
   }
 
   function salvar() {

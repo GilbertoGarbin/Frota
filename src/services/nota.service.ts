@@ -1,9 +1,9 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import * as DocumentPicker from 'expo-document-picker';
 
-import { guardarArquivo, lerArquivo } from '@/lib/arquivo';
+import { lerArquivo } from '@/lib/arquivo';
 import { supabase } from '@/lib/supabase';
-import { TAMANHO_MAXIMO_BYTES, type Anexo } from '@/services/anexo.service';
+import { TAMANHO_MAXIMO_BYTES } from '@/services/anexo.service';
 
 // Leitura da nota fiscal do posto (PDF do DANFE ou XML da NF-e) pela Edge Function ler-nota.
 // Mesmo formato de supabase/functions/ler-nota/nota.ts (a função fica fora do tsc do app).
@@ -42,10 +42,10 @@ function paraBase64(dados: ArrayBuffer): string {
 }
 
 /**
- * Escolhe o PDF ou o XML da nota e lê. Devolve null se a pessoa cancelou. O PDF volta também
- * como anexo, para ficar guardado como comprovante (XML não é aceito no armazenamento).
+ * Escolhe o PDF ou o XML da nota e lê. Devolve null se a pessoa cancelou. O arquivo só serve
+ * para a leitura: guardar como comprovante é outro botão (Anexar arquivo), se a pessoa quiser.
  */
-export async function lerNotaFiscal(): Promise<{ nota: NotaLida; anexo: Anexo | null } | null> {
+export async function lerNotaFiscal(): Promise<NotaLida | null> {
   const resultado = await DocumentPicker.getDocumentAsync({
     type: ['application/pdf', ...TIPOS_XML],
     copyToCacheDirectory: true,
@@ -72,10 +72,7 @@ export async function lerNotaFiscal(): Promise<{ nota: NotaLida; anexo: Anexo | 
   if (!data || data.itens.length === 0) {
     throw new Error('Não encontramos os itens desta nota. Lance o abastecimento à mão.');
   }
-  const anexo: Anexo | null = ehPdf
-    ? { uri: await guardarArquivo(arquivo.uri, 'pdf'), extensao: 'pdf', tipoConteudo: 'application/pdf', nome: arquivo.name }
-    : null;
-  return { nota: data, anexo };
+  return data;
 }
 
 /** Itens de combustível, o diesel primeiro (é o abastecimento principal; Arla vem junto). */

@@ -10,7 +10,7 @@ import { CampoData } from '@/components/ui/campo-data';
 import { Grade, Indicador, Secao } from '@/components/ui/cartao';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Selo } from '@/components/ui/selo';
-import { Cores, Espaco } from '@/constants/tema';
+import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useCarregar } from '@/hooks/use-carregar';
 import {
   atualizarComplementoGestor,
@@ -236,50 +236,116 @@ function notaDoFrete({ viagem, complementos }: Detalhe): string | undefined {
 function BlocoAdiantamento({ viagem, aoSalvar }: { viagem: Viagem; aoSalvar: (valor: number) => Promise<void> }) {
   const buscar = useCallback(() => sugerirAdiantamento(viagem.origem, viagem.destino), [viagem.origem, viagem.destino]);
   const { dados: sugestao } = useCarregar(buscar);
+  const [editando, setEditando] = useState(false);
   const [valor, setValor] = useState(formatarDecimal(viagem.valor_adiantamento));
   const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
   const travado = viagem.status === 'finalizada';
+  const definido = viagem.valor_adiantamento > 0;
 
-  function salvar() {
+  async function salvar() {
     const novo = lerDecimal(valor) ?? 0;
     if (Number.isNaN(novo)) return setErro('Valor inválido.');
     setErro(null);
-    aoSalvar(novo);
+    setSalvando(true);
+    await aoSalvar(novo);
+    setSalvando(false);
+    setEditando(false);
   }
 
+  const textoSugestao =
+    sugestao === undefined
+      ? 'Buscando a média da rota…'
+      : sugestao?.valor != null
+        ? `Sugerido: ${formatarMoeda(sugestao.valor)} · média de ${sugestao.quantidade} ${sugestao.quantidade === 1 ? 'viagem' : 'viagens'} nesta rota`
+        : 'Sem histórico nesta rota para sugerir um valor.';
+
   return (
-    <Secao titulo="Adiantamento">
-      <Grade>
-        <Indicador
-          rotulo="Valor sugerido"
-          tom="destaque"
-          valor={sugestao?.valor != null ? formatarMoeda(sugestao.valor) : 'Sem histórico nesta rota'}
-          detalhe={
-            sugestao?.valor != null
-              ? `Média de ${sugestao.quantidade} viagem(ns) em ${viagem.origem} → ${viagem.destino}`
-              : undefined
-          }
-        />
-      </Grade>
+    <View style={estilosAdiant.cartao}>
+      <View style={estilosAdiant.topo}>
+        <View style={estilosAdiant.principal}>
+          <Text style={estilosAdiant.rotulo}>Adiantamento</Text>
+          <Text style={[estilosAdiant.valor, !definido && estilosAdiant.valorVazio]}>
+            {definido ? formatarMoeda(viagem.valor_adiantamento) : 'Sem adiantamento'}
+          </Text>
+        </View>
+        {definido && viagem.status !== 'programada' ? (
+          <View style={estilosAdiant.numeros}>
+            <View style={estilosAdiant.numero}>
+              <Text style={estilosAdiant.rotulo}>Gasto</Text>
+              <Text style={estilosAdiant.numeroValor}>{formatarMoeda(viagem.adiantamento_gasto)}</Text>
+            </View>
+            <View style={estilosAdiant.numero}>
+              <Text style={estilosAdiant.rotulo}>Saldo</Text>
+              <Text
+                style={[
+                  estilosAdiant.numeroValor,
+                  (viagem.adiantamento_saldo ?? 0) < 0 && estilosAdiant.negativo,
+                ]}>
+                {formatarMoeda(viagem.adiantamento_saldo)}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+        {!travado && !editando ? (
+          <Botao titulo={definido ? 'Alterar' : 'Definir'} variante="contorno" compacto onPress={() => setEditando(true)} />
+        ) : null}
+      </View>
+
+      {editando ? (
+        <View style={estilosAdiant.edicao}>
+          <View style={estilosAdiant.campo}>
+            <Campo
+              rotulo="Novo valor (R$)"
+              value={valor}
+              onChangeText={(t) => setValor(mascararDecimal(t))}
+              keyboardType="numeric"
+              inputMode="decimal"
+            />
+          </View>
+          {sugestao?.valor != null ? (
+            <Botao
+              titulo="Usar o sugerido"
+              variante="link"
+              compacto
+              onPress={() => setValor(formatarDecimal(sugestao.valor))}
+            />
+          ) : null}
+          <Botao titulo="Salvar" compacto onPress={salvar} carregando={salvando} />
+          <Botao titulo="Cancelar" variante="link" compacto onPress={() => setEditando(false)} />
+        </View>
+      ) : null}
+
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-      {travado ? (
-        <Text style={styles.texto}>Valor definido: {formatarMoeda(viagem.valor_adiantamento)}</Text>
-      ) : (
-        <>
-          <Campo
-            rotulo="Valor definido (R$)"
-            ajuda="Se o motorista já iniciou a viagem, o valor novo aparece no app dele."
-            value={valor}
-            onChangeText={(t) => setValor(mascararDecimal(t))}
-            keyboardType="numeric"
-            inputMode="decimal"
-          />
-          <Botao titulo="Salvar adiantamento" variante="contorno" compacto onPress={salvar} />
-        </>
-      )}
-    </Secao>
+      <Text style={estilosAdiant.sugestao}>
+        {editando ? `${textoSugestao} Se o motorista já iniciou a viagem, o valor novo aparece no app dele.` : textoSugestao}
+      </Text>
+    </View>
   );
 }
+
+const estilosAdiant = StyleSheet.create({
+  cartao: {
+    gap: Espaco.md,
+    padding: Espaco.lg,
+    borderWidth: 1,
+    borderColor: Cores.borda,
+    borderRadius: Raio.md,
+    backgroundColor: Cores.branco,
+  },
+  topo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.lg },
+  principal: { flexGrow: 1, gap: 2 },
+  rotulo: { fontSize: 12, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase', color: Cores.textoSuave },
+  valor: { fontSize: 24, fontWeight: '700', color: Cores.texto },
+  valorVazio: { fontSize: 18, color: Cores.textoSuave },
+  numeros: { flexDirection: 'row', gap: Espaco.lg },
+  numero: { gap: 2, paddingHorizontal: Espaco.md, paddingVertical: Espaco.xs, borderRadius: Raio.sm, backgroundColor: Cores.fundo },
+  numeroValor: { fontSize: 16, fontWeight: '700', color: Cores.texto },
+  negativo: { color: Cores.perigo },
+  edicao: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: Espaco.md },
+  campo: { width: 200, maxWidth: '100%' },
+  sugestao: { fontSize: 13, lineHeight: 19, color: Cores.textoSuave },
+});
 
 type PropsComplementos = {
   viagem: Viagem;

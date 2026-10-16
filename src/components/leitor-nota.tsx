@@ -5,7 +5,6 @@ import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { COMBUSTIVEIS } from '@/constants/lancamentos';
 import { Cores, Espaco, Raio } from '@/constants/tema';
-import type { Anexo } from '@/services/anexo.service';
 import { combustiveisDaNota, lerNotaFiscal, type ItemNota, type NotaLida } from '@/services/nota.service';
 import { mensagemDeErro } from '@/utils/erros';
 import { formatarData, formatarDecimal, formatarMoeda } from '@/utils/formato';
@@ -16,7 +15,7 @@ import { formatarData, formatarDecimal, formatarMoeda } from '@/utils/formato';
 export const nomeCombustivel = (c: string) => COMBUSTIVEIS.find((x) => x.valor === c)?.rotulo ?? c;
 const litros = (q: number) => `${formatarDecimal(q, q % 1 === 0 ? 0 : 3)} L`;
 
-export function BotaoLerNota({ aoLer }: { aoLer: (nota: NotaLida, anexo: Anexo | null) => void }) {
+export function BotaoLerNota({ aoLer }: { aoLer: (nota: NotaLida) => void }) {
   const [lendo, setLendo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -24,8 +23,8 @@ export function BotaoLerNota({ aoLer }: { aoLer: (nota: NotaLida, anexo: Anexo |
     setErro(null);
     setLendo(true);
     try {
-      const lido = await lerNotaFiscal();
-      if (lido) aoLer(lido.nota, lido.anexo);
+      const nota = await lerNotaFiscal();
+      if (nota) aoLer(nota);
     } catch (e) {
       setErro(mensagemDeErro(e));
     }
