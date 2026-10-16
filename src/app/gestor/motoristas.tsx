@@ -57,6 +57,7 @@ export default function Motoristas() {
       <FormMotorista
         motorista={editando}
         veiculos={dados.veiculos}
+        motoristas={dados.motoristas}
         temAcesso={editando ? dados.comAcesso.has(editando.id) : false}
         aoFechar={(salvou) => {
           setEditando(undefined);
@@ -130,11 +131,13 @@ function ValidadeCnh({ iso }: { iso: string | null }) {
 type PropsForm = {
   motorista: Motorista | null;
   veiculos: Veiculo[];
+  /** para esconder os caminhões que já estão com outro motorista ativo */
+  motoristas: Motorista[];
   temAcesso: boolean;
   aoFechar: (salvou: boolean) => void;
 };
 
-function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) {
+function FormMotorista({ motorista, veiculos, motoristas, temAcesso, aoFechar }: PropsForm) {
   const [nome, setNome] = useState(motorista?.nome ?? '');
   const [cpf, setCpf] = useState(formatarCpf(motorista?.cpf ?? ''));
   const [telefone, setTelefone] = useState(formatarTelefone(motorista?.telefone ?? ''));
@@ -151,11 +154,17 @@ function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) 
   const [salvando, setSalvando] = useState(false);
   const comissionado = modelo === 'comissionado';
 
-  // Veículos ativos, mais o já vinculado (mesmo que tenha sido inativado depois)
+  // Caminhão com outro motorista ativo não aparece (o banco também impede)
+  const ocupados = new Set(
+    motoristas.flatMap((m) =>
+      m.id !== motorista?.id && m.status === 'ativo' && m.veiculo_vinculado_id ? [m.veiculo_vinculado_id] : [],
+    ),
+  );
+  // Veículos ativos e livres, mais o já vinculado (mesmo que tenha sido inativado depois)
   const opcoesVeiculo = [
     { valor: SEM_VEICULO, rotulo: 'Nenhum' },
     ...veiculos
-      .filter((v) => v.status === 'ativo' || v.id === motorista?.veiculo_vinculado_id)
+      .filter((v) => (v.status === 'ativo' && !ocupados.has(v.id)) || v.id === motorista?.veiculo_vinculado_id)
       .map((v) => ({ valor: v.id, rotulo: `${v.placa} · ${v.modelo}` })),
   ];
 
@@ -246,7 +255,13 @@ function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) 
         opcoes={opcoesVeiculo}
         valor={veiculoId}
         onChange={setVeiculoId}
-        ajuda={veiculos.length === 0 ? 'Cadastre os veículos em “Veículos” para vincular.' : undefined}
+        ajuda={
+          veiculos.length === 0
+            ? 'Cadastre os veículos em “Veículos” para vincular.'
+            : ocupados.size > 0
+              ? 'Caminhões que já estão com outro motorista ativo não aparecem na lista.'
+              : undefined
+        }
       />
       <LinhaForm minimo={280}>
         <Segmentado rotulo="Modelo de remuneração" opcoes={MODELOS} valor={modelo} onChange={setModelo} />

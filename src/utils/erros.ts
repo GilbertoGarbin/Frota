@@ -13,6 +13,7 @@ const MENSAGENS: [RegExp, string][] = [
   [/motoristas_tenant_id_cpf_key/, 'Já existe um motorista com este CPF.'],
   [/usuarios_um_admin_por_tenant/, 'A transportadora já tem um admin.'],
   [/veiculos_tenant_id_placa_key/, 'Já existe um veículo com esta placa.'],
+  [/motoristas_um_ativo_por_veiculo/, 'Este caminhão já está vinculado a outro motorista ativo.'],
   [/motoristas_tenant_id_veiculo_vinculado_id_fkey/, 'Este veículo está vinculado a um motorista.'],
   [/violates foreign key constraint/i, 'Este registro está em uso e não pode ser alterado assim.'],
   [/row-level security/i, 'Você não tem permissão para fazer isso.'],

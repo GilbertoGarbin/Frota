@@ -822,3 +822,18 @@ test('super admin: vê as empresas, os usuários e controla a assinatura', async
     await assert.rejects(q(`select plataforma_assinatura($1, 'apagar')`, [tenantG]), /inválida/);
   });
 });
+
+test('caminhão vinculado a um motorista ativo não vai para outro', async () => {
+  const vx = await novoVeiculo('XYZ9Z99');
+  const m1 = await novoMotorista('Primeiro', '70000000001', vx);
+  await assert.rejects(novoMotorista('Segundo', '70000000002', vx), /motoristas_um_ativo_por_veiculo/);
+  // inativo libera o caminhão
+  await como(gestorA, () => q(`update motoristas set status = 'inativo' where id = $1`, [m1]));
+  const m2 = await novoMotorista('Segundo', '70000000002', vx);
+  // e não volta a ativo enquanto o caminhão estiver com outro
+  await assert.rejects(
+    como(gestorA, () => q(`update motoristas set status = 'ativo' where id = $1`, [m1])),
+    /motoristas_um_ativo_por_veiculo/,
+  );
+  assert.ok(m2);
+});
