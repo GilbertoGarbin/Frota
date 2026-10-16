@@ -885,3 +885,13 @@ test('preço por litro com 4 casas: total bate com a nota com desconto', async (
   assert.equal(Number(a.preco_litro), 6.7402);
   assert.equal(Number(a.total), 2830.88);
 });
+
+test('gestor lança complemento de frete e ele soma ao frete total', async () => {
+  const vc = await novoVeiculo('CMP1A11');
+  const mc = await novoMotorista('Carlos', '90000000001', vc);
+  const vg = await programar(mc, vc, 1000);
+  await como(gestorA, () =>
+    q(`insert into complementos (viagem_id, origem_lancamento, tipo, valor) values ($1, 'gestor', 'complemento', 250)`, [vg]),
+  );
+  assert.equal(Number((await viagemGestor(vg)).valor_frete_total), 1250);
+});

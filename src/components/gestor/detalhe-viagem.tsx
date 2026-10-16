@@ -7,6 +7,7 @@ import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
+import { LinhaForm } from '@/components/ui/linha-form';
 import { Faixa, Grade, Indicador, ItemFaixa, Secao, SecaoRecolhivel } from '@/components/ui/cartao';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Selo } from '@/components/ui/selo';
@@ -268,34 +269,24 @@ function BlocoAdiantamento({ viagem, aoSalvar }: { viagem: Viagem; aoSalvar: (va
         : 'Sem histórico nesta rota para sugerir um valor.';
 
   return (
-    <View style={estilosAdiant.cartao}>
-      <View style={estilosAdiant.topo}>
-        <View style={estilosAdiant.principal}>
-          <Text style={estilosAdiant.rotulo}>Adiantamento ao motorista</Text>
-          <Text style={[estilosAdiant.valor, !definido && estilosAdiant.valorVazio]}>
-            {definido ? formatarMoeda(viagem.valor_adiantamento) : 'Sem adiantamento'}
-          </Text>
-        </View>
+    <View style={styles.percurso}>
+      <View style={styles.percursoLinha}>
+        <Text style={styles.percursoRotulo}>Adiantamento ao motorista</Text>
+        <Dado rotulo="Valor" valor={definido ? formatarMoeda(viagem.valor_adiantamento) : 'Sem adiantamento'} />
         {definido && viagem.status !== 'programada' ? (
-          <View style={estilosAdiant.numeros}>
-            <View style={estilosAdiant.numero}>
-              <Text style={estilosAdiant.rotulo}>Gasto</Text>
-              <Text style={estilosAdiant.numeroValor}>{formatarMoeda(viagem.adiantamento_gasto)}</Text>
-            </View>
-            <View style={estilosAdiant.numero}>
-              <Text style={estilosAdiant.rotulo}>Saldo</Text>
-              <Text
-                style={[
-                  estilosAdiant.numeroValor,
-                  (viagem.adiantamento_saldo ?? 0) < 0 && estilosAdiant.negativo,
-                ]}>
-                {formatarMoeda(viagem.adiantamento_saldo)}
-              </Text>
-            </View>
-          </View>
+          <>
+            <Dado rotulo="Gasto" valor={formatarMoeda(viagem.adiantamento_gasto)} />
+            <Dado
+              rotulo="Saldo"
+              valor={formatarMoeda(viagem.adiantamento_saldo)}
+              negativo={(viagem.adiantamento_saldo ?? 0) < 0}
+            />
+          </>
         ) : null}
         {!travado && !editando ? (
-          <Botao titulo={definido ? 'Alterar' : 'Definir'} variante="contorno" compacto onPress={() => setEditando(true)} />
+          <View style={styles.percursoAcoes}>
+            <Botao titulo={definido ? 'Alterar' : 'Definir'} variante="contorno" compacto onPress={() => setEditando(true)} />
+          </View>
         ) : null}
       </View>
 
@@ -334,23 +325,6 @@ function BlocoAdiantamento({ viagem, aoSalvar }: { viagem: Viagem; aoSalvar: (va
 }
 
 const estilosAdiant = StyleSheet.create({
-  cartao: {
-    gap: Espaco.md,
-    padding: Espaco.lg,
-    borderWidth: 1,
-    borderColor: Cores.borda,
-    borderRadius: Raio.md,
-    backgroundColor: Cores.branco,
-  },
-  topo: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.lg },
-  principal: { flexGrow: 1, gap: 2 },
-  rotulo: { fontSize: 12, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase', color: Cores.textoSuave },
-  valor: { fontSize: 24, fontWeight: '700', color: Cores.texto },
-  valorVazio: { fontSize: 18, color: Cores.textoSuave },
-  numeros: { flexDirection: 'row', gap: Espaco.lg },
-  numero: { gap: 2, paddingHorizontal: Espaco.md, paddingVertical: Espaco.xs, borderRadius: Raio.sm, backgroundColor: Cores.fundo },
-  numeroValor: { fontSize: 16, fontWeight: '700', color: Cores.texto },
-  negativo: { color: Cores.perigo },
   edicao: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: Espaco.md },
   campo: { width: 200, maxWidth: '100%' },
   sugestao: { fontSize: 13, lineHeight: 19, color: Cores.textoSuave },
@@ -368,7 +342,7 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
   const [aberto, setAberto] = useState(false);
   // id do lançamento em edição; null = lançamento novo
   const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [tipo, setTipo] = useState<TipoComplemento>('diaria_espera');
+  const [tipo, setTipo] = useState<TipoComplemento>('complemento');
   const [valor, setValor] = useState('');
   const [data, setData] = useState(formatarData(hojeIso()));
   const [descricao, setDescricao] = useState('');
@@ -418,20 +392,18 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
           <View style={styles.formulario}>
             {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
             <Segmentado rotulo="Tipo" opcoes={TIPOS_DO_GESTOR} valor={tipo} onChange={setTipo} />
-            <Campo
-              rotulo="Valor (R$)"
-              ajuda="Soma ao frete total da viagem e à base de comissão."
-              value={valor}
-              onChangeText={(t) => setValor(mascararDecimal(t))}
-              keyboardType="numeric"
-              inputMode="decimal"
-            />
-            <CampoData
-              rotulo="Data"
-              valor={data}
-              onChange={setData}
-            />
-            <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
+            <LinhaForm minimo={180}>
+              <Campo
+                rotulo="Valor (R$)"
+                value={valor}
+                onChangeText={(t) => setValor(mascararDecimal(t))}
+                keyboardType="numeric"
+                inputMode="decimal"
+                placeholder="Soma ao frete e à comissão"
+              />
+              <CampoData rotulo="Data" valor={data} onChange={setData} />
+              <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
+            </LinhaForm>
             <View style={styles.linha}>
               <Botao titulo={editandoId ? 'Salvar alteração' : 'Lançar'} compacto onPress={lancar} />
               <Botao titulo="Cancelar" variante="link" compacto onPress={fechar} />
@@ -532,11 +504,11 @@ type PagamentoDireto = { forma_pagamento: string; chave_pix: string | null; venc
 
 /** PIX ou nota a prazo pagos pela empresa: situação e botão para marcar como pago. */
 /** "Km inicial" pequeno em cima, valor embaixo */
-function Dado({ rotulo, valor }: { rotulo: string; valor: string }) {
+function Dado({ rotulo, valor, negativo }: { rotulo: string; valor: string; negativo?: boolean }) {
   return (
     <View style={styles.dado}>
       <Text style={styles.dadoRotulo}>{rotulo}</Text>
-      <Text style={styles.dadoValor}>{valor}</Text>
+      <Text style={[styles.dadoValor, negativo && styles.negativo]}>{valor}</Text>
     </View>
   );
 }
@@ -698,6 +670,7 @@ const styles = StyleSheet.create({
   dado: { gap: 1 },
   dadoRotulo: { fontSize: 11, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase', color: Cores.textoSuave },
   dadoValor: { fontSize: 15, fontWeight: '600', color: Cores.texto },
+  negativo: { color: Cores.perigo },
   // no celular a situação do pagamento quebra linha em vez de passar da borda
   situacao: { flexShrink: 1, maxWidth: '100%' },
   texto: { fontSize: 14, color: Cores.texto },

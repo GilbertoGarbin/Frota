@@ -14,6 +14,7 @@ export type StatusViagem = 'programada' | 'em_andamento' | 'finalizada';
 export type FormaPagamento = 'adiantamento' | 'cartao_empresa' | 'proprio_bolso' | 'pix_empresa' | 'a_prazo';
 export type TipoComplemento =
   | 'carga_complementar'
+  | 'complemento'
   | 'diaria_espera'
   | 'pedagio_adicional'
   | 'reentrega'
@@ -36,6 +37,7 @@ export const ROTULO_PAGAMENTO: Record<FormaPagamento, string> = {
 export const pagaDireto = (forma: string) => forma === 'pix_empresa' || forma === 'a_prazo';
 export const ROTULO_COMPLEMENTO: Record<TipoComplemento, string> = {
   carga_complementar: 'Carga complementar',
+  complemento: 'Complemento',
   diaria_espera: 'Diária de espera',
   pedagio_adicional: 'Pedágio adicional',
   reentrega: 'Reentrega',
@@ -43,6 +45,7 @@ export const ROTULO_COMPLEMENTO: Record<TipoComplemento, string> = {
 };
 // O que o gestor lança (spec do gestor, 5b). Carga complementar é só do motorista.
 export const TIPOS_DO_GESTOR: { valor: TipoComplemento; rotulo: string }[] = [
+  { valor: 'complemento', rotulo: 'Complemento' },
   { valor: 'diaria_espera', rotulo: 'Diária de espera' },
   { valor: 'pedagio_adicional', rotulo: 'Pedágio adicional' },
   { valor: 'reentrega', rotulo: 'Reentrega' },
