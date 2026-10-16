@@ -53,6 +53,12 @@ Implementado e publicado em 14/10/2026. Leia antes a seção
    ativar o modelo em português (`supabase/templates/recuperar-senha.html`, bloco comentado
    no `config.toml`). No FLUXO, só com autorização dele.
 
+4. **Ler nota pela foto e pelo QR code — esperando exemplos do Gilberto (16/10/2026).** PDF e
+   XML já são lidos (Edge Function `ler-nota`). Faltam: foto de nota em papel (leitor de texto do
+   celular, `expo-text-extractor`, como no FLUXO) e QR do cupom fiscal (NFC-e → página da Sefaz).
+   Precisa de uma foto real de nota e de cupom em `docs/` para escrever as regras, e de APK novo
+   (câmera + leitor de texto).
+
 ## Decisões já tomadas com o Gilberto
 
 - A transportadora se cadastra sozinha pelo site, com período de avaliação.
