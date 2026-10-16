@@ -12,8 +12,8 @@ import { FormViagem } from '@/components/gestor/form-viagem';
 import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
-import { Campo } from '@/components/ui/campo';
-import { Grade, Indicador } from '@/components/ui/cartao';
+import { CampoBusca } from '@/components/ui/campo-busca';
+import { Faixa, ItemFaixa } from '@/components/ui/cartao';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Selo } from '@/components/ui/selo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
@@ -97,10 +97,14 @@ export default function Viagens() {
     <Pagina
       titulo="Viagens"
       subtitulo="Crie, atribua e acompanhe a margem de cada viagem."
-      acao={<Botao titulo="+ Nova viagem" compacto onPress={() => setModo({ tipo: 'nova' })} desativado={!dados} />}>
+      acao={
+        <View style={styles.acoes}>
+          <CampoBusca valor={busca} onChange={setBusca} placeholder="Placa, motorista, cliente ou cidade" />
+          <Botao titulo="+ Nova viagem" compacto onPress={() => setModo({ tipo: 'nova' })} desativado={!dados} />
+        </View>
+      }>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       <Segmentado rotulo="Mostrar" opcoes={FILTROS} valor={filtro} onChange={setFiltro} />
-      <Campo rotulo="Buscar" value={busca} onChangeText={setBusca} placeholder="Placa, motorista, cliente ou cidade" />
 
       {!dados ? (
         erro ? null : <ActivityIndicator color={Cores.primaria} />
@@ -146,31 +150,40 @@ function CartaoViagem({ viagem: v, motorista, placa, aoAbrir }: PropsCartao) {
         {adiantamentoEmAberto(v) ? <Selo tipo="aviso">Adiantamento em aberto</Selo> : null}
         <Selo tipo={finalizada ? 'sucesso' : status === 'em_andamento' ? 'aviso' : 'info'}>{ROTULO_STATUS[status]}</Selo>
       </View>
-      <Grade>
-        <Indicador
+      <Faixa>
+        <ItemFaixa
           rotulo="Frete bruto"
           valor={formatarMoeda(v.valor_frete_total)}
           detalhe={v.valor_frete_total !== v.valor_frete ? `Base ${formatarMoeda(v.valor_frete)} + adicionais` : undefined}
         />
-        <Indicador
+        <ItemFaixa
           rotulo="Combustível"
           valor={formatarMoeda(v.combustivel_valor)}
           extra={<SeloCombustivel status={v.combustivel_status} />}
         />
-        <Indicador rotulo="Comissão" valor={formatarMoeda(v.comissao_valor)} />
-        <Indicador rotulo="Outras despesas" valor={formatarMoeda(v.total_despesas)} />
-        <Indicador
-          rotulo="Margem operacional"
+        <ItemFaixa rotulo="Comissão" valor={formatarMoeda(v.comissao_valor)} />
+        <ItemFaixa rotulo="Outras despesas" valor={formatarMoeda(v.total_despesas)} />
+        <ItemFaixa
+          rotulo="Margem"
           tom={finalizada ? tomDaMargem(margem) : 'neutro'}
           valor={finalizada ? formatarMoeda(v.resultado_operacional) : '—'}
           detalhe={finalizada ? formatarPercentual(margem) : undefined}
         />
-      </Grade>
+      </Faixa>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  acoes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: Espaco.sm,
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+  },
   suave: { fontSize: 13, color: Cores.textoSuave },
   vazio: {
     padding: Espaco.xxl,
