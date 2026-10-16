@@ -24,6 +24,7 @@ export function FormularioCompacto({ children }: PropsWithChildren) {
 export function Campo({ rotulo, ajuda, style, secureTextEntry, acessorio, ...resto }: Props) {
   const [mostrar, setMostrar] = useState(false);
   const compacto = useCampoCompacto();
+  const [dicaAberta, setDicaAberta] = useState(false);
   const temBotao = secureTextEntry || acessorio !== undefined;
   const entrada = (
     <TextInput
@@ -34,9 +35,29 @@ export function Campo({ rotulo, ajuda, style, secureTextEntry, acessorio, ...res
       {...resto}
     />
   );
+  // no formulário compacto a explicação vira um ⓘ ao lado do rótulo (não desalinha os campos)
+  const dicaNoRotulo = compacto && !!ajuda;
   return (
-    <View style={styles.grupo}>
-      <Text style={[styles.rotulo, compacto && styles.rotuloCompacto]}>{rotulo}</Text>
+    <View style={[styles.grupo, dicaAberta && styles.grupoPorCima]}>
+      <View style={styles.rotuloLinha}>
+        <Text style={[styles.rotulo, compacto && styles.rotuloCompacto]}>{rotulo}</Text>
+        {dicaNoRotulo ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Explicação: ${ajuda}`}
+            onPress={() => setDicaAberta((v) => !v)}
+            onHoverIn={() => setDicaAberta(true)}
+            onHoverOut={() => setDicaAberta(false)}
+            hitSlop={8}>
+            <MaterialCommunityIcons name="information-outline" size={16} color={Cores.textoSuave} />
+          </Pressable>
+        ) : null}
+        {dicaNoRotulo && dicaAberta ? (
+          <View style={styles.balao} pointerEvents="none">
+            <Text style={styles.balaoTexto}>{ajuda}</Text>
+          </View>
+        ) : null}
+      </View>
       {acessorio !== undefined ? (
         <View>
           {entrada}
@@ -57,13 +78,28 @@ export function Campo({ rotulo, ajuda, style, secureTextEntry, acessorio, ...res
       ) : (
         entrada
       )}
-      {ajuda ? <Text style={styles.ajuda}>{ajuda}</Text> : null}
+      {ajuda && !dicaNoRotulo ? <Text style={styles.ajuda}>{ajuda}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   grupo: { gap: Espaco.xs },
+  // o balão da dica fica por cima dos campos vizinhos
+  grupoPorCima: { zIndex: 10 },
+  rotuloLinha: { flexDirection: 'row', alignItems: 'center', gap: Espaco.xs },
+  balao: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: 4,
+    zIndex: 10,
+    padding: Espaco.sm,
+    borderRadius: Raio.sm,
+    backgroundColor: Cores.texto,
+  },
+  balaoTexto: { fontSize: 12, lineHeight: 17, color: Cores.branco },
   rotulo: { fontSize: 14, fontWeight: '600', color: Cores.texto },
   entrada: {
     minHeight: 48,
