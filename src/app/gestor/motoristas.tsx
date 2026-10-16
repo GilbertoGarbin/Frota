@@ -213,7 +213,7 @@ function FormMotorista({ motorista, veiculos, motoristas, temAcesso, aoFechar }:
   return (
     <Pagina
       titulo={motorista ? motorista.nome : 'Novo motorista'}
-      subtitulo="Campos com * são obrigatórios."
+      subtitulo={motorista ? undefined : 'Campos com * são obrigatórios.'}
       media>
       <Mensagem mensagem={mensagem} aoFechar={() => setMensagem(null)} />
       <LinhaForm minimo={280}>

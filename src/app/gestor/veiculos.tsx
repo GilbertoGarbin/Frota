@@ -129,7 +129,7 @@ function FormVeiculo({ veiculo, aoFechar }: { veiculo: Veiculo | null; aoFechar:
   return (
     <Pagina
       titulo={veiculo ? `Editar ${veiculo.placa}` : 'Novo veículo'}
-      subtitulo="Campos com * são obrigatórios."
+      subtitulo={veiculo ? undefined : 'Campos com * são obrigatórios.'}
       media>
       <Mensagem mensagem={mensagem} aoFechar={() => setMensagem(null)} />
       <LinhaForm minimo={220}>
