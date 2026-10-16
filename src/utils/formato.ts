@@ -28,6 +28,17 @@ export function mascararDecimal(texto: string, casas = 2): string {
   return `${inteiro},${cheio.slice(-casas)}`;
 }
 
+/** Máscara de digitação de números inteiros, como km: "123456" → "123.456". */
+export function mascararInteiro(texto: string): string {
+  const digitos = soDigitos(texto).replace(/^0+(?=\d)/, '').slice(0, 9);
+  return digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/** Placa no padrão antigo (ABC1234) ou Mercosul (ABC1D23), sem hífen. */
+export function placaValida(placa: string): boolean {
+  return /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(placa.replace(/[^A-Za-z0-9]/g, '').toUpperCase());
+}
+
 export function formatarMoeda(valor: number | null | undefined): string {
   if (valor === null || valor === undefined) return '—';
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
