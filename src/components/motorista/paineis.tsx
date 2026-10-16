@@ -24,6 +24,7 @@ import {
   lerData,
   lerDecimal,
   mascararData,
+  mascararDecimal,
 } from '@/utils/formato';
 
 // Painéis da viagem em andamento: abrem na própria tela, sem navegar (spec do motorista 5.5).
@@ -150,7 +151,7 @@ export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
       <Campo rotulo="Posto" value={posto} onChangeText={setPosto} />
       <Segmentado rotulo="Combustível" opcoes={COMBUSTIVEIS} valor={combustivel} onChange={setCombustivel} />
       <Campo rotulo="Litros" value={litros} onChangeText={setLitros} {...numerico} />
-      <Campo rotulo="Preço por litro (R$)" value={preco} onChangeText={setPreco} placeholder="Ex.: 5,899" {...numerico} />
+      <Campo rotulo="Preço por litro (R$)" value={preco} onChangeText={(t) => setPreco(mascararDecimal(t, 3))} placeholder="Ex.: 5,899" {...numerico} />
       <ValorCalculado rotulo="Total" valor={total === null ? '—' : formatarMoeda(total)} nota="Litros × preço por litro" />
       <Segmentado rotulo="Forma de pagamento" opcoes={PAGAMENTOS} valor={pagamento} onChange={setPagamento} />
       <Pressable
@@ -216,7 +217,7 @@ export function PainelDespesa({ viagem, aoFechar }: PropsPainel) {
     <Moldura titulo="Nova despesa" erro={erro} aoFechar={aoFechar}>
       <CampoData valor={data} onChange={setData} />
       <Segmentado rotulo="Categoria" opcoes={CATEGORIAS} valor={categoria} onChange={setCategoria} />
-      <Campo rotulo="Valor (R$)" value={valor} onChangeText={setValor} {...numerico} />
+      <Campo rotulo="Valor (R$)" value={valor} onChangeText={(t) => setValor(mascararDecimal(t))} {...numerico} />
       <Segmentado
         rotulo="Forma de pagamento"
         opcoes={PAGAMENTOS}
@@ -369,7 +370,7 @@ export function PainelCarga({ viagem, aoFechar }: PropsPainel) {
         onChangeText={setEntrega}
       />
       <Campo rotulo="Peso / volume (opcional)" value={peso} onChangeText={setPeso} />
-      <Campo rotulo="Valor (R$)" value={valor} onChangeText={setValor} {...numerico} />
+      <Campo rotulo="Valor (R$)" value={valor} onChangeText={(t) => setValor(mascararDecimal(t))} {...numerico} />
       <Campo rotulo="Descrição (opcional)" value={descricao} onChangeText={setDescricao} />
       <CampoAnexo rotulo="Comprovante" anexo={anexo} onChange={setAnexo} />
       <Botao titulo="Salvar carga complementar" onPress={salvar} carregando={salvando} />

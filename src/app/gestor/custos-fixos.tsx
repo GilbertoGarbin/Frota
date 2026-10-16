@@ -21,6 +21,7 @@ import {
   lerData,
   lerDecimal,
   mascararData,
+  mascararDecimal,
   mesAtual,
   periodoDoMes,
   rotuloMes,
@@ -143,7 +144,7 @@ function FormCustoFixo({ custo, aoFechar }: { custo: CustoFixo | null; aoFechar:
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       <Campo rotulo="Descrição" value={descricao} onChangeText={setDescricao} placeholder="Ex.: Seguro do caminhão" />
       <Campo rotulo="Categoria (opcional)" value={categoria} onChangeText={setCategoria} placeholder="Ex.: Seguro, Financiamento, Rastreador" />
-      <Campo rotulo="Valor mensal (R$)" value={valor} onChangeText={setValor} keyboardType="numeric" inputMode="decimal" />
+      <Campo rotulo="Valor mensal (R$)" value={valor} onChangeText={(t) => setValor(mascararDecimal(t))} keyboardType="numeric" inputMode="decimal" />
       <Campo
         rotulo="Vale a partir de"
         ajuda="O custo entra no resultado a partir do mês desta data."

@@ -15,6 +15,19 @@ export function formatarDecimal(valor: number | null | undefined, casas = 2): st
   return valor.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
 }
 
+/**
+ * Máscara de digitação de valores e porcentagens, como em caixa eletrônico: os números entram
+ * pela direita e as casas decimais ficam sempre fixas. "1" → "0,01"; "1400" → "14,00";
+ * "123456" → "1.234,56". Vazio continua vazio (campo opcional).
+ */
+export function mascararDecimal(texto: string, casas = 2): string {
+  const digitos = soDigitos(texto).replace(/^0+/, '').slice(0, 13);
+  if (!digitos) return '';
+  const cheio = digitos.padStart(casas + 1, '0');
+  const inteiro = cheio.slice(0, -casas).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${inteiro},${cheio.slice(-casas)}`;
+}
+
 export function formatarMoeda(valor: number | null | undefined): string {
   if (valor === null || valor === undefined) return '—';
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

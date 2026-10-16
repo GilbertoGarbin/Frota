@@ -5,7 +5,7 @@ import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
-import { Segmentado } from '@/components/ui/segmentado';
+import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
 import { Cores, Espaco, Raio } from '@/constants/tema';
@@ -317,7 +317,7 @@ function FormMotorista({ motoristas, aoCancelar, aoCriar }: PropsMotorista) {
         </Aviso>
       ) : (
         <>
-          <Segmentado
+          <Seletor
             rotulo="Motorista"
             opcoes={motoristas.map((m) => ({ valor: m.id, rotulo: m.nome }))}
             valor={motoristaId}

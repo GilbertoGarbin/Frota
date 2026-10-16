@@ -8,6 +8,7 @@ import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { Grade, Indicador } from '@/components/ui/cartao';
 import { Segmentado } from '@/components/ui/segmentado';
+import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
 import { Cores } from '@/constants/tema';
@@ -37,6 +38,7 @@ import {
   lerData,
   lerDecimal,
   mascararData,
+  mascararDecimal,
   mesAtual,
   periodoDoMes,
   rotuloMes,
@@ -227,7 +229,7 @@ function FormManutencao({ manutencao: m, veiculos, viagens, aoFechar }: PropsFor
   return (
     <Pagina titulo={m ? 'Editar manutenção' : 'Nova manutenção'} estreita>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-      <Segmentado
+      <Seletor
         rotulo="Veículo"
         opcoes={opcoesVeiculo}
         valor={veiculoId}
@@ -235,11 +237,11 @@ function FormManutencao({ manutencao: m, veiculos, viagens, aoFechar }: PropsFor
         ajuda={veiculos.length === 0 ? 'Cadastre um veículo em “Veículos” primeiro.' : undefined}
       />
       {veiculoId ? (
-        <Segmentado rotulo="Viagem relacionada (opcional)" opcoes={opcoesViagem} valor={viagemId} onChange={setViagemId} />
+        <Seletor rotulo="Viagem relacionada (opcional)" opcoes={opcoesViagem} valor={viagemId} onChange={setViagemId} />
       ) : null}
       <Segmentado rotulo="Tipo" opcoes={TIPOS_MANUTENCAO} valor={tipo} onChange={setTipo} />
       <Campo rotulo="Descrição" value={descricao} onChangeText={setDescricao} placeholder="Ex.: troca de óleo" />
-      <Campo rotulo="Valor (R$)" value={valor} onChangeText={setValor} keyboardType="numeric" inputMode="decimal" />
+      <Campo rotulo="Valor (R$)" value={valor} onChangeText={(t) => setValor(mascararDecimal(t))} keyboardType="numeric" inputMode="decimal" />
       <Campo
         rotulo="Data"
         value={data}

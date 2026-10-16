@@ -5,13 +5,13 @@ import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
-import { Segmentado } from '@/components/ui/segmentado';
+import { Seletor } from '@/components/ui/seletor';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import type { Motorista } from '@/services/motoristas.service';
 import type { Veiculo } from '@/services/veiculos.service';
 import { atualizarViagem, criarViagem, sugerirAdiantamento, type Viagem } from '@/services/viagens.service';
 import { mensagemDeErro } from '@/utils/erros';
-import { formatarData, formatarDecimal, formatarMoeda, hojeIso, lerData, lerDecimal, mascararData } from '@/utils/formato';
+import { formatarData, formatarDecimal, formatarMoeda, hojeIso, lerData, lerDecimal, mascararData, mascararDecimal } from '@/utils/formato';
 
 type Props = {
   /** null = nova viagem; Viagem = editar viagem ainda programada */
@@ -117,8 +117,8 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
       {opcoesMotorista.length === 0 ? (
         <Aviso tipo="info">Cadastre um motorista ativo em “Motoristas” antes de criar a viagem.</Aviso>
       ) : null}
-      <Segmentado rotulo="Motorista" opcoes={opcoesMotorista} valor={motoristaId} onChange={aoEscolherMotorista} />
-      <Segmentado
+      <Seletor rotulo="Motorista" opcoes={opcoesMotorista} valor={motoristaId} onChange={aoEscolherMotorista} />
+      <Seletor
         rotulo="Veículo"
         opcoes={opcoesVeiculo}
         valor={veiculoId}
@@ -141,7 +141,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
       <Campo
         rotulo="Valor do frete (R$)"
         value={frete}
-        onChangeText={setFrete}
+        onChangeText={(t) => setFrete(mascararDecimal(t))}
         keyboardType="numeric"
         inputMode="decimal"
         placeholder="Ex.: 2.500,00"
@@ -179,7 +179,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
         rotulo="Adiantamento a definir (R$)"
         ajuda="Valor que a empresa entrega ao motorista antes da viagem. Deixe vazio se não houver."
         value={adiantamento}
-        onChangeText={setAdiantamento}
+        onChangeText={(t) => setAdiantamento(mascararDecimal(t))}
         keyboardType="numeric"
         inputMode="decimal"
       />

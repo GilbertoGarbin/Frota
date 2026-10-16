@@ -21,7 +21,7 @@ import type { Veiculo } from '@/services/veiculos.service';
 import { registrarAbastecimentoAvulso } from '@/services/viagens.service';
 import { totalAbastecimento } from '@/utils/dinheiro';
 import { mensagemDeErro } from '@/utils/erros';
-import { formatarData, formatarDecimal, formatarMoeda, hojeIso, lerData, lerDecimal, mascararData } from '@/utils/formato';
+import { formatarData, formatarDecimal, formatarMoeda, hojeIso, lerData, lerDecimal, mascararData, mascararDecimal } from '@/utils/formato';
 
 const ESTADOS: { valor: EstadoPneu; rotulo: string }[] = [
   { valor: 'bom', rotulo: 'Bom' },
@@ -204,7 +204,7 @@ export function SecaoAbastecimento({ veiculo, aoRegistrar }: { veiculo: Veiculo;
           {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
           <Campo rotulo="Km do odômetro" value={km} onChangeText={setKm} keyboardType="numeric" inputMode="decimal" />
           <Campo rotulo="Litros" value={litros} onChangeText={setLitros} keyboardType="numeric" inputMode="decimal" />
-          <Campo rotulo="Preço por litro (R$)" value={preco} onChangeText={setPreco} keyboardType="numeric" inputMode="decimal" placeholder="Ex.: 5,899" />
+          <Campo rotulo="Preço por litro (R$)" value={preco} onChangeText={(t) => setPreco(mascararDecimal(t, 3))} keyboardType="numeric" inputMode="decimal" placeholder="Ex.: 5,899" />
           <View style={styles.total}>
             <Text style={styles.totalRotulo}>Total</Text>
             <Text style={styles.totalValor}>{total === null ? '—' : formatarMoeda(total)}</Text>

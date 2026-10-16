@@ -5,11 +5,11 @@ import { TelaMotorista, ValorCalculado } from '@/components/motorista/base';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
-import { Segmentado } from '@/components/ui/segmentado';
+import { Seletor } from '@/components/ui/seletor';
 import { useMotorista, type DadosNovaViagem } from '@/context/MotoristaContext';
 import { percentualDe } from '@/utils/dinheiro';
 import { mensagemDeErro } from '@/utils/erros';
-import { formatarData, formatarDecimal, formatarMoeda, hojeIso, lerData, lerDecimal, mascararData } from '@/utils/formato';
+import { formatarData, formatarDecimal, formatarMoeda, hojeIso, lerData, lerDecimal, mascararData, mascararDecimal } from '@/utils/formato';
 
 // 5.3 Cadastrar/editar viagem — caminho de quem dirige e também administra (dono-motorista).
 // O fluxo principal é o gestor criar a viagem no painel. Com ?id= edita uma viagem própria ainda programada.
@@ -92,7 +92,7 @@ export default function NovaViagem() {
         placeholder="dd/mm/aaaa"
         maxLength={10}
       />
-      <Segmentado
+      <Seletor
         rotulo="Veículo"
         opcoes={veiculos}
         valor={veiculoId}
@@ -103,7 +103,7 @@ export default function NovaViagem() {
       <Campo rotulo="Origem" value={origem} onChangeText={setOrigem} />
       <Campo rotulo="Destino" value={destino} onChangeText={setDestino} />
       <Campo rotulo="Carga (opcional)" value={carga} onChangeText={setCarga} />
-      <Campo rotulo="Valor do frete (R$)" value={frete} onChangeText={setFrete} keyboardType="numeric" inputMode="decimal" />
+      <Campo rotulo="Valor do frete (R$)" value={frete} onChangeText={(t) => setFrete(mascararDecimal(t))} keyboardType="numeric" inputMode="decimal" />
       {comissionado ? (
         <ValorCalculado
           trancado

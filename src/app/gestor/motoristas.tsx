@@ -9,6 +9,7 @@ import { Campo } from '@/components/ui/campo';
 import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
 import { Segmentado } from '@/components/ui/segmentado';
+import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
 import { Cores, Espaco } from '@/constants/tema';
@@ -32,6 +33,7 @@ import {
   lerData,
   lerDecimal,
   mascararData,
+  mascararDecimal,
 } from '@/utils/formato';
 
 const MODELOS: { valor: ModeloRemuneracao; rotulo: string }[] = [
@@ -174,7 +176,7 @@ function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) 
     if (!cpfValido(cpf)) return invalido('CPF inválido. Confira os números.');
     if (validade === undefined) return invalido('Validade da CNH inválida. Use dia/mês/ano.');
     if (percentual === null || Number.isNaN(percentual) || percentual > 100) {
-      return invalido('Informe a comissão em %, de 0 a 100. Exemplo: 14');
+      return invalido('Informe a comissão em %, de 0 a 100. Exemplo: 14,00');
     }
     if (Number.isNaN(salarioFixo)) return invalido('Salário fixo inválido.');
 
@@ -239,7 +241,7 @@ function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) 
           maxLength={10}
         />
       </LinhaForm>
-      <Segmentado
+      <Seletor
         rotulo="Veículo vinculado"
         opcoes={opcoesVeiculo}
         valor={veiculoId}
@@ -253,17 +255,17 @@ function FormMotorista({ motorista, veiculos, temAcesso, aoFechar }: PropsForm) 
             rotulo="% Comissão *"
             ajuda="Sobre o frete total de cada viagem. Mudar aqui não altera viagens já iniciadas."
             value={comissao}
-            onChangeText={setComissao}
+            onChangeText={(t) => setComissao(mascararDecimal(t))}
             keyboardType="numeric"
             inputMode="decimal"
-            placeholder="Ex.: 14"
+            placeholder="Ex.: 14,00"
           />
         ) : (
           <Campo
             rotulo="Salário fixo (R$)"
             ajuda="Opcional. Ainda não é usado em nenhum cálculo."
             value={salario}
-            onChangeText={setSalario}
+            onChangeText={(t) => setSalario(mascararDecimal(t))}
             keyboardType="numeric"
             inputMode="decimal"
           />

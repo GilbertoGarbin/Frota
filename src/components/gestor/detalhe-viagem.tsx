@@ -43,6 +43,7 @@ import {
   lerData,
   lerDecimal,
   mascararData,
+  mascararDecimal,
 } from '@/utils/formato';
 
 type Props = {
@@ -260,7 +261,7 @@ function BlocoAdiantamento({ viagem, aoSalvar }: { viagem: Viagem; aoSalvar: (va
             rotulo="Valor definido (R$)"
             ajuda="Se o motorista já iniciou a viagem, o valor novo aparece no app dele."
             value={valor}
-            onChangeText={setValor}
+            onChangeText={(t) => setValor(mascararDecimal(t))}
             keyboardType="numeric"
             inputMode="decimal"
           />
@@ -335,7 +336,7 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
             rotulo="Valor (R$)"
             ajuda="Soma ao frete total da viagem e à base de comissão."
             value={valor}
-            onChangeText={setValor}
+            onChangeText={(t) => setValor(mascararDecimal(t))}
             keyboardType="numeric"
             inputMode="decimal"
           />
