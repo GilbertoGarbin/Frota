@@ -221,14 +221,12 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         {v.observacoes_finais ? <Text style={styles.suave}>Observações finais: {v.observacoes_finais}</Text> : null}
       </View>
 
-      <BlocoAdiantamento viagem={v} aoSalvar={(valor) => executar(() => atualizarViagem(v.id, { valor_adiantamento: valor }))} />
-
-      <BlocoComplementos
-        viagem={v}
-        complementos={dados.complementos}
-        aoLancar={(c) => executar(() => lancarComplementoGestor(v.id, c))}
-        aoAtualizar={(id, c) => executar(() => atualizarComplementoGestor(id, c))}
-        aoExcluir={(id) => executar(() => excluirComplemento(id))}
+      <BlocoRegistros
+        dados={dados}
+        aoErro={setErroAcao}
+        placa={placa}
+        aoLancar={recarregar}
+        aoMarcarPago={(tabela, id, pago) => executar(() => marcarPago(tabela, id, pago))}
       />
 
       {status === 'finalizada' && (v.valor_adiantamento > 0 || v.gasto_proprio_bolso > 0) ? (
@@ -238,13 +236,21 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         />
       ) : null}
 
-      <BlocoRegistros
-        dados={dados}
-        aoErro={setErroAcao}
-        placa={placa}
-        aoLancar={recarregar}
-        aoMarcarPago={(tabela, id, pago) => executar(() => marcarPago(tabela, id, pago))}
-      />
+      {/* raramente usados: no fim, lado a lado no computador */}
+      <View style={styles.ladoALado}>
+        <View style={styles.metade}>
+          <BlocoAdiantamento viagem={v} aoSalvar={(valor) => executar(() => atualizarViagem(v.id, { valor_adiantamento: valor }))} />
+        </View>
+        <View style={styles.metade}>
+          <BlocoComplementos
+            viagem={v}
+            complementos={dados.complementos}
+            aoLancar={(c) => executar(() => lancarComplementoGestor(v.id, c))}
+            aoAtualizar={(id, c) => executar(() => atualizarComplementoGestor(id, c))}
+            aoExcluir={(id) => executar(() => excluirComplemento(id))}
+          />
+        </View>
+      </View>
     </Pagina>
   );
 }
@@ -523,8 +529,8 @@ const NOME_DOCUMENTO: Record<string, string> = {
   outro: 'Outro documento',
 };
 
-const resumoLista = (n: number, um: string, varios: string, total: number) =>
-  n === 0 ? `Nenhum ${um}` : `${n} ${n === 1 ? um : varios} · ${formatarMoeda(total)}`;
+const resumoLista = (n: number, um: string, varios: string, total: number, vazio = `Nenhum ${um}`) =>
+  n === 0 ? vazio : `${n} ${n === 1 ? um : varios} · ${formatarMoeda(total)}`;
 
 /** Selo com o que ainda falta a empresa pagar ao posto/fornecedor (PIX ou a prazo). */
 function seloAPagar(itens: { forma_pagamento: string; pago_em: string | null; valor: number }[]) {
@@ -719,7 +725,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
 
       <SecaoRecolhivel
         titulo="Despesas"
-        resumo={resumoLista(despesas.length, 'despesa', 'despesas', somar(despesas.map((d) => d.valor)))}
+        resumo={resumoLista(despesas.length, 'despesa', 'despesas', somar(despesas.map((d) => d.valor)), 'Nenhuma despesa')}
         extra={seloAPagar(despesas)}
         acao={botaoLancar('despesa', '+ Lançar despesa')}
         topo={aberto === 'despesa' ? <FormDespesaGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} /> : null}>
@@ -785,6 +791,8 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
 
 const styles = StyleSheet.create({
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
+  ladoALado: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: Espaco.lg },
+  metade: { flexGrow: 1, flexBasis: 380, minWidth: 0 },
   // valores adicionais: valor e data estreitos, a descrição ocupa o resto
   linhaAdicional: { flexDirection: 'row', flexWrap: 'wrap', gap: Espaco.md },
   campoCurto: { flexGrow: 1, flexBasis: 140, maxWidth: 200 },
