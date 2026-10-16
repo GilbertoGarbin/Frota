@@ -8,7 +8,7 @@ import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
 import { Faixa, Grade, Indicador, ItemFaixa, Secao, SecaoRecolhivel } from '@/components/ui/cartao';
-import { Segmentado } from '@/components/ui/segmentado';
+import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useCarregar } from '@/hooks/use-carregar';
@@ -298,8 +298,13 @@ function BlocoAdiantamento({ viagem, aoSalvar }: { viagem: Viagem; aoSalvar: (va
 
   return (
     <View style={styles.percurso}>
-      <View style={styles.percursoLinha}>
+      <View style={styles.cabecalhoCartao}>
         <Text style={styles.percursoRotulo}>Adiantamento ao motorista</Text>
+        {!travado && !editando ? (
+          <Botao titulo={definido ? 'Alterar' : 'Definir'} variante="contorno" compacto onPress={() => setEditando(true)} />
+        ) : null}
+      </View>
+      <View style={styles.percursoLinha}>
         <Dado rotulo="Valor" valor={definido ? formatarMoeda(viagem.valor_adiantamento) : 'Sem adiantamento'} />
         {definido && viagem.status !== 'programada' ? (
           <>
@@ -310,11 +315,6 @@ function BlocoAdiantamento({ viagem, aoSalvar }: { viagem: Viagem; aoSalvar: (va
               negativo={(viagem.adiantamento_saldo ?? 0) < 0}
             />
           </>
-        ) : null}
-        {!travado && !editando ? (
-          <View style={styles.percursoAcoes}>
-            <Botao titulo={definido ? 'Alterar' : 'Definir'} variante="contorno" compacto onPress={() => setEditando(true)} />
-          </View>
         ) : null}
       </View>
 
@@ -422,8 +422,10 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
         aberto ? (
           <View style={styles.formulario}>
             {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-            <Segmentado rotulo="Tipo" opcoes={TIPOS_DO_GESTOR} valor={tipo} onChange={setTipo} />
             <View style={styles.linhaAdicional}>
+              <View style={styles.campoCurto}>
+                <Seletor rotulo="Tipo" opcoes={TIPOS_DO_GESTOR} valor={tipo} onChange={setTipo} />
+              </View>
               <View style={styles.campoCurto}>
                 <Campo
                   rotulo="Valor (R$) *"
@@ -437,18 +439,18 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
               <View style={styles.campoCurto}>
                 <CampoData rotulo="Data" valor={data} onChange={setData} />
               </View>
-              <View style={styles.campoLongo}>
-                {tipo === 'complemento' ? (
-                  <Campo
-                    rotulo="Descrição *"
-                    value={descricao}
-                    onChangeText={setDescricao}
-                    placeholder="De onde para onde e o que está levando"
-                  />
-                ) : (
-                  <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
-                )}
-              </View>
+            </View>
+            <View>
+              {tipo === 'complemento' ? (
+                <Campo
+                  rotulo="Descrição *"
+                  value={descricao}
+                  onChangeText={setDescricao}
+                  placeholder="De onde para onde e o que está levando"
+                />
+              ) : (
+                <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
+              )}
             </View>
             <Text style={styles.suave}>Soma ao frete total da viagem e à base da comissão.</Text>
             <View style={styles.linha}>
@@ -791,6 +793,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
 
 const styles = StyleSheet.create({
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
+  cabecalhoCartao: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Espaco.md },
   ladoALado: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: Espaco.lg },
   metade: { flexGrow: 1, flexBasis: 380, minWidth: 0 },
   // valores adicionais: valor e data estreitos, a descrição ocupa o resto
