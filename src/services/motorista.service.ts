@@ -20,14 +20,37 @@ export type RegistroAbastecimento = Base<
   'abastecimentos',
   Pick<
     Tables<'abastecimentos'>,
-    'id' | 'viagem_id' | 'data' | 'km' | 'posto' | 'combustivel' | 'litros' | 'preco_litro' | 'tanque_cheio' | 'forma_pagamento' | 'comprovante_path'
+    | 'id'
+    | 'viagem_id'
+    | 'data'
+    | 'km'
+    | 'posto'
+    | 'combustivel'
+    | 'litros'
+    | 'preco_litro'
+    | 'tanque_cheio'
+    | 'forma_pagamento'
+    | 'chave_pix'
+    | 'vencimento'
+    | 'comprovante_path'
   > & { total: number }
 >;
 export type RegistroDespesa = Base<
   'despesas',
   Pick<
     Tables<'despesas'>,
-    'id' | 'viagem_id' | 'data' | 'categoria' | 'valor' | 'forma_pagamento' | 'local' | 'descricao' | 'observacoes' | 'comprovante_path'
+    | 'id'
+    | 'viagem_id'
+    | 'data'
+    | 'categoria'
+    | 'valor'
+    | 'forma_pagamento'
+    | 'chave_pix'
+    | 'vencimento'
+    | 'local'
+    | 'descricao'
+    | 'observacoes'
+    | 'comprovante_path'
   >
 >;
 export type RegistroParada = Base<

@@ -118,6 +118,10 @@ num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer e
   com `insert ... on conflict (id) do nothing`, só enquanto a viagem está em andamento.
 - Derivados de `viagens` (frete total, comissão, despesas, gasto do adiantamento) são
   recalculados por trigger a cada gravação; valor enviado pelo cliente é ignorado.
+- Formas de pagamento de abastecimento/despesa: `adiantamento` e `proprio_bolso` entram no saldo do
+  motorista; `cartao_empresa`, `pix_empresa` (empresa paga o posto por PIX, com `chave_pix`) e `a_prazo`
+  (nota assinada no posto, com `vencimento`) não. Os dois últimos aparecem em "A pagar aos postos"
+  (Financeiro) até o gestor preencher `pago_em` — o motorista nunca marca como pago (trigger).
 - Combustível: `app.recalcular_combustivel(veiculo_id)` refaz janelas, rateio e estimativas do
   veículo inteiro a partir dos dados gravados (ver comentário na migration). `janelas_consumo`
   é tabela derivada — nunca gravar nela.

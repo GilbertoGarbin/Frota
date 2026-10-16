@@ -19,6 +19,8 @@ import {
   excluirComplemento,
   excluirViagem,
   lancarComplementoGestor,
+  marcarPago,
+  pagaDireto,
   ROTULO_COMPLEMENTO,
   ROTULO_PAGAMENTO,
   ROTULO_STATUS,
@@ -206,7 +208,12 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         />
       ) : null}
 
-      <BlocoRegistros dados={dados} aoErro={setErroAcao} aoLancar={recarregar} />
+      <BlocoRegistros
+        dados={dados}
+        aoErro={setErroAcao}
+        aoLancar={recarregar}
+        aoMarcarPago={(tabela, id, pago) => executar(() => marcarPago(tabela, id, pago))}
+      />
     </Pagina>
   );
 }
@@ -425,9 +432,38 @@ const NOME_DOCUMENTO: Record<string, string> = {
   outro: 'Outro documento',
 };
 
-type PropsRegistros = { dados: Detalhe; aoErro: (mensagem: string) => void; aoLancar: () => void };
+type PropsRegistros = {
+  dados: Detalhe;
+  aoErro: (mensagem: string) => void;
+  aoLancar: () => void;
+  aoMarcarPago: (tabela: 'abastecimentos' | 'despesas', id: string, pago: boolean) => void;
+};
 
-function BlocoRegistros({ dados, aoErro, aoLancar }: PropsRegistros) {
+type PagamentoDireto = { forma_pagamento: string; chave_pix: string | null; vencimento: string | null; pago_em: string | null };
+
+/** PIX ou nota a prazo pagos pela empresa: situação e botão para marcar como pago. */
+function SituacaoPagamento({ item, aoMarcar }: { item: PagamentoDireto; aoMarcar: (pago: boolean) => void }) {
+  if (!pagaDireto(item.forma_pagamento)) return null;
+  return (
+    <View style={styles.linha}>
+      {item.pago_em ? (
+        <>
+          <Selo tipo="sucesso">{`Pago em ${formatarData(item.pago_em)}`}</Selo>
+          <Botao titulo="Desfazer" variante="link" compacto onPress={() => aoMarcar(false)} />
+        </>
+      ) : (
+        <>
+          <Selo tipo="aviso">A pagar</Selo>
+          {item.chave_pix ? <Text selectable style={styles.suave}>{`PIX: ${item.chave_pix}`}</Text> : null}
+          {item.vencimento ? <Text style={styles.suave}>{`Vence em ${formatarData(item.vencimento)}`}</Text> : null}
+          <Botao titulo="Marcar como pago" variante="contorno" compacto onPress={() => aoMarcar(true)} />
+        </>
+      )}
+    </View>
+  );
+}
+
+function BlocoRegistros({ dados, aoErro, aoLancar, aoMarcarPago }: PropsRegistros) {
   const { viagem, abastecimentos, despesas, paradas, documentos } = dados;
   // qual formulário de lançamento está aberto (um por vez)
   const [aberto, setAberto] = useState<'abastecimento' | 'despesa' | 'documento' | null>(null);
@@ -467,6 +503,7 @@ function BlocoRegistros({ dados, aoErro, aoLancar }: PropsRegistros) {
             </View>
             {a.tanque_cheio ? <Selo tipo="info">Tanque cheio</Selo> : null}
             {comprovante(a.comprovante_path)}
+            <SituacaoPagamento item={a} aoMarcar={(pago) => aoMarcarPago('abastecimentos', a.id, pago)} />
           </View>
         ))}
       </Secao>
@@ -487,6 +524,7 @@ function BlocoRegistros({ dados, aoErro, aoLancar }: PropsRegistros) {
               </Text>
             </View>
             {comprovante(d.comprovante_path)}
+            <SituacaoPagamento item={d} aoMarcar={(pago) => aoMarcarPago('despesas', d.id, pago)} />
           </View>
         ))}
       </Secao>

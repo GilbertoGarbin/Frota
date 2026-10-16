@@ -31,7 +31,7 @@ async function registrarComprovante(viagemId: string, caminho: string): Promise<
 
 export type DadosAbastecimentoGestor = Pick<
   TablesInsert<'abastecimentos'>,
-  'data' | 'km' | 'posto' | 'combustivel' | 'litros' | 'preco_litro' | 'tanque_cheio' | 'forma_pagamento'
+  'data' | 'km' | 'posto' | 'combustivel' | 'litros' | 'preco_litro' | 'tanque_cheio' | 'forma_pagamento' | 'chave_pix' | 'vencimento'
 >;
 
 export async function lancarAbastecimentoGestor(
@@ -51,7 +51,7 @@ export async function lancarAbastecimentoGestor(
 
 export type DadosDespesaGestor = Pick<
   TablesInsert<'despesas'>,
-  'data' | 'categoria' | 'valor' | 'forma_pagamento' | 'local' | 'descricao'
+  'data' | 'categoria' | 'valor' | 'forma_pagamento' | 'local' | 'descricao' | 'chave_pix' | 'vencimento'
 >;
 
 export async function lancarDespesaGestor(

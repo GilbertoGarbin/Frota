@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Text } from 'react-native';
 
+import { ContasAPagar } from '@/components/gestor/contas-a-pagar';
 import { tomDaMargem } from '@/components/gestor/detalhe-viagem';
 import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
@@ -63,6 +64,7 @@ export default function Financeiro() {
       titulo="Financeiro"
       subtitulo={`Fechamento de ${rotuloMes(mes)}, por placa.`}
       acao={<SeletorMes mes={mes} onChange={setMes} />}>
+      <ContasAPagar />
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {!r || !dados ? (
         erro ? null : <ActivityIndicator color={Cores.primaria} />

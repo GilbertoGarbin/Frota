@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CamposPagamento, dadosDoPagamento } from '@/components/campos-pagamento';
 import { CampoAnexo, Cartao, Dado, estilosMotorista as em, ValorCalculado } from '@/components/motorista/base';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
@@ -83,6 +84,8 @@ export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
   const [preco, setPreco] = useState('');
   const [pagamento, setPagamento] = useState<FormaPagamento | null>(viagem.valor_adiantamento > 0 ? 'adiantamento' : null);
   const [cheio, setCheio] = useState(false);
+  const [chavePix, setChavePix] = useState('');
+  const [vencimento, setVencimento] = useState('');
   const [anexo, setAnexo] = useState<Anexo | null>(null);
 
   const litrosLidos = lerDecimal(litros);
@@ -100,6 +103,8 @@ export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
     if (!litrosLidos || Number.isNaN(litrosLidos)) return setErro('Informe os litros.');
     if (!precoLido || Number.isNaN(precoLido)) return setErro('Informe o preço por litro.');
     if (!pagamento) return setErro('Escolha a forma de pagamento.');
+    const extra = dadosDoPagamento(pagamento, chavePix, vencimento);
+    if (typeof extra === 'string') return setErro(extra);
     enviar(() =>
       lancarAbastecimento(
         viagem,
@@ -113,6 +118,7 @@ export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
           total: totalAbastecimento(litrosLidos, precoLido),
           tanque_cheio: cheio,
           forma_pagamento: pagamento,
+          ...extra,
         },
         anexo,
       ),
@@ -129,6 +135,13 @@ export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
       <Campo rotulo="Preço por litro (R$)" value={preco} onChangeText={(t) => setPreco(mascararDecimal(t, 3))} placeholder="Ex.: 5,899" {...numerico} />
       <ValorCalculado rotulo="Total" valor={total === null ? '—' : formatarMoeda(total)} nota="Litros × preço por litro" />
       <Segmentado rotulo="Forma de pagamento" opcoes={PAGAMENTOS} valor={pagamento} onChange={setPagamento} />
+      <CamposPagamento
+        pagamento={pagamento}
+        chavePix={chavePix}
+        aoMudarChavePix={setChavePix}
+        vencimento={vencimento}
+        aoMudarVencimento={setVencimento}
+      />
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: cheio }}
@@ -157,6 +170,8 @@ export function PainelDespesa({ viagem, aoFechar }: PropsPainel) {
   const [local, setLocal] = useState('');
   const [descricao, setDescricao] = useState('');
   const [observacoes, setObservacoes] = useState('');
+  const [chavePix, setChavePix] = useState('');
+  const [vencimento, setVencimento] = useState('');
   const [anexo, setAnexo] = useState<Anexo | null>(null);
 
   function salvar() {
@@ -166,6 +181,8 @@ export function PainelDespesa({ viagem, aoFechar }: PropsPainel) {
     if (!categoria) return setErro('Escolha a categoria.');
     if (!valorLido || Number.isNaN(valorLido)) return setErro('Informe o valor.');
     if (!pagamento) return setErro('Escolha a forma de pagamento.');
+    const extra = dadosDoPagamento(pagamento, chavePix, vencimento);
+    if (typeof extra === 'string') return setErro(extra);
     enviar(() =>
       lancarDespesa(
         viagem,
@@ -174,6 +191,7 @@ export function PainelDespesa({ viagem, aoFechar }: PropsPainel) {
           categoria,
           valor: valorLido,
           forma_pagamento: pagamento,
+          ...extra,
           local: local.trim() || null,
           descricao: descricao.trim() || null,
           observacoes: observacoes.trim() || null,
@@ -194,6 +212,13 @@ export function PainelDespesa({ viagem, aoFechar }: PropsPainel) {
         valor={pagamento}
         onChange={setPagamento}
         ajuda={pagamento === 'adiantamento' ? 'Desconta do saldo do adiantamento da viagem.' : undefined}
+      />
+      <CamposPagamento
+        pagamento={pagamento}
+        chavePix={chavePix}
+        aoMudarChavePix={setChavePix}
+        vencimento={vencimento}
+        aoMudarVencimento={setVencimento}
       />
       <Campo rotulo="Local / estabelecimento (opcional)" value={local} onChangeText={setLocal} />
       <Campo rotulo="Descrição (opcional)" value={descricao} onChangeText={setDescricao} />

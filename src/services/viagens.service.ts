@@ -11,7 +11,7 @@ export type Parada = Tables<'paradas'>;
 export type Documento = Tables<'documentos'>;
 
 export type StatusViagem = 'programada' | 'em_andamento' | 'finalizada';
-export type FormaPagamento = 'adiantamento' | 'cartao_empresa' | 'proprio_bolso';
+export type FormaPagamento = 'adiantamento' | 'cartao_empresa' | 'proprio_bolso' | 'pix_empresa' | 'a_prazo';
 export type TipoComplemento =
   | 'carga_complementar'
   | 'diaria_espera'
@@ -28,7 +28,12 @@ export const ROTULO_PAGAMENTO: Record<FormaPagamento, string> = {
   adiantamento: 'Adiantamento',
   cartao_empresa: 'Cartão da empresa',
   proprio_bolso: 'Próprio bolso',
+  pix_empresa: 'Empresa paga por PIX',
+  a_prazo: 'Nota a prazo',
 };
+
+/** Pagamento que a empresa faz direto ao posto/fornecedor (aparece em "A pagar"). */
+export const pagaDireto = (forma: string) => forma === 'pix_empresa' || forma === 'a_prazo';
 export const ROTULO_COMPLEMENTO: Record<TipoComplemento, string> = {
   carga_complementar: 'Carga complementar',
   diaria_espera: 'Diária de espera',
@@ -163,5 +168,66 @@ export async function registrarAbastecimentoAvulso(
   >,
 ): Promise<void> {
   const { error } = await supabase.from('abastecimentos').insert({ ...dados, forma_pagamento: 'cartao_empresa' });
+  if (error) throw error;
+}
+
+// --- Contas a pagar: PIX e notas a prazo dos postos ---------------------------------------
+
+export type ContaAPagar = {
+  tabela: 'abastecimentos' | 'despesas';
+  id: string;
+  viagemId: string | null;
+  descricao: string;
+  valor: number;
+  data: string;
+  forma: 'pix_empresa' | 'a_prazo';
+  chavePix: string | null;
+  vencimento: string | null;
+  local: string | null;
+};
+
+/** Tudo que a empresa ainda precisa pagar direto ao posto/fornecedor, o que vence antes primeiro. */
+export async function listarContasAPagar(): Promise<ContaAPagar[]> {
+  const formas = ['pix_empresa', 'a_prazo'];
+  const [abast, desp] = await Promise.all([
+    supabase.from('abastecimentos').select('*').in('forma_pagamento', formas).is('pago_em', null),
+    supabase.from('despesas').select('*').in('forma_pagamento', formas).is('pago_em', null),
+  ]);
+  if (abast.error) throw abast.error;
+  if (desp.error) throw desp.error;
+  const contas: ContaAPagar[] = [
+    ...abast.data.map((a) => ({
+      tabela: 'abastecimentos' as const,
+      id: a.id,
+      viagemId: a.viagem_id,
+      descricao: `Abastecimento · ${a.litros.toLocaleString('pt-BR')} L`,
+      valor: a.total ?? 0,
+      data: a.data,
+      forma: a.forma_pagamento as ContaAPagar['forma'],
+      chavePix: a.chave_pix,
+      vencimento: a.vencimento,
+      local: a.posto,
+    })),
+    ...desp.data.map((d) => ({
+      tabela: 'despesas' as const,
+      id: d.id,
+      viagemId: d.viagem_id,
+      descricao: `Despesa · ${d.categoria}`,
+      valor: d.valor,
+      data: d.data,
+      forma: d.forma_pagamento as ContaAPagar['forma'],
+      chavePix: d.chave_pix,
+      vencimento: d.vencimento,
+      local: d.local,
+    })),
+  ];
+  // sem vencimento (PIX, pagar na hora) primeiro; depois pela data de vencimento
+  return contas.sort((a, b) => (a.vencimento ?? '').localeCompare(b.vencimento ?? '') || a.data.localeCompare(b.data));
+}
+
+/** Marca (ou desmarca) um abastecimento/despesa como pago pela empresa. */
+export async function marcarPago(tabela: ContaAPagar['tabela'], id: string, pago: boolean): Promise<void> {
+  const pagoEm = pago ? new Date().toISOString().slice(0, 10) : null;
+  const { error } = await supabase.from(tabela).update({ pago_em: pagoEm }).eq('id', id);
   if (error) throw error;
 }

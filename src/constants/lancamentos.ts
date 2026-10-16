@@ -6,6 +6,8 @@ export const PAGAMENTOS: { valor: FormaPagamento; rotulo: string }[] = [
   { valor: 'adiantamento', rotulo: 'Adiantamento' },
   { valor: 'cartao_empresa', rotulo: 'Cartão da empresa' },
   { valor: 'proprio_bolso', rotulo: 'Próprio bolso' },
+  { valor: 'pix_empresa', rotulo: 'Empresa paga por PIX' },
+  { valor: 'a_prazo', rotulo: 'Nota a prazo' },
 ];
 
 export const COMBUSTIVEIS = [

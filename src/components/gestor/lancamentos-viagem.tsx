@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { CamposPagamento, dadosDoPagamento } from '@/components/campos-pagamento';
 import { CampoAnexo } from '@/components/motorista/base';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
@@ -98,6 +99,8 @@ export function FormAbastecimentoGestor({ viagem, aoSalvar, aoCancelar }: PropsF
   const [pagamento, setPagamento] = useState<FormaPagamento | null>(null);
   const [cheio, setCheio] = useState<'sim' | 'nao'>('sim');
   const [posto, setPosto] = useState('');
+  const [chavePix, setChavePix] = useState('');
+  const [vencimento, setVencimento] = useState('');
   const [anexo, setAnexo] = useState<Anexo | null>(null);
 
   const litrosLidos = lerDecimal(litros);
@@ -121,6 +124,8 @@ export function FormAbastecimentoGestor({ viagem, aoSalvar, aoCancelar }: PropsF
     if (!litrosLidos || Number.isNaN(litrosLidos)) return invalido('Litros inválidos. Exemplo: 350,5');
     if (!precoLido || Number.isNaN(precoLido)) return invalido('Preço por litro inválido. Exemplo: 5,899');
     if (!pagamento || !acesso) return;
+    const extra = dadosDoPagamento(pagamento, chavePix, vencimento);
+    if (typeof extra === 'string') return invalido(extra);
     enviar(() =>
       lancarAbastecimentoGestor(
         acesso.tenantId,
@@ -132,6 +137,7 @@ export function FormAbastecimentoGestor({ viagem, aoSalvar, aoCancelar }: PropsF
           preco_litro: precoLido,
           combustivel,
           forma_pagamento: pagamento,
+          ...extra,
           tanque_cheio: cheio === 'sim',
           posto: posto.trim() || null,
         },
@@ -161,10 +167,15 @@ export function FormAbastecimentoGestor({ viagem, aoSalvar, aoCancelar }: PropsF
           placeholder="Ex.: 5,899"
         />
       </LinhaForm>
-      <LinhaForm minimo={260}>
-        <Segmentado rotulo="Combustível" opcoes={COMBUSTIVEIS} valor={combustivel} onChange={setCombustivel} />
-        <Segmentado rotulo="Forma de pagamento *" opcoes={PAGAMENTOS} valor={pagamento} onChange={setPagamento} />
-      </LinhaForm>
+      <Segmentado rotulo="Combustível" opcoes={COMBUSTIVEIS} valor={combustivel} onChange={setCombustivel} />
+      <Segmentado rotulo="Forma de pagamento *" opcoes={PAGAMENTOS} valor={pagamento} onChange={setPagamento} />
+      <CamposPagamento
+        pagamento={pagamento}
+        chavePix={chavePix}
+        aoMudarChavePix={setChavePix}
+        vencimento={vencimento}
+        aoMudarVencimento={setVencimento}
+      />
       <LinhaForm minimo={200}>
         <Segmentado rotulo="Tanque cheio?" opcoes={SIM_NAO} valor={cheio} onChange={setCheio} />
         <Campo rotulo="Posto (opcional)" value={posto} onChangeText={setPosto} />
@@ -188,6 +199,8 @@ export function FormDespesaGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
   const [pagamento, setPagamento] = useState<FormaPagamento | null>(null);
   const [local, setLocal] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [chavePix, setChavePix] = useState('');
+  const [vencimento, setVencimento] = useState('');
   const [anexo, setAnexo] = useState<Anexo | null>(null);
 
   function salvar() {
@@ -204,6 +217,8 @@ export function FormDespesaGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
     if (!dataIso) return invalido('Data inválida. Use dia/mês/ano.');
     if (!valorLido || Number.isNaN(valorLido)) return invalido('Valor inválido.');
     if (!categoria || !pagamento || !acesso) return;
+    const extra = dadosDoPagamento(pagamento, chavePix, vencimento);
+    if (typeof extra === 'string') return invalido(extra);
     enviar(() =>
       lancarDespesaGestor(
         acesso.tenantId,
@@ -213,6 +228,7 @@ export function FormDespesaGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
           categoria,
           valor: valorLido,
           forma_pagamento: pagamento,
+          ...extra,
           local: local.trim() || null,
           descricao: descricao.trim() || null,
         },
@@ -235,6 +251,13 @@ export function FormDespesaGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
         />
       </LinhaForm>
       <Segmentado rotulo="Forma de pagamento *" opcoes={PAGAMENTOS} valor={pagamento} onChange={setPagamento} />
+      <CamposPagamento
+        pagamento={pagamento}
+        chavePix={chavePix}
+        aoMudarChavePix={setChavePix}
+        vencimento={vencimento}
+        aoMudarVencimento={setVencimento}
+      />
       <LinhaForm minimo={260}>
         <Campo rotulo="Local / estabelecimento (opcional)" value={local} onChangeText={setLocal} />
         <Campo rotulo="Descrição (opcional)" value={descricao} onChangeText={setDescricao} />

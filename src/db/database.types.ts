@@ -17,6 +17,7 @@ export type Database = {
       abastecimentos: {
         Row: {
           atualizado_em: string
+          chave_pix: string | null
           combustivel: string
           comprovante_path: string | null
           criado_em: string
@@ -26,16 +27,19 @@ export type Database = {
           id: string
           km: number
           litros: number
+          pago_em: string | null
           posto: string | null
           preco_litro: number
           tanque_cheio: boolean
           tenant_id: string
           total: number | null
           veiculo_id: string
+          vencimento: string | null
           viagem_id: string | null
         }
         Insert: {
           atualizado_em?: string
+          chave_pix?: string | null
           combustivel?: string
           comprovante_path?: string | null
           criado_em?: string
@@ -45,16 +49,19 @@ export type Database = {
           id?: string
           km: number
           litros: number
+          pago_em?: string | null
           posto?: string | null
           preco_litro: number
           tanque_cheio?: boolean
           tenant_id?: string
           total?: number | null
           veiculo_id: string
+          vencimento?: string | null
           viagem_id?: string | null
         }
         Update: {
           atualizado_em?: string
+          chave_pix?: string | null
           combustivel?: string
           comprovante_path?: string | null
           criado_em?: string
@@ -64,12 +71,14 @@ export type Database = {
           id?: string
           km?: number
           litros?: number
+          pago_em?: string | null
           posto?: string | null
           preco_litro?: number
           tanque_cheio?: boolean
           tenant_id?: string
           total?: number | null
           veiculo_id?: string
+          vencimento?: string | null
           viagem_id?: string | null
         }
         Relationships: [
@@ -271,6 +280,7 @@ export type Database = {
         Row: {
           atualizado_em: string
           categoria: string
+          chave_pix: string | null
           comprovante_path: string | null
           criado_em: string
           criado_por: string | null
@@ -280,13 +290,16 @@ export type Database = {
           id: string
           local: string | null
           observacoes: string | null
+          pago_em: string | null
           tenant_id: string
           valor: number
+          vencimento: string | null
           viagem_id: string
         }
         Insert: {
           atualizado_em?: string
           categoria: string
+          chave_pix?: string | null
           comprovante_path?: string | null
           criado_em?: string
           criado_por?: string | null
@@ -296,13 +309,16 @@ export type Database = {
           id?: string
           local?: string | null
           observacoes?: string | null
+          pago_em?: string | null
           tenant_id?: string
           valor: number
+          vencimento?: string | null
           viagem_id: string
         }
         Update: {
           atualizado_em?: string
           categoria?: string
+          chave_pix?: string | null
           comprovante_path?: string | null
           criado_em?: string
           criado_por?: string | null
@@ -312,8 +328,10 @@ export type Database = {
           id?: string
           local?: string | null
           observacoes?: string | null
+          pago_em?: string | null
           tenant_id?: string
           valor?: number
+          vencimento?: string | null
           viagem_id?: string
         }
         Relationships: [

@@ -837,3 +837,43 @@ test('caminhão vinculado a um motorista ativo não vai para outro', async () =>
   );
   assert.ok(m2);
 });
+
+test('pagamento direto ao posto: não mexe no adiantamento e só o gestor marca como pago', async () => {
+  const vp = await novoVeiculo('PIX1A11');
+  const mp = await novoMotorista('Paulo', '80000000001', vp);
+  const login = await uuid();
+  await db.query('insert into auth.users (id) values ($1)', [login]);
+  await db.query(`insert into usuarios (id, tenant_id, papel, motorista_id) values ($1, $2, 'motorista', $3)`, [login, tenantA, mp]);
+  const vg = await programar(mp, vp, 3000, 1000);
+
+  const ids = await como(login, async () => {
+    await q('select iniciar_viagem($1, 5000)', [vg]);
+    const pix = (await um(
+      `insert into abastecimentos (viagem_id, veiculo_id, km, litros, preco_litro, forma_pagamento, chave_pix, pago_em)
+       values ($1, $2, 5300, 200, 6, 'pix_empresa', 'posto@pix.com', current_date) returning id, pago_em`,
+      [vg, vp],
+    ));
+    const prazo = (await um(
+      `insert into despesas (viagem_id, categoria, valor, forma_pagamento, vencimento)
+       values ($1, 'Borracharia', 150, 'a_prazo', current_date + 5) returning id`,
+      [vg],
+    ));
+    assert.equal(pix.pago_em, null, 'motorista não marca como pago');
+    // nem depois, numa correção
+    await q(`update abastecimentos set pago_em = current_date where id = $1`, [pix.id]);
+    return { pix: pix.id, prazo: prazo.id };
+  });
+
+  const v = await viagemGestor(vg);
+  assert.equal(Number(v.adiantamento_gasto), 0);
+  assert.equal(Number(v.gasto_proprio_bolso), 0);
+  assert.equal(Number(v.total_despesas), 150);
+  assert.equal((await um('select pago_em from abastecimentos where id = $1', [ids.pix])).pago_em, null);
+
+  await como(gestorA, () => q(`update abastecimentos set pago_em = current_date where id = $1`, [ids.pix]));
+  assert.notEqual((await um('select pago_em from abastecimentos where id = $1', [ids.pix])).pago_em, null);
+  await assert.rejects(
+    como(gestorA, () => q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'X', 1, 'boleto')`, [vg])),
+    /despesas_forma_pagamento_check/,
+  );
+});
