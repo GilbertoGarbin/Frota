@@ -155,7 +155,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
           )}
         </LinhaForm>
         {/* depois de iniciada a viagem está no app do motorista e o combustível sai do km do caminhão */}
-        {iniciada ? <Text style={styles.nota}>Motorista e veículo não mudam depois que a viagem começou.</Text> : null}
+        {iniciada ? <Text style={styles.notaPequena}>Motorista e veículo não mudam depois que a viagem começou.</Text> : null}
       </Bloco>
 
       <Bloco titulo="Rota e carga">
@@ -259,5 +259,6 @@ const styles = StyleSheet.create({
   blocoTitulo: { fontSize: 13, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', color: Cores.textoSuave },
   botoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
   adiantamento: { alignItems: 'flex-start' },
+  notaPequena: { fontSize: 11, lineHeight: 14, marginTop: -4, color: Cores.textoSuave },
   nota: { fontSize: 13, lineHeight: 19, color: Cores.textoSuave },
 });
