@@ -251,25 +251,23 @@ function FormMotorista({ motorista, veiculos, motoristas, temAcesso, aoFechar }:
           maxLength={15}
         />
         <Campo rotulo="CNH — número" value={cnhNumero} onChangeText={setCnhNumero} keyboardType="number-pad" />
-        <CampoData
-          rotulo="CNH — validade"
-          valor={cnhValidade}
-          onChange={setCnhValidade}
+      </LinhaForm>
+      <LinhaForm minimo={200}>
+        <CampoData rotulo="CNH — validade" valor={cnhValidade} onChange={setCnhValidade} />
+        <Seletor
+          rotulo="Veículo vinculado"
+          opcoes={opcoesVeiculo}
+          valor={veiculoId}
+          onChange={setVeiculoId}
+          ajuda={
+            veiculos.length === 0
+              ? 'Cadastre os veículos em “Veículos” para vincular.'
+              : ocupados.size > 0
+                ? 'Caminhões com outro motorista ativo não aparecem.'
+                : undefined
+          }
         />
       </LinhaForm>
-      <Seletor
-        rotulo="Veículo vinculado"
-        opcoes={opcoesVeiculo}
-        valor={veiculoId}
-        onChange={setVeiculoId}
-        ajuda={
-          veiculos.length === 0
-            ? 'Cadastre os veículos em “Veículos” para vincular.'
-            : ocupados.size > 0
-              ? 'Caminhões que já estão com outro motorista ativo não aparecem na lista.'
-              : undefined
-        }
-      />
       <LinhaForm minimo={280}>
         <Segmentado rotulo="Modelo de remuneração" opcoes={MODELOS} valor={modelo} onChange={setModelo} />
         {comissionado ? (

@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useCampoCompacto } from '@/components/ui/campo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 
 type Props<T extends string> = {
@@ -12,9 +13,10 @@ type Props<T extends string> = {
 
 /** Escolha única entre poucas opções, em botões lado a lado (spec: segmentado, não dropdown). */
 export function Segmentado<T extends string>({ rotulo, opcoes, valor, onChange, ajuda }: Props<T>) {
+  const compacto = useCampoCompacto();
   return (
     <View style={styles.grupo}>
-      <Text style={styles.rotulo}>{rotulo}</Text>
+      <Text style={[styles.rotulo, compacto && styles.rotuloCompacto]}>{rotulo}</Text>
       <View accessibilityRole="radiogroup" accessibilityLabel={rotulo} style={styles.opcoes}>
         {opcoes.map((opcao) => {
           const marcado = opcao.valor === valor;
@@ -24,8 +26,8 @@ export function Segmentado<T extends string>({ rotulo, opcoes, valor, onChange, 
               accessibilityRole="radio"
               accessibilityState={{ checked: marcado }}
               onPress={() => onChange(opcao.valor)}
-              style={[styles.opcao, marcado && styles.marcado]}>
-              <Text style={[styles.texto, marcado && styles.textoMarcado]}>
+              style={[styles.opcao, compacto && styles.opcaoCompacta, marcado && styles.marcado]}>
+              <Text style={[styles.texto, compacto && styles.textoCompacto, marcado && styles.textoMarcado]}>
                 {marcado ? '✓ ' : ''}
                 {opcao.rotulo}
               </Text>
@@ -54,5 +56,9 @@ const styles = StyleSheet.create({
   marcado: { borderColor: Cores.primaria, backgroundColor: Cores.chipClaro },
   texto: { fontSize: 15, color: Cores.texto },
   textoMarcado: { color: Cores.primariaEscura, fontWeight: '600' },
+  // dentro das janelas: mesma altura dos campos compactos
+  opcaoCompacta: { minHeight: 40, paddingHorizontal: Espaco.md },
+  textoCompacto: { fontSize: 14 },
+  rotuloCompacto: { fontSize: 13 },
   ajuda: { fontSize: 13, color: Cores.textoSuave },
 });
