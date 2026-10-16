@@ -141,6 +141,9 @@ num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer e
 - Cada tela usa `Pagina` (`src/components/gestor/pagina.tsx`), `Tabela`, `Selo`, `Segmentado`, `Campo`
   e `Botao` de `src/components/ui/`. Lista e formulário ficam no mesmo arquivo de rota; o formulário
   substitui a lista enquanto está aberto.
+- Formulários de cadastro e de lançamento abrem numa **janela por cima** (`Janela`,
+  `src/components/ui/janela.tsx`), com a lista visível atrás. Rodapé sempre com **Salvar e Cancelar**
+  juntos. Campos lado a lado com `LinhaForm`; obrigatórios com `*`; faltas e erros na `Mensagem`.
 - Dados: `useCarregar(funcaoDoService)`; acesso ao Supabase só em `src/services/*.service.ts`.
 - Entrada e exibição pt-BR em `src/utils/formato.ts`; erros do banco traduzidos em `src/utils/erros.ts`.
 

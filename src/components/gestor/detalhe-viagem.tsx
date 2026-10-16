@@ -8,6 +8,7 @@ import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
 import { Faixa, Grade, Indicador, ItemFaixa, Secao, SecaoRecolhivel } from '@/components/ui/cartao';
+import { Janela } from '@/components/ui/janela';
 import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
@@ -194,16 +195,21 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
           ) : null}
         </View>
         {operacao ? (
-          <FormOperacao
-            operacao={operacao}
-            viagem={v}
-            temCanhoto={dados.documentos.some((d) => d.tipo === 'canhoto')}
-            aoConcluir={() => {
-              setOperacao(null);
-              recarregar();
-            }}
-            aoCancelar={() => setOperacao(null)}
-          />
+          <Janela
+            visivel
+            titulo={operacao === 'iniciar' ? 'Iniciar viagem' : 'Finalizar viagem'}
+            aoFechar={() => setOperacao(null)}>
+            <FormOperacao
+              operacao={operacao}
+              viagem={v}
+              temCanhoto={dados.documentos.some((d) => d.tipo === 'canhoto')}
+              aoConcluir={() => {
+                setOperacao(null);
+                recarregar();
+              }}
+              aoCancelar={() => setOperacao(null)}
+            />
+          </Janela>
         ) : null}
         {v.iniciada_em || v.data_hora_chegada ? (
           <Text style={styles.suave}>
@@ -319,34 +325,33 @@ function BlocoAdiantamento({ viagem, aoSalvar }: { viagem: Viagem; aoSalvar: (va
       </View>
 
       {editando ? (
-        <View style={estilosAdiant.edicao}>
-          <View style={estilosAdiant.campo}>
-            <Campo
-              rotulo="Novo valor (R$)"
-              value={valor}
-              onChangeText={(t) => setValor(mascararDecimal(t))}
-              keyboardType="numeric"
-              inputMode="decimal"
-            />
+        <Janela visivel titulo="Adiantamento ao motorista" aoFechar={() => setEditando(false)}>
+          <View style={estilosAdiant.edicao}>
+            <View style={estilosAdiant.campo}>
+              <Campo
+                rotulo="Novo valor (R$)"
+                value={valor}
+                onChangeText={(t) => setValor(mascararDecimal(t))}
+                keyboardType="numeric"
+                inputMode="decimal"
+              />
+            </View>
+            {sugestao?.valor != null ? (
+              <Botao
+                titulo="Usar o sugerido"
+                variante="link"
+                compacto
+                onPress={() => setValor(formatarDecimal(sugestao.valor))}
+              />
+            ) : null}
+            <Botao titulo="Salvar" compacto onPress={salvar} carregando={salvando} />
+            <Botao titulo="Cancelar" variante="link" compacto onPress={() => setEditando(false)} />
           </View>
-          {sugestao?.valor != null ? (
-            <Botao
-              titulo="Usar o sugerido"
-              variante="link"
-              compacto
-              onPress={() => setValor(formatarDecimal(sugestao.valor))}
-            />
-          ) : null}
-          <Botao titulo="Salvar" compacto onPress={salvar} carregando={salvando} />
-          <Botao titulo="Cancelar" variante="link" compacto onPress={() => setEditando(false)} />
-        </View>
-      ) : null}
-
-      {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-      {editando ? (
-        <Text style={estilosAdiant.sugestao}>
-          {`${textoSugestao} Se o motorista já iniciou a viagem, o valor novo aparece no app dele.`}
-        </Text>
+          {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
+          <Text style={estilosAdiant.sugestao}>
+            {`${textoSugestao} Se o motorista já iniciou a viagem, o valor novo aparece no app dele.`}
+          </Text>
+        </Janela>
       ) : null}
     </View>
   );
@@ -418,48 +423,6 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
         editavel && !aberto ? (
           <Botao titulo="+ Lançar valor adicional" variante="contorno" compacto onPress={() => setAberto(true)} />
         ) : undefined
-      }
-      topo={
-        aberto ? (
-          <View style={styles.formulario}>
-            {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-            <View style={styles.linhaAdicional}>
-              <View style={styles.campoCurto}>
-                <Seletor rotulo="Tipo" opcoes={TIPOS_DO_GESTOR} valor={tipo} onChange={setTipo} />
-              </View>
-              <View style={styles.campoCurto}>
-                <Campo
-                  rotulo="Valor (R$) *"
-                  value={valor}
-                  onChangeText={(t) => setValor(mascararDecimal(t))}
-                  keyboardType="numeric"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                />
-              </View>
-              <View style={styles.campoCurto}>
-                <CampoData rotulo="Data" valor={data} onChange={setData} />
-              </View>
-            </View>
-            <View>
-              {tipo === 'complemento' ? (
-                <Campo
-                  rotulo="Descrição *"
-                  value={descricao}
-                  onChangeText={setDescricao}
-                  placeholder="De onde para onde e o que está levando"
-                />
-              ) : (
-                <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
-              )}
-            </View>
-            <Text style={styles.suave}>Soma ao frete total da viagem e à base da comissão.</Text>
-            <View style={styles.linha}>
-              <Botao titulo={editandoId ? 'Salvar alteração' : 'Lançar'} compacto onPress={lancar} />
-              <Botao titulo="Cancelar" variante="link" compacto onPress={fechar} />
-            </View>
-          </View>
-        ) : null
       }>
       {complementos.length === 0 ? (
         <Text style={styles.suave}>Nenhum valor adicional lançado.</Text>
@@ -501,6 +464,48 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
           </View>
         ))
       )}
+      {aberto ? (
+        <Janela visivel titulo={editandoId ? 'Editar valor adicional' : 'Novo valor adicional'} aoFechar={fechar}>
+          <View style={styles.formularioJanela}>
+            {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
+            <View style={styles.linhaAdicional}>
+              <View style={styles.campoCurto}>
+                <Seletor rotulo="Tipo" opcoes={TIPOS_DO_GESTOR} valor={tipo} onChange={setTipo} />
+              </View>
+              <View style={styles.campoCurto}>
+                <Campo
+                  rotulo="Valor (R$) *"
+                  value={valor}
+                  onChangeText={(t) => setValor(mascararDecimal(t))}
+                  keyboardType="numeric"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                />
+              </View>
+              <View style={styles.campoCurto}>
+                <CampoData rotulo="Data" valor={data} onChange={setData} />
+              </View>
+            </View>
+            <View>
+              {tipo === 'complemento' ? (
+                <Campo
+                  rotulo="Descrição *"
+                  value={descricao}
+                  onChangeText={setDescricao}
+                  placeholder="De onde para onde e o que está levando"
+                />
+              ) : (
+                <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
+              )}
+            </View>
+            <Text style={styles.suave}>Soma ao frete total da viagem e à base da comissão.</Text>
+            <View style={styles.linha}>
+              <Botao titulo={editandoId ? 'Salvar alteração' : 'Lançar'} compacto onPress={lancar} />
+              <Botao titulo="Cancelar" variante="link" compacto onPress={fechar} />
+            </View>
+          </View>
+        </Janela>
+      ) : null}
     </SecaoRecolhivel>
   );
 }
@@ -612,7 +617,7 @@ function FormOperacao({ operacao, viagem, temCanhoto, aoConcluir, aoCancelar }: 
   }
 
   return (
-    <View style={styles.formulario}>
+    <View style={styles.formularioJanela}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {!iniciar && !temCanhoto ? (
         <Aviso tipo="info">
@@ -695,8 +700,9 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
     setAberto(null);
     aoLancar();
   };
-  const botaoLancar = (qual: NonNullable<typeof aberto>, titulo: string) =>
-    aberto === qual ? undefined : <Botao titulo={titulo} variante="contorno" compacto onPress={() => setAberto(qual)} />;
+  const botaoLancar = (qual: NonNullable<typeof aberto>, titulo: string) => (
+    <Botao titulo={titulo} variante="contorno" compacto onPress={() => setAberto(qual)} />
+  );
 
   async function abrir(caminho: string) {
     try {
@@ -714,12 +720,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
         titulo="Abastecimentos"
         resumo={resumoLista(abastecimentos.length, 'abastecimento', 'abastecimentos', somar(abastecimentos.map((a) => a.total)))}
         extra={seloAPagar(abastecimentos.map((a) => ({ ...a, valor: a.total ?? 0 })))}
-        acao={botaoLancar('abastecimento', '+ Lançar abastecimento')}
-        topo={
-          aberto === 'abastecimento' ? (
-            <FormAbastecimentoGestor viagem={viagem} placa={placa} aoSalvar={salvo} aoCancelar={fechar} />
-          ) : null
-        }>
+        acao={botaoLancar('abastecimento', '+ Lançar abastecimento')}>
         {abastecimentos.length === 0 ? <Text style={styles.suave}>Nenhum abastecimento nesta viagem.</Text> : null}
         {abastecimentos.map((a) => (
           <View key={a.id} style={styles.item}>
@@ -739,30 +740,53 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
         ))}
       </SecaoRecolhivel>
 
-      <SecaoRecolhivel
-        titulo="Despesas"
-        resumo={resumoLista(despesas.length, 'despesa', 'despesas', somar(despesas.map((d) => d.valor)), 'Nenhuma despesa')}
-        extra={seloAPagar(despesas)}
-        acao={botaoLancar('despesa', '+ Lançar despesa')}
-        topo={aberto === 'despesa' ? <FormDespesaGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} /> : null}>
-        {despesas.length === 0 ? <Text style={styles.suave}>Nenhuma despesa nesta viagem.</Text> : null}
-        {despesas.map((d) => (
-          <View key={d.id} style={styles.item}>
-            <View style={styles.itemTexto}>
-              <Text style={styles.texto}>
-                {d.categoria} · {formatarMoeda(d.valor)}
-              </Text>
-              <Text style={styles.suave}>
-                {formatarData(d.data)} · {ROTULO_PAGAMENTO[d.forma_pagamento as FormaPagamento]}
-                {d.local ? ` · ${d.local}` : ''}
-                {d.descricao ? ` · ${d.descricao}` : ''}
-              </Text>
-            </View>
-            {comprovante(d.comprovante_path)}
-            <SituacaoPagamento item={d} aoMarcar={(pago) => aoMarcarPago('despesas', d.id, pago)} />
-          </View>
-        ))}
-      </SecaoRecolhivel>
+      <View style={styles.ladoALado}>
+        <View style={styles.metade}>
+          <SecaoRecolhivel
+            titulo="Despesas"
+            resumo={resumoLista(despesas.length, 'despesa', 'despesas', somar(despesas.map((d) => d.valor)), 'Nenhuma despesa')}
+            extra={seloAPagar(despesas)}
+            acao={botaoLancar('despesa', '+ Lançar despesa')}>
+            {despesas.length === 0 ? <Text style={styles.suave}>Nenhuma despesa nesta viagem.</Text> : null}
+            {despesas.map((d) => (
+              <View key={d.id} style={styles.item}>
+                <View style={styles.itemTexto}>
+                  <Text style={styles.texto}>
+                    {d.categoria} · {formatarMoeda(d.valor)}
+                  </Text>
+                  <Text style={styles.suave}>
+                    {formatarData(d.data)} · {ROTULO_PAGAMENTO[d.forma_pagamento as FormaPagamento]}
+                    {d.local ? ` · ${d.local}` : ''}
+                    {d.descricao ? ` · ${d.descricao}` : ''}
+                  </Text>
+                </View>
+                {comprovante(d.comprovante_path)}
+                <SituacaoPagamento item={d} aoMarcar={(pago) => aoMarcarPago('despesas', d.id, pago)} />
+              </View>
+            ))}
+          </SecaoRecolhivel>
+        </View>
+        <View style={styles.metade}>
+          <SecaoRecolhivel
+            titulo="Documentos"
+            resumo={documentos.length === 0 ? 'Nenhum documento' : `${documentos.length} ${documentos.length === 1 ? 'documento' : 'documentos'}`}
+            extra={
+              documentos.some((d) => d.tipo === 'canhoto') ? <Selo tipo="sucesso">Canhoto enviado</Selo> : null
+            }
+            acao={botaoLancar('documento', '+ Adicionar documento')}>
+            {documentos.length === 0 ? <Text style={styles.suave}>Nenhum documento enviado.</Text> : null}
+            {documentos.map((d) => (
+              <View key={d.id} style={styles.item}>
+                <View style={styles.itemTexto}>
+                  <Text style={styles.texto}>{NOME_DOCUMENTO[d.tipo] ?? d.tipo}</Text>
+                  <Text style={styles.suave}>Enviado em {formatarDataHora(d.enviado_em)}</Text>
+                </View>
+                <Botao titulo="Abrir" variante="link" compacto onPress={() => abrir(d.arquivo_path)} />
+              </View>
+            ))}
+          </SecaoRecolhivel>
+        </View>
+      </View>
 
       {paradas.length > 0 ? (
         <SecaoRecolhivel titulo="Paradas" resumo={`${paradas.length} ${paradas.length === 1 ? 'parada' : 'paradas'}`}>
@@ -782,31 +806,28 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
         </SecaoRecolhivel>
       ) : null}
 
-      <SecaoRecolhivel
-        titulo="Documentos"
-        resumo={documentos.length === 0 ? 'Nenhum documento' : `${documentos.length} ${documentos.length === 1 ? 'documento' : 'documentos'}`}
-        extra={
-          documentos.some((d) => d.tipo === 'canhoto') ? <Selo tipo="sucesso">Canhoto enviado</Selo> : null
-        }
-        acao={botaoLancar('documento', '+ Adicionar documento')}
-        topo={aberto === 'documento' ? <FormDocumentoGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} /> : null}>
-        {documentos.length === 0 ? <Text style={styles.suave}>Nenhum documento enviado.</Text> : null}
-        {documentos.map((d) => (
-          <View key={d.id} style={styles.item}>
-            <View style={styles.itemTexto}>
-              <Text style={styles.texto}>{NOME_DOCUMENTO[d.tipo] ?? d.tipo}</Text>
-              <Text style={styles.suave}>Enviado em {formatarDataHora(d.enviado_em)}</Text>
-            </View>
-            <Botao titulo="Abrir" variante="link" compacto onPress={() => abrir(d.arquivo_path)} />
-          </View>
-        ))}
-      </SecaoRecolhivel>
+      {aberto === 'abastecimento' ? (
+        <Janela visivel titulo="Novo abastecimento" aoFechar={fechar}>
+          <FormAbastecimentoGestor viagem={viagem} placa={placa} aoSalvar={salvo} aoCancelar={fechar} />
+        </Janela>
+      ) : null}
+      {aberto === 'despesa' ? (
+        <Janela visivel titulo="Nova despesa" aoFechar={fechar}>
+          <FormDespesaGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} />
+        </Janela>
+      ) : null}
+      {aberto === 'documento' ? (
+        <Janela visivel titulo="Adicionar documento" aoFechar={fechar}>
+          <FormDocumentoGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} />
+        </Janela>
+      ) : null}
     </>
   );
 }
 
 const styles = StyleSheet.create({
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
+  formularioJanela: { gap: Espaco.md },
   itemAdicional: {
     flexDirection: 'row',
     alignItems: 'flex-start',

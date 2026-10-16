@@ -344,14 +344,7 @@ export function FormDocumentoGestor({ viagem, aoSalvar, aoCancelar }: PropsForm)
 }
 
 const styles = StyleSheet.create({
-  moldura: {
-    gap: Espaco.md,
-    padding: Espaco.lg,
-    borderRadius: Raio.md,
-    backgroundColor: Cores.fundo,
-    borderWidth: 1,
-    borderColor: Cores.borda,
-  },
+  moldura: { gap: Espaco.md },
   botoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
   // valor calculado: bloco de "resultado", nunca com cara de campo (spec, seção 2)
   total: { gap: 2, padding: Espaco.md, borderRadius: Raio.sm, backgroundColor: Cores.chipClaro },
