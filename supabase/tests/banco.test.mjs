@@ -906,3 +906,23 @@ test('gestor lança complemento de frete e ele soma ao frete total', async () =>
     /complementos_complemento_descrito/,
   );
 });
+
+test('gestor inicia e finaliza a viagem pelo painel, com as mesmas regras do app', async () => {
+  const vo = await novoVeiculo('OPR1A11');
+  const mo = await novoMotorista('Otávio', '91000000001', vo);
+  const vg = await programar(mo, vo, 2000);
+  await como(gestorA, () => q(`select iniciar_viagem($1, 50000, '2026-10-01T12:00:00Z')`, [vg]));
+  let v = await viagemGestor(vg);
+  assert.equal(v.status, 'em_andamento');
+  assert.equal(Number(v.km_inicial), 50000);
+  // sem canhoto não finaliza
+  await assert.rejects(como(gestorA, () => q('select finalizar_viagem($1, 50800)', [vg])), /canhoto/);
+  await como(gestorA, () =>
+    q(`insert into documentos (viagem_id, tipo, arquivo_path) values ($1, 'canhoto', 'c.jpg')`, [vg]),
+  );
+  await assert.rejects(como(gestorA, () => q('select finalizar_viagem($1, 49000)', [vg])), /km final/);
+  await como(gestorA, () => q('select finalizar_viagem($1, 50800)', [vg]));
+  v = await viagemGestor(vg);
+  assert.equal(v.status, 'finalizada');
+  assert.equal(Number(v.km_final), 50800);
+});

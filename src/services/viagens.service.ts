@@ -234,3 +234,36 @@ export async function marcarPago(tabela: ContaAPagar['tabela'], id: string, pago
   const { error } = await supabase.from(tabela).update({ pago_em: pagoEm }).eq('id', id);
   if (error) throw error;
 }
+
+// --- Iniciar e finalizar pelo painel (mesmas funções e regras do app do motorista) -------
+
+/** Data escolhida → momento a gravar: hoje = agora; outro dia = meio-dia desse dia (viagem antiga). */
+function momentoDoDia(dataIso: string): string {
+  const hoje = new Date();
+  const [ano, mes, dia] = dataIso.split('-').map(Number);
+  const ehHoje = hoje.getFullYear() === ano && hoje.getMonth() + 1 === mes && hoje.getDate() === dia;
+  return ehHoje ? hoje.toISOString() : new Date(ano, mes - 1, dia, 12).toISOString();
+}
+
+export async function iniciarViagemGestor(viagemId: string, kmInicial: number, dataIso: string): Promise<void> {
+  const { error } = await supabase.rpc('iniciar_viagem', {
+    p_viagem_id: viagemId,
+    p_km_inicial: kmInicial,
+    p_iniciada_em: momentoDoDia(dataIso),
+  });
+  if (error) throw error;
+}
+
+export async function finalizarViagemGestor(
+  viagemId: string,
+  dados: { kmFinal: number; dataIso: string; local: string | null; observacoes: string | null },
+): Promise<void> {
+  const { error } = await supabase.rpc('finalizar_viagem', {
+    p_viagem_id: viagemId,
+    p_km_final: dados.kmFinal,
+    p_data_hora_chegada: momentoDoDia(dados.dataIso),
+    p_local_chegada: dados.local ?? undefined,
+    p_observacoes_finais: dados.observacoes ?? undefined,
+  });
+  if (error) throw error;
+}

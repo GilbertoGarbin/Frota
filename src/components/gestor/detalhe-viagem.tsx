@@ -18,6 +18,8 @@ import {
   carregarDetalheViagem,
   excluirComplemento,
   excluirViagem,
+  finalizarViagemGestor,
+  iniciarViagemGestor,
   lancarComplementoGestor,
   marcarPago,
   pagaDireto,
@@ -47,6 +49,7 @@ import {
   lerData,
   lerDecimal,
   mascararDecimal,
+  mascararInteiro,
 } from '@/utils/formato';
 
 type Props = {
@@ -81,6 +84,8 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
   const { dados, erro, recarregar } = useCarregar(buscar);
   const [erroAcao, setErroAcao] = useState<string | null>(null);
   const [confirmandoExcluir, setConfirmandoExcluir] = useState(false);
+  // iniciar/finalizar pelo painel (motorista sem app, esquecimento, viagem antiga)
+  const [operacao, setOperacao] = useState<'iniciar' | 'finalizar' | null>(null);
 
   async function executar(acao: () => Promise<void>) {
     setErroAcao(null);
@@ -158,8 +163,14 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
           {v.km_inicial !== null && v.km_final !== null ? (
             <Dado rotulo="Rodado" valor={formatarKm(v.km_final - v.km_inicial)} />
           ) : null}
-          {status === 'programada' ? (
+          {status === 'em_andamento' && operacao === null ? (
             <View style={[styles.linha, styles.percursoAcoes]}>
+              <Botao titulo="Finalizar viagem" compacto onPress={() => setOperacao('finalizar')} />
+            </View>
+          ) : null}
+          {status === 'programada' && operacao === null ? (
+            <View style={[styles.linha, styles.percursoAcoes]}>
+              <Botao titulo="Iniciar viagem" compacto onPress={() => setOperacao('iniciar')} />
               <Botao titulo="Editar viagem" variante="contorno" compacto onPress={() => aoEditar(v)} />
               {confirmandoExcluir ? (
                 <>
@@ -182,6 +193,18 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
             </View>
           ) : null}
         </View>
+        {operacao ? (
+          <FormOperacao
+            operacao={operacao}
+            viagem={v}
+            temCanhoto={dados.documentos.some((d) => d.tipo === 'canhoto')}
+            aoConcluir={() => {
+              setOperacao(null);
+              recarregar();
+            }}
+            aoCancelar={() => setOperacao(null)}
+          />
+        ) : null}
         {v.iniciada_em || v.data_hora_chegada ? (
           <Text style={styles.suave}>
             {[
@@ -521,6 +544,95 @@ type PropsRegistros = {
 type PagamentoDireto = { forma_pagamento: string; chave_pix: string | null; vencimento: string | null; pago_em: string | null };
 
 /** PIX ou nota a prazo pagos pela empresa: situação e botão para marcar como pago. */
+type PropsOperacao = {
+  operacao: 'iniciar' | 'finalizar';
+  viagem: Viagem;
+  temCanhoto: boolean;
+  aoConcluir: () => void;
+  aoCancelar: () => void;
+};
+
+/** Iniciar (km inicial) ou finalizar (km final, chegada) a viagem pelo painel. */
+function FormOperacao({ operacao, viagem, temCanhoto, aoConcluir, aoCancelar }: PropsOperacao) {
+  const iniciar = operacao === 'iniciar';
+  const [km, setKm] = useState('');
+  const [data, setData] = useState(formatarData(hojeIso()));
+  const [local, setLocal] = useState('');
+  const [observacoes, setObservacoes] = useState('');
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  async function confirmar() {
+    const kmLido = lerDecimal(km);
+    const dataIso = lerData(data);
+    if (kmLido === null || Number.isNaN(kmLido)) return setErro(iniciar ? 'Informe o km inicial.' : 'Informe o km final.');
+    if (!dataIso) return setErro('Data inválida. Use dia/mês/ano.');
+    if (!iniciar && viagem.km_inicial !== null && kmLido < viagem.km_inicial) {
+      return setErro(`O km final não pode ser menor que o km inicial (${formatarKm(viagem.km_inicial)}).`);
+    }
+    setErro(null);
+    setSalvando(true);
+    try {
+      if (iniciar) await iniciarViagemGestor(viagem.id, kmLido, dataIso);
+      else {
+        await finalizarViagemGestor(viagem.id, {
+          kmFinal: kmLido,
+          dataIso,
+          local: local.trim() || null,
+          observacoes: observacoes.trim() || null,
+        });
+      }
+      aoConcluir();
+    } catch (e) {
+      setErro(mensagemDeErro(e));
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <View style={styles.formulario}>
+      {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
+      {!iniciar && !temCanhoto ? (
+        <Aviso tipo="info">
+          Para finalizar, anexe antes o canhoto em Documentos (+ Adicionar documento, tipo Canhoto).
+        </Aviso>
+      ) : null}
+      <View style={styles.linhaAdicional}>
+        <View style={styles.campoCurto}>
+          <Campo
+            rotulo={iniciar ? 'Km inicial *' : 'Km final *'}
+            value={km}
+            onChangeText={(t) => setKm(mascararInteiro(t))}
+            keyboardType="number-pad"
+            inputMode="numeric"
+            placeholder={iniciar ? 'Odômetro na saída' : 'Odômetro na chegada'}
+          />
+        </View>
+        <View style={styles.campoCurto}>
+          <CampoData rotulo={iniciar ? 'Data da saída' : 'Data da chegada'} valor={data} onChange={setData} />
+        </View>
+        {iniciar ? null : (
+          <View style={styles.campoLongo}>
+            <Campo rotulo="Local de chegada (opcional)" value={local} onChangeText={setLocal} />
+          </View>
+        )}
+      </View>
+      {iniciar ? null : (
+        <Campo rotulo="Observações finais (opcional)" value={observacoes} onChangeText={setObservacoes} />
+      )}
+      <View style={styles.linha}>
+        <Botao
+          titulo={iniciar ? 'Confirmar saída' : 'Finalizar viagem'}
+          compacto
+          onPress={confirmar}
+          carregando={salvando}
+        />
+        <Botao titulo="Cancelar" variante="link" compacto onPress={aoCancelar} />
+      </View>
+    </View>
+  );
+}
+
 /** "Km inicial" pequeno em cima, valor embaixo */
 function Dado({ rotulo, valor, negativo }: { rotulo: string; valor: string; negativo?: boolean }) {
   return (
