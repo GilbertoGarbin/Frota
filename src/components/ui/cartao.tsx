@@ -1,4 +1,5 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useState, type PropsWithChildren, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Cores, Espaco, Raio } from '@/constants/tema';
@@ -88,7 +89,53 @@ export function Secao({ titulo, acao, children }: PropsWithChildren<{ titulo: st
   );
 }
 
+type PropsRecolhivel = {
+  titulo: string;
+  /** linha de resumo ao lado do título (ex.: "2 abastecimentos · R$ 2.950,58") */
+  resumo: string;
+  /** selos ao lado do resumo (ex.: "a pagar") */
+  extra?: ReactNode;
+  acao?: ReactNode;
+  /** conteúdo que fica sempre visível (ex.: formulário de lançamento aberto) */
+  topo?: ReactNode;
+  children: ReactNode;
+};
+
+/** Seção que mostra só o resumo; tocar no cabeçalho abre e fecha a lista. */
+export function SecaoRecolhivel({ titulo, resumo, extra, acao, topo, children }: PropsRecolhivel) {
+  const [aberta, setAberta] = useState(false);
+  return (
+    <View style={styles.secao}>
+      <View style={styles.secaoCabecalho}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: aberta }}
+          accessibilityLabel={`${titulo}: ${resumo}. ${aberta ? 'Fechar' : 'Abrir'} a lista`}
+          onPress={() => setAberta((a) => !a)}
+          style={styles.recolhivelBotao}>
+          <MaterialCommunityIcons name={aberta ? 'chevron-up' : 'chevron-down'} size={22} color={Cores.textoSuave} />
+          <View style={styles.recolhivelTextos}>
+            <Text accessibilityRole="header" style={styles.secaoTitulo}>
+              {titulo}
+            </Text>
+            <View style={styles.linhaRotulo}>
+              <Text style={styles.recolhivelResumo}>{resumo}</Text>
+              {extra}
+            </View>
+          </View>
+        </Pressable>
+        {acao}
+      </View>
+      {topo}
+      {aberta ? children : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  recolhivelBotao: { flexDirection: 'row', alignItems: 'center', gap: Espaco.sm, flexGrow: 1, flexShrink: 1, minWidth: 200 },
+  recolhivelTextos: { flexShrink: 1, gap: 2 },
+  recolhivelResumo: { fontSize: 14, color: Cores.textoSuave },
   grade: { flexDirection: 'row', flexWrap: 'wrap', gap: Espaco.md },
   indicador: { flexGrow: 1, flexBasis: 200, gap: 4, padding: Espaco.lg, borderRadius: Raio.md },
   borda: { borderWidth: 1, borderColor: Cores.borda },

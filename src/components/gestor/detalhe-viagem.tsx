@@ -7,7 +7,7 @@ import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
-import { Faixa, Grade, Indicador, ItemFaixa, Secao } from '@/components/ui/cartao';
+import { Faixa, Grade, Indicador, ItemFaixa, Secao, SecaoRecolhivel } from '@/components/ui/cartao';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Selo } from '@/components/ui/selo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
@@ -398,38 +398,40 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
   }
 
   return (
-    <Secao
+    <SecaoRecolhivel
       titulo="Valores adicionais ao frete"
+      resumo={resumoLista(complementos.length, 'valor adicional', 'valores adicionais', somar(complementos.map((c) => c.valor)))}
       acao={
         editavel && !aberto ? (
           <Botao titulo="+ Lançar valor adicional" variante="contorno" compacto onPress={() => setAberto(true)} />
         ) : undefined
-      }>
-      {aberto ? (
-        <View style={styles.formulario}>
-          {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-          <Segmentado rotulo="Tipo" opcoes={TIPOS_DO_GESTOR} valor={tipo} onChange={setTipo} />
-          <Campo
-            rotulo="Valor (R$)"
-            ajuda="Soma ao frete total da viagem e à base de comissão."
-            value={valor}
-            onChangeText={(t) => setValor(mascararDecimal(t))}
-            keyboardType="numeric"
-            inputMode="decimal"
-          />
-          <CampoData
-            rotulo="Data"
-            valor={data}
-            onChange={setData}
-          />
-          <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
-          <View style={styles.linha}>
-            <Botao titulo={editandoId ? 'Salvar alteração' : 'Lançar'} compacto onPress={lancar} />
-            <Botao titulo="Cancelar" variante="link" compacto onPress={fechar} />
+      }
+      topo={
+        aberto ? (
+          <View style={styles.formulario}>
+            {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
+            <Segmentado rotulo="Tipo" opcoes={TIPOS_DO_GESTOR} valor={tipo} onChange={setTipo} />
+            <Campo
+              rotulo="Valor (R$)"
+              ajuda="Soma ao frete total da viagem e à base de comissão."
+              value={valor}
+              onChangeText={(t) => setValor(mascararDecimal(t))}
+              keyboardType="numeric"
+              inputMode="decimal"
+            />
+            <CampoData
+              rotulo="Data"
+              valor={data}
+              onChange={setData}
+            />
+            <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
+            <View style={styles.linha}>
+              <Botao titulo={editandoId ? 'Salvar alteração' : 'Lançar'} compacto onPress={lancar} />
+              <Botao titulo="Cancelar" variante="link" compacto onPress={fechar} />
+            </View>
           </View>
-        </View>
-      ) : null}
-
+        ) : null
+      }>
       {complementos.length === 0 ? (
         <Text style={styles.suave}>Nenhum valor adicional lançado.</Text>
       ) : (
@@ -457,7 +459,7 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
           </View>
         ))
       )}
-    </Secao>
+    </SecaoRecolhivel>
   );
 }
 
@@ -501,6 +503,16 @@ const NOME_DOCUMENTO: Record<string, string> = {
   outro: 'Outro documento',
 };
 
+const resumoLista = (n: number, um: string, varios: string, total: number) =>
+  n === 0 ? `Nenhum ${um}` : `${n} ${n === 1 ? um : varios} · ${formatarMoeda(total)}`;
+
+/** Selo com o que ainda falta a empresa pagar ao posto/fornecedor (PIX ou a prazo). */
+function seloAPagar(itens: { forma_pagamento: string; pago_em: string | null; valor: number }[]) {
+  const pendentes = itens.filter((i) => pagaDireto(i.forma_pagamento) && !i.pago_em);
+  if (pendentes.length === 0) return null;
+  return <Selo tipo="aviso">{`${formatarMoeda(somar(pendentes.map((i) => i.valor)))} a pagar`}</Selo>;
+}
+
 type PropsRegistros = {
   dados: Detalhe;
   placa: string;
@@ -515,7 +527,7 @@ type PagamentoDireto = { forma_pagamento: string; chave_pix: string | null; venc
 function SituacaoPagamento({ item, aoMarcar }: { item: PagamentoDireto; aoMarcar: (pago: boolean) => void }) {
   if (!pagaDireto(item.forma_pagamento)) return null;
   return (
-    <View style={styles.linha}>
+    <View style={[styles.linha, styles.situacao]}>
       {item.pago_em ? (
         <>
           <Selo tipo="sucesso">{`Pago em ${formatarData(item.pago_em)}`}</Selo>
@@ -557,8 +569,16 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
 
   return (
     <>
-      <Secao titulo="Abastecimentos" acao={botaoLancar('abastecimento', '+ Lançar abastecimento')}>
-        {aberto === 'abastecimento' ? <FormAbastecimentoGestor viagem={viagem} placa={placa} aoSalvar={salvo} aoCancelar={fechar} /> : null}
+      <SecaoRecolhivel
+        titulo="Abastecimentos"
+        resumo={resumoLista(abastecimentos.length, 'abastecimento', 'abastecimentos', somar(abastecimentos.map((a) => a.total)))}
+        extra={seloAPagar(abastecimentos.map((a) => ({ ...a, valor: a.total ?? 0 })))}
+        acao={botaoLancar('abastecimento', '+ Lançar abastecimento')}
+        topo={
+          aberto === 'abastecimento' ? (
+            <FormAbastecimentoGestor viagem={viagem} placa={placa} aoSalvar={salvo} aoCancelar={fechar} />
+          ) : null
+        }>
         {abastecimentos.length === 0 ? <Text style={styles.suave}>Nenhum abastecimento nesta viagem.</Text> : null}
         {abastecimentos.map((a) => (
           <View key={a.id} style={styles.item}>
@@ -576,10 +596,14 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
             <SituacaoPagamento item={a} aoMarcar={(pago) => aoMarcarPago('abastecimentos', a.id, pago)} />
           </View>
         ))}
-      </Secao>
+      </SecaoRecolhivel>
 
-      <Secao titulo="Despesas" acao={botaoLancar('despesa', '+ Lançar despesa')}>
-        {aberto === 'despesa' ? <FormDespesaGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} /> : null}
+      <SecaoRecolhivel
+        titulo="Despesas"
+        resumo={resumoLista(despesas.length, 'despesa', 'despesas', somar(despesas.map((d) => d.valor)))}
+        extra={seloAPagar(despesas)}
+        acao={botaoLancar('despesa', '+ Lançar despesa')}
+        topo={aberto === 'despesa' ? <FormDespesaGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} /> : null}>
         {despesas.length === 0 ? <Text style={styles.suave}>Nenhuma despesa nesta viagem.</Text> : null}
         {despesas.map((d) => (
           <View key={d.id} style={styles.item}>
@@ -597,10 +621,10 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
             <SituacaoPagamento item={d} aoMarcar={(pago) => aoMarcarPago('despesas', d.id, pago)} />
           </View>
         ))}
-      </Secao>
+      </SecaoRecolhivel>
 
       {paradas.length > 0 ? (
-        <Secao titulo="Paradas">
+        <SecaoRecolhivel titulo="Paradas" resumo={`${paradas.length} ${paradas.length === 1 ? 'parada' : 'paradas'}`}>
           {paradas.map((p) => (
             <View key={p.id} style={styles.item}>
               <View style={styles.itemTexto}>
@@ -614,11 +638,17 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
               </View>
             </View>
           ))}
-        </Secao>
+        </SecaoRecolhivel>
       ) : null}
 
-      <Secao titulo="Documentos" acao={botaoLancar('documento', '+ Adicionar documento')}>
-        {aberto === 'documento' ? <FormDocumentoGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} /> : null}
+      <SecaoRecolhivel
+        titulo="Documentos"
+        resumo={documentos.length === 0 ? 'Nenhum documento' : `${documentos.length} ${documentos.length === 1 ? 'documento' : 'documentos'}`}
+        extra={
+          documentos.some((d) => d.tipo === 'canhoto') ? <Selo tipo="sucesso">Canhoto enviado</Selo> : null
+        }
+        acao={botaoLancar('documento', '+ Adicionar documento')}
+        topo={aberto === 'documento' ? <FormDocumentoGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} /> : null}>
         {documentos.length === 0 ? <Text style={styles.suave}>Nenhum documento enviado.</Text> : null}
         {documentos.map((d) => (
           <View key={d.id} style={styles.item}>
@@ -629,13 +659,15 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
             <Botao titulo="Abrir" variante="link" compacto onPress={() => abrir(d.arquivo_path)} />
           </View>
         ))}
-      </Secao>
+      </SecaoRecolhivel>
     </>
   );
 }
 
 const styles = StyleSheet.create({
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
+  // no celular a situação do pagamento quebra linha em vez de passar da borda
+  situacao: { flexShrink: 1, maxWidth: '100%' },
   texto: { fontSize: 14, color: Cores.texto },
   suave: { fontSize: 13, color: Cores.textoSuave },
   formulario: { gap: Espaco.md, paddingBottom: Espaco.md, borderBottomWidth: 1, borderBottomColor: Cores.borda },
