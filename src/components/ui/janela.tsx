@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { FormularioCompacto } from '@/components/ui/campo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 
 type Props = {
@@ -33,7 +34,8 @@ export function Janela({ visivel, titulo, subtitulo, aoFechar, children }: Props
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.conteudo} keyboardShouldPersistTaps="handled">
-            {children}
+            {/* toda janela de cadastro usa campos compactos (explicações no ⓘ) */}
+            <FormularioCompacto>{children}</FormularioCompacto>
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -70,5 +72,5 @@ const styles = StyleSheet.create({
   titulos: { flex: 1, gap: 2 },
   titulo: { fontSize: 18, fontWeight: '700', color: Cores.texto },
   subtitulo: { fontSize: 13, color: Cores.textoSuave },
-  conteudo: { gap: Espaco.lg, padding: Espaco.xl },
+  conteudo: { gap: Espaco.md, padding: Espaco.xl },
 });
