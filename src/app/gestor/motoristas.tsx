@@ -6,6 +6,7 @@ import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { CampoData } from '@/components/ui/campo-data';
 import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
 import { Segmentado } from '@/components/ui/segmentado';
@@ -32,7 +33,6 @@ import {
   formatarTelefone,
   lerData,
   lerDecimal,
-  mascararData,
   mascararDecimal,
 } from '@/utils/formato';
 
@@ -213,7 +213,6 @@ function FormMotorista({ motorista, veiculos, motoristas, temAcesso, aoFechar }:
   return (
     <Pagina
       titulo={motorista ? motorista.nome : 'Novo motorista'}
-      subtitulo={motorista ? undefined : 'Campos com * são obrigatórios.'}
       media>
       <Mensagem mensagem={mensagem} aoFechar={() => setMensagem(null)} />
       <LinhaForm minimo={280}>
@@ -240,14 +239,10 @@ function FormMotorista({ motorista, veiculos, motoristas, temAcesso, aoFechar }:
           maxLength={15}
         />
         <Campo rotulo="CNH — número" value={cnhNumero} onChangeText={setCnhNumero} keyboardType="number-pad" />
-        <Campo
+        <CampoData
           rotulo="CNH — validade"
-          value={cnhValidade}
-          onChangeText={(t) => setCnhValidade(mascararData(t))}
-          keyboardType="number-pad"
-          inputMode="numeric"
-          placeholder="dd/mm/aaaa"
-          maxLength={10}
+          valor={cnhValidade}
+          onChange={setCnhValidade}
         />
       </LinhaForm>
       <Seletor

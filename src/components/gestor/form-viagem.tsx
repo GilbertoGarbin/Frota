@@ -5,13 +5,14 @@ import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { CampoData } from '@/components/ui/campo-data';
 import { Seletor } from '@/components/ui/seletor';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import type { Motorista } from '@/services/motoristas.service';
 import type { Veiculo } from '@/services/veiculos.service';
 import { atualizarViagem, criarViagem, sugerirAdiantamento, type Viagem } from '@/services/viagens.service';
 import { mensagemDeErro } from '@/utils/erros';
-import { formatarData, formatarDecimal, formatarMoeda, hojeIso, lerData, lerDecimal, mascararData, mascararDecimal } from '@/utils/formato';
+import { formatarData, formatarDecimal, formatarMoeda, hojeIso, lerData, lerDecimal, mascararDecimal } from '@/utils/formato';
 
 type Props = {
   /** null = nova viagem; Viagem = editar viagem ainda programada */
@@ -129,14 +130,10 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
       <Campo rotulo="Origem" value={origem} onChangeText={setOrigem} placeholder="Ex.: Curitiba" />
       <Campo rotulo="Destino" value={destino} onChangeText={setDestino} placeholder="Ex.: Pato Branco" />
       <Campo rotulo="Carga (opcional)" value={carga} onChangeText={setCarga} />
-      <Campo
+      <CampoData
         rotulo="Data prevista"
-        value={data}
-        onChangeText={(t) => setData(mascararData(t))}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        placeholder="dd/mm/aaaa"
-        maxLength={10}
+        valor={data}
+        onChange={setData}
       />
       <Campo
         rotulo="Valor do frete (R$)"

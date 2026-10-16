@@ -1,19 +1,25 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
 import { Cores, Espaco, Raio } from '@/constants/tema';
 
-type Props = TextInputProps & { rotulo: string; ajuda?: string };
+type Props = TextInputProps & {
+  rotulo: string;
+  ajuda?: string;
+  /** botão dentro do campo, à direita (ex.: calendário) */
+  acessorio?: ReactNode;
+};
 
 /** Campo com rótulo. Campo de senha ganha o botão de olho para mostrar o que foi digitado. */
-export function Campo({ rotulo, ajuda, style, secureTextEntry, ...resto }: Props) {
+export function Campo({ rotulo, ajuda, style, secureTextEntry, acessorio, ...resto }: Props) {
   const [mostrar, setMostrar] = useState(false);
+  const temBotao = secureTextEntry || acessorio !== undefined;
   const entrada = (
     <TextInput
       accessibilityLabel={rotulo}
       placeholderTextColor={Cores.textoSuave}
-      style={[styles.entrada, secureTextEntry && styles.comOlho, style]}
+      style={[styles.entrada, temBotao && styles.comOlho, style]}
       secureTextEntry={secureTextEntry && !mostrar}
       {...resto}
     />
@@ -21,7 +27,12 @@ export function Campo({ rotulo, ajuda, style, secureTextEntry, ...resto }: Props
   return (
     <View style={styles.grupo}>
       <Text style={styles.rotulo}>{rotulo}</Text>
-      {secureTextEntry ? (
+      {acessorio !== undefined ? (
+        <View>
+          {entrada}
+          <View style={styles.olho}>{acessorio}</View>
+        </View>
+      ) : secureTextEntry ? (
         <View>
           {entrada}
           <Pressable

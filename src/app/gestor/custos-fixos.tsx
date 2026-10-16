@@ -5,6 +5,7 @@ import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { CampoData } from '@/components/ui/campo-data';
 import { Grade, Indicador } from '@/components/ui/cartao';
 import { Selo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
@@ -20,7 +21,6 @@ import {
   hojeIso,
   lerData,
   lerDecimal,
-  mascararData,
   mascararDecimal,
   mesAtual,
   periodoDoMes,
@@ -145,25 +145,17 @@ function FormCustoFixo({ custo, aoFechar }: { custo: CustoFixo | null; aoFechar:
       <Campo rotulo="Descrição" value={descricao} onChangeText={setDescricao} placeholder="Ex.: Seguro do caminhão" />
       <Campo rotulo="Categoria (opcional)" value={categoria} onChangeText={setCategoria} placeholder="Ex.: Seguro, Financiamento, Rastreador" />
       <Campo rotulo="Valor mensal (R$)" value={valor} onChangeText={(t) => setValor(mascararDecimal(t))} keyboardType="numeric" inputMode="decimal" />
-      <Campo
+      <CampoData
         rotulo="Vale a partir de"
         ajuda="O custo entra no resultado a partir do mês desta data."
-        value={inicio}
-        onChangeText={(t) => setInicio(mascararData(t))}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        placeholder="dd/mm/aaaa"
-        maxLength={10}
+        valor={inicio}
+        onChange={setInicio}
       />
-      <Campo
+      <CampoData
         rotulo="Vale até (opcional)"
         ajuda="Deixe vazio se o custo continua. Preencha para encerrar (ex.: última parcela)."
-        value={fim}
-        onChangeText={(t) => setFim(mascararData(t))}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        placeholder="dd/mm/aaaa"
-        maxLength={10}
+        valor={fim}
+        onChange={setFim}
       />
       <Botao titulo="Salvar" onPress={aoSalvar} carregando={salvando} desativado={!descricao.trim()} />
       <Botao titulo="Cancelar" variante="link" onPress={() => aoFechar(false)} />

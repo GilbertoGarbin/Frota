@@ -6,6 +6,7 @@ import { CampoAnexo } from '@/components/motorista/base';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { CampoData } from '@/components/ui/campo-data';
 import { Grade, Indicador } from '@/components/ui/cartao';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Seletor } from '@/components/ui/seletor';
@@ -37,7 +38,6 @@ import {
   hojeIso,
   lerData,
   lerDecimal,
-  mascararData,
   mascararDecimal,
   mesAtual,
   periodoDoMes,
@@ -242,14 +242,10 @@ function FormManutencao({ manutencao: m, veiculos, viagens, aoFechar }: PropsFor
       <Segmentado rotulo="Tipo" opcoes={TIPOS_MANUTENCAO} valor={tipo} onChange={setTipo} />
       <Campo rotulo="Descrição" value={descricao} onChangeText={setDescricao} placeholder="Ex.: troca de óleo" />
       <Campo rotulo="Valor (R$)" value={valor} onChangeText={(t) => setValor(mascararDecimal(t))} keyboardType="numeric" inputMode="decimal" />
-      <Campo
+      <CampoData
         rotulo="Data"
-        value={data}
-        onChangeText={(t) => setData(mascararData(t))}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        placeholder="dd/mm/aaaa"
-        maxLength={10}
+        valor={data}
+        onChange={setData}
       />
       <Campo rotulo="Km do veículo na manutenção" value={km} onChangeText={setKm} keyboardType="numeric" inputMode="decimal" />
       <Campo

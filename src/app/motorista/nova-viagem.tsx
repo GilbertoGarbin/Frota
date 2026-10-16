@@ -5,11 +5,12 @@ import { TelaMotorista, ValorCalculado } from '@/components/motorista/base';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { CampoData } from '@/components/ui/campo-data';
 import { Seletor } from '@/components/ui/seletor';
 import { useMotorista, type DadosNovaViagem } from '@/context/MotoristaContext';
 import { percentualDe } from '@/utils/dinheiro';
 import { mensagemDeErro } from '@/utils/erros';
-import { formatarData, formatarDecimal, formatarMoeda, hojeIso, lerData, lerDecimal, mascararData, mascararDecimal } from '@/utils/formato';
+import { formatarData, formatarDecimal, formatarMoeda, hojeIso, lerData, lerDecimal, mascararDecimal } from '@/utils/formato';
 
 // 5.3 Cadastrar/editar viagem — caminho de quem dirige e também administra (dono-motorista).
 // O fluxo principal é o gestor criar a viagem no painel. Com ?id= edita uma viagem própria ainda programada.
@@ -83,14 +84,10 @@ export default function NovaViagem() {
   return (
     <TelaMotorista titulo={editando ? 'Editar viagem' : 'Nova viagem'} aoVoltar={() => router.back()}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-      <Campo
+      <CampoData
         rotulo="Data"
-        value={data}
-        onChangeText={(t) => setData(mascararData(t))}
-        keyboardType="number-pad"
-        inputMode="numeric"
-        placeholder="dd/mm/aaaa"
-        maxLength={10}
+        valor={data}
+        onChange={setData}
       />
       <Seletor
         rotulo="Veículo"

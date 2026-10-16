@@ -5,6 +5,7 @@ import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { CampoData } from '@/components/ui/campo-data';
 import { Grade, Indicador, Secao } from '@/components/ui/cartao';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Selo } from '@/components/ui/selo';
@@ -42,7 +43,6 @@ import {
   hojeIso,
   lerData,
   lerDecimal,
-  mascararData,
   mascararDecimal,
 } from '@/utils/formato';
 
@@ -340,13 +340,10 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
             keyboardType="numeric"
             inputMode="decimal"
           />
-          <Campo
+          <CampoData
             rotulo="Data"
-            value={data}
-            onChangeText={(t) => setData(mascararData(t))}
-            keyboardType="number-pad"
-            inputMode="numeric"
-            maxLength={10}
+            valor={data}
+            onChange={setData}
           />
           <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
           <View style={styles.linha}>

@@ -6,6 +6,7 @@ import { CampoAnexo, Cartao, Dado, estilosMotorista as em, ValorCalculado } from
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { CampoData } from '@/components/ui/campo-data';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useMotorista } from '@/context/MotoristaContext';
@@ -23,7 +24,6 @@ import {
   hojeIso,
   lerData,
   lerDecimal,
-  mascararData,
   mascararDecimal,
 } from '@/utils/formato';
 
@@ -71,20 +71,6 @@ function useEnvio(aoFechar: () => void) {
     }
   }
   return { erro, setErro, salvando, enviar };
-}
-
-function CampoData({ valor, onChange }: { valor: string; onChange: (v: string) => void }) {
-  return (
-    <Campo
-      rotulo="Data"
-      value={valor}
-      onChangeText={(t) => onChange(mascararData(t))}
-      keyboardType="number-pad"
-      inputMode="numeric"
-      placeholder="dd/mm/aaaa"
-      maxLength={10}
-    />
-  );
 }
 
 const numerico = { keyboardType: 'numeric', inputMode: 'decimal' } as const;
@@ -146,7 +132,7 @@ export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
 
   return (
     <Moldura titulo="Novo abastecimento" erro={erro} aoFechar={aoFechar}>
-      <CampoData valor={data} onChange={setData} />
+      <CampoData rotulo="Data" valor={data} onChange={setData} />
       <Campo rotulo="Km (odômetro)" value={km} onChangeText={setKm} {...numerico} />
       <Campo rotulo="Posto" value={posto} onChangeText={setPosto} />
       <Segmentado rotulo="Combustível" opcoes={COMBUSTIVEIS} valor={combustivel} onChange={setCombustivel} />
@@ -215,7 +201,7 @@ export function PainelDespesa({ viagem, aoFechar }: PropsPainel) {
 
   return (
     <Moldura titulo="Nova despesa" erro={erro} aoFechar={aoFechar}>
-      <CampoData valor={data} onChange={setData} />
+      <CampoData rotulo="Data" valor={data} onChange={setData} />
       <Segmentado rotulo="Categoria" opcoes={CATEGORIAS} valor={categoria} onChange={setCategoria} />
       <Campo rotulo="Valor (R$)" value={valor} onChangeText={(t) => setValor(mascararDecimal(t))} {...numerico} />
       <Segmentado
@@ -360,7 +346,7 @@ export function PainelCarga({ viagem, aoFechar }: PropsPainel) {
   return (
     <Moldura titulo="Carga complementar" erro={erro} aoFechar={aoFechar}>
       <Text style={em.suave}>Carga extra pega no caminho. O valor soma ao frete da viagem.</Text>
-      <CampoData valor={data} onChange={setData} />
+      <CampoData rotulo="Data" valor={data} onChange={setData} />
       <Campo rotulo="Cliente / embarcador da carga adicional" value={cliente} onChangeText={setCliente} />
       <Campo rotulo="Local de coleta" value={coleta} onChangeText={setColeta} />
       <Campo
@@ -524,13 +510,10 @@ export function PainelConferencia({ viagem, aoFechar, aoFinalizar }: PropsPainel
       <Campo rotulo="Km final" value={kmFinal} onChangeText={setKmFinal} {...numerico} />
       <View style={em.grade}>
         <View style={em.metade}>
-          <Campo
+          <CampoData
             rotulo="Data de chegada"
-            value={data}
-            onChangeText={(t) => setData(mascararData(t))}
-            keyboardType="number-pad"
-            inputMode="numeric"
-            maxLength={10}
+            valor={data}
+            onChange={setData}
           />
         </View>
         <View style={em.metade}>

@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { CampoData } from '@/components/ui/campo-data';
 import { Secao } from '@/components/ui/cartao';
 import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
@@ -30,7 +31,6 @@ import {
   hojeIso,
   lerData,
   lerDecimal,
-  mascararData,
   mascararDecimal,
   mascararInteiro,
 } from '@/utils/formato';
@@ -249,13 +249,10 @@ export function SecaoAbastecimento({ veiculo, aoRegistrar }: { veiculo: Veiculo;
       {aberto ? (
         <View style={styles.formulario}>
           <LinhaForm minimo={160}>
-            <Campo
+            <CampoData
               rotulo="Data *"
-              value={data}
-              onChangeText={(t) => setData(mascararData(t))}
-              keyboardType="number-pad"
-              inputMode="numeric"
-              maxLength={10}
+              valor={data}
+              onChange={setData}
             />
             <Campo
               rotulo="Km do odômetro *"
