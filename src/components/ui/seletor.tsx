@@ -12,26 +12,36 @@ type Props<T extends string> = {
   ajuda?: string;
   /** texto da caixa enquanto nada foi escolhido */
   placeholder?: string;
+  /** sem rótulo em cima e mais baixo: para o cabeçalho das listas (filtros) */
+  compacto?: boolean;
 };
 
 /**
  * Escolha numa lista que abre por cima da tela (web e celular). Para listas que crescem com o
  * cadastro (veículos, motoristas, viagens); para 2 ou 3 opções fixas, usar Segmentado.
  */
-export function Seletor<T extends string>({ rotulo, opcoes, valor, onChange, ajuda, placeholder = 'Escolher…' }: Props<T>) {
+export function Seletor<T extends string>({
+  rotulo,
+  opcoes,
+  valor,
+  onChange,
+  ajuda,
+  placeholder = 'Escolher…',
+  compacto,
+}: Props<T>) {
   const [aberto, setAberto] = useState(false);
   const escolhida = opcoes.find((o) => o.valor === valor);
 
   return (
-    <View style={styles.grupo}>
-      <Text style={styles.rotulo}>{rotulo}</Text>
+    <View style={[styles.grupo, compacto && styles.grupoCompacto]}>
+      {compacto ? null : <Text style={styles.rotulo}>{rotulo}</Text>}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={rotulo}
         accessibilityHint="Abre a lista para escolher"
         onPress={() => setAberto(true)}
-        style={({ pressed }) => [styles.caixa, pressed && styles.pressionado]}>
-        <Text style={[styles.valor, !escolhida && styles.vazio]} numberOfLines={1}>
+        style={({ pressed }) => [styles.caixa, compacto && styles.caixaCompacta, pressed && styles.pressionado]}>
+        <Text style={[styles.valor, compacto && styles.valorCompacto, !escolhida && styles.vazio]} numberOfLines={1}>
           {escolhida?.rotulo ?? placeholder}
         </Text>
         <MaterialCommunityIcons name="chevron-down" size={22} color={Cores.textoSuave} />
@@ -86,6 +96,9 @@ const styles = StyleSheet.create({
     backgroundColor: Cores.branco,
   },
   valor: { flex: 1, fontSize: 16, color: Cores.texto },
+  grupoCompacto: { minWidth: 150 },
+  caixaCompacta: { minHeight: 36 },
+  valorCompacto: { fontSize: 14 },
   vazio: { color: Cores.textoSuave },
   ajuda: { fontSize: 13, color: Cores.textoSuave },
   pressionado: { opacity: 0.7 },

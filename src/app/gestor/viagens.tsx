@@ -1,5 +1,6 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -13,8 +14,7 @@ import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { CampoBusca } from '@/components/ui/campo-busca';
-import { Faixa, ItemFaixa } from '@/components/ui/cartao';
-import { Segmentado } from '@/components/ui/segmentado';
+import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useCarregar } from '@/hooks/use-carregar';
@@ -51,6 +51,10 @@ export default function Viagens() {
 
   const nomeMotorista = (id: string) => dados?.motoristas.find((m) => m.id === id)?.nome ?? '—';
   const placa = (id: string) => dados?.veiculos.find((v) => v.id === id)?.placa ?? '—';
+  const veiculoTexto = (id: string) => {
+    const vei = dados?.veiculos.find((v) => v.id === id);
+    return vei ? `${vei.placa} — ${vei.modelo}` : '—';
+  };
 
   const formulario =
     dados && (modo.tipo === 'nova' || modo.tipo === 'editar') ? (
@@ -104,11 +108,11 @@ export default function Viagens() {
       acao={
         <View style={styles.acoes}>
           <CampoBusca valor={busca} onChange={setBusca} placeholder="Placa, motorista, cliente ou cidade" />
+          <Seletor rotulo="Mostrar" opcoes={FILTROS} valor={filtro} onChange={setFiltro} compacto />
           <Botao titulo="+ Nova viagem" compacto onPress={() => setModo({ tipo: 'nova' })} desativado={!dados} />
         </View>
       }>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-      <Segmentado rotulo="Mostrar" opcoes={FILTROS} valor={filtro} onChange={setFiltro} />
 
       {!dados ? (
         erro ? null : <ActivityIndicator color={Cores.primaria} />
@@ -124,7 +128,7 @@ export default function Viagens() {
             key={v.id}
             viagem={v}
             motorista={nomeMotorista(v.motorista_id)}
-            placa={placa(v.veiculo_id)}
+            veiculo={veiculoTexto(v.veiculo_id)}
             aoAbrir={() => setModo({ tipo: 'detalhe', id: v.id })}
           />
         ))
@@ -134,48 +138,100 @@ export default function Viagens() {
   );
 }
 
-type PropsCartao = { viagem: Viagem; motorista: string; placa: string; aoAbrir: () => void };
+type PropsCartao = { viagem: Viagem; motorista: string; veiculo: string; aoAbrir: () => void };
 
-function CartaoViagem({ viagem: v, motorista, placa, aoAbrir }: PropsCartao) {
+const ICONE_STATUS: Record<StatusViagem, keyof typeof MaterialCommunityIcons.glyphMap> = {
+  programada: 'clock-outline',
+  em_andamento: 'truck-outline',
+  finalizada: 'check',
+};
+
+// Cartão da lista (layout do protótipo): rota com marcador, dados da viagem e os cinco números
+function CartaoViagem({ viagem: v, motorista, veiculo, aoAbrir }: PropsCartao) {
   const status = v.status as StatusViagem;
   const finalizada = status === 'finalizada';
   const margem = margemPercentual(v);
+  const tomMargem = finalizada ? tomDaMargem(margem) : 'neutro';
+  const corStatus = finalizada ? 'sucesso' : status === 'em_andamento' ? 'aviso' : 'neutro';
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`Abrir viagem ${v.origem} para ${v.destino}`} onPress={aoAbrir} style={styles.cartao}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Abrir viagem ${v.origem} para ${v.destino}`}
+      onPress={aoAbrir}
+      style={({ pressed }) => [styles.cartao, pressed && styles.pressionado]}>
       <View style={styles.cabecalho}>
         <View style={styles.titulos}>
-          <Text style={styles.rota}>
-            {v.origem} → {v.destino}
-          </Text>
-          <Text style={styles.suave}>
-            {motorista} · {placa} · {formatarData(v.data_prevista)}
+          <View style={styles.rotaLinha}>
+            <MaterialCommunityIcons name="map-marker-outline" size={18} color={Cores.primaria} />
+            <Text style={styles.rota} numberOfLines={1}>
+              {v.origem} → {v.destino}
+            </Text>
+          </View>
+          <Text style={styles.suave} numberOfLines={1}>
+            {formatarData(v.data_prevista)} · {motorista} · {veiculo}
             {v.cliente ? ` · ${v.cliente}` : ''}
           </Text>
         </View>
         {adiantamentoEmAberto(v) ? <Selo tipo="aviso">Adiantamento em aberto</Selo> : null}
-        <Selo tipo={finalizada ? 'sucesso' : status === 'em_andamento' ? 'aviso' : 'info'}>{ROTULO_STATUS[status]}</Selo>
+        <View style={[styles.status, styles[`status_${corStatus}`]]}>
+          <MaterialCommunityIcons name={ICONE_STATUS[status]} size={14} color={COR_STATUS[corStatus]} />
+          <Text style={[styles.statusTexto, { color: COR_STATUS[corStatus] }]}>{ROTULO_STATUS[status]}</Text>
+        </View>
       </View>
-      <Faixa>
-        <ItemFaixa
-          rotulo="Frete bruto"
+      <View style={styles.numeros}>
+        <Numero
+          rotulo="Frete Bruto"
           valor={formatarMoeda(v.valor_frete_total)}
-          detalhe={v.valor_frete_total !== v.valor_frete ? `Base ${formatarMoeda(v.valor_frete)} + adicionais` : undefined}
+          nota={v.valor_frete_total !== v.valor_frete ? 'Com adicionais' : undefined}
         />
-        <ItemFaixa
+        <Numero
           rotulo="Combustível"
-          valor={formatarMoeda(v.combustivel_valor)}
+          valor={formatarMoeda(v.combustivel_valor ?? 0)}
           extra={<SeloCombustivel status={v.combustivel_status} />}
         />
-        <ItemFaixa rotulo="Comissão" valor={formatarMoeda(v.comissao_valor)} />
-        <ItemFaixa rotulo="Outras despesas" valor={formatarMoeda(v.total_despesas)} />
-        <ItemFaixa
-          rotulo="Margem"
-          tom={finalizada ? tomDaMargem(margem) : 'neutro'}
-          valor={finalizada ? formatarMoeda(v.resultado_operacional) : '—'}
-          detalhe={finalizada ? formatarPercentual(margem) : undefined}
+        <Numero rotulo="Comissão" valor={formatarMoeda(v.comissao_valor)} />
+        <Numero rotulo="Outras Despesas" valor={formatarMoeda(v.total_despesas)} />
+        <Numero
+          rotulo="Margem Operacional"
+          valor={finalizada ? `${formatarMoeda(v.resultado_operacional)} (${formatarPercentual(margem)})` : '—'}
+          tom={tomMargem}
+          nota={finalizada ? undefined : 'Ao finalizar'}
         />
-      </Faixa>
+      </View>
     </Pressable>
+  );
+}
+
+const COR_STATUS = { sucesso: Cores.sucessoTexto, aviso: Cores.avisoTexto, neutro: Cores.textoSuave } as const;
+
+/** Quadradinho de número do cartão: rótulo pequeno, valor em destaque. */
+function Numero({
+  rotulo,
+  valor,
+  nota,
+  extra,
+  tom = 'neutro',
+}: {
+  rotulo: string;
+  valor: string;
+  nota?: string;
+  extra?: ReactNode;
+  tom?: 'neutro' | 'sucesso' | 'perigo';
+}) {
+  return (
+    <View style={[styles.numero, tom === 'sucesso' && styles.numeroSucesso, tom === 'perigo' && styles.numeroPerigo]}>
+      <Text style={styles.numeroRotulo}>{rotulo}</Text>
+      <Text
+        style={[
+          styles.numeroValor,
+          tom === 'sucesso' && { color: Cores.sucessoTexto },
+          tom === 'perigo' && { color: Cores.perigoTexto },
+        ]}>
+        {valor}
+      </Text>
+      {extra}
+      {nota ? <Text style={styles.numeroNota}>{nota}</Text> : null}
+    </View>
   );
 }
 
@@ -190,6 +246,35 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   suave: { fontSize: 13, color: Cores.textoSuave },
+  pressionado: { opacity: 0.85 },
+  rotaLinha: { flexDirection: 'row', alignItems: 'center', gap: Espaco.xs },
+  status: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Espaco.sm,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  status_sucesso: { backgroundColor: Cores.sucessoFundo },
+  status_aviso: { backgroundColor: Cores.avisoFundo },
+  status_neutro: { backgroundColor: Cores.fundo },
+  statusTexto: { fontSize: 12, fontWeight: '600' },
+  numeros: { flexDirection: 'row', flexWrap: 'wrap', gap: Espaco.sm },
+  numero: {
+    flexGrow: 1,
+    flexBasis: 150,
+    gap: 2,
+    paddingHorizontal: Espaco.md,
+    paddingVertical: Espaco.sm,
+    borderRadius: Raio.sm,
+    backgroundColor: Cores.fundo,
+  },
+  numeroSucesso: { backgroundColor: Cores.sucessoFundo },
+  numeroPerigo: { backgroundColor: Cores.perigoFundo },
+  numeroRotulo: { fontSize: 12, color: Cores.textoSuave },
+  numeroValor: { fontSize: 15, fontWeight: '700', color: Cores.texto },
+  numeroNota: { fontSize: 11, color: Cores.textoSuave },
   vazio: {
     padding: Espaco.xxl,
     alignItems: 'center',
