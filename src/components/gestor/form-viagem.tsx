@@ -214,7 +214,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
 
 /** Texto cinza dentro do campo de adiantamento: a média da rota, quando houver; senão, o que é o campo. */
 function placeholderAdiantamento(rota: string | null, sugestao: Sugestao | null): string {
-  const explicacao = 'Dinheiro para a viagem — deixe vazio se não houver';
+  const explicacao = 'Adiantamento ao motorista nesta viagem';
   if (!rota || !sugestao || sugestao.valor === null) return explicacao;
   const viagens = `${sugestao.quantidade} ${sugestao.quantidade === 1 ? 'viagem' : 'viagens'}`;
   return `Sugerido: ${formatarMoeda(sugestao.valor)} (média de ${viagens})`;
