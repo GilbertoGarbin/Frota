@@ -7,7 +7,6 @@ import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
-import { LinhaForm } from '@/components/ui/linha-form';
 import { Faixa, Grade, Indicador, ItemFaixa, Secao, SecaoRecolhivel } from '@/components/ui/cartao';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Selo } from '@/components/ui/selo';
@@ -354,6 +353,9 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
     const d = lerData(data);
     if (v === null || Number.isNaN(v) || v <= 0) return setErro('Informe o valor.');
     if (!d) return setErro('Data inválida. Use dia/mês/ano.');
+    if (tipo === 'complemento' && !descricao.trim()) {
+      return setErro('Descreva o complemento: de onde para onde e o que está levando.');
+    }
     setErro(null);
     const dados = { tipo, valor: v, data: d, descricao: descricao.trim() || null };
     if (editandoId) await aoAtualizar(editandoId, dados);
@@ -392,18 +394,34 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
           <View style={styles.formulario}>
             {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
             <Segmentado rotulo="Tipo" opcoes={TIPOS_DO_GESTOR} valor={tipo} onChange={setTipo} />
-            <LinhaForm minimo={180}>
-              <Campo
-                rotulo="Valor (R$)"
-                value={valor}
-                onChangeText={(t) => setValor(mascararDecimal(t))}
-                keyboardType="numeric"
-                inputMode="decimal"
-                placeholder="Soma ao frete e à comissão"
-              />
-              <CampoData rotulo="Data" valor={data} onChange={setData} />
-              <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
-            </LinhaForm>
+            <View style={styles.linhaAdicional}>
+              <View style={styles.campoCurto}>
+                <Campo
+                  rotulo="Valor (R$) *"
+                  value={valor}
+                  onChangeText={(t) => setValor(mascararDecimal(t))}
+                  keyboardType="numeric"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                />
+              </View>
+              <View style={styles.campoCurto}>
+                <CampoData rotulo="Data" valor={data} onChange={setData} />
+              </View>
+              <View style={styles.campoLongo}>
+                {tipo === 'complemento' ? (
+                  <Campo
+                    rotulo="Descrição *"
+                    value={descricao}
+                    onChangeText={setDescricao}
+                    placeholder="De onde para onde e o que está levando"
+                  />
+                ) : (
+                  <Campo rotulo="Observação (opcional)" value={descricao} onChangeText={setDescricao} />
+                )}
+              </View>
+            </View>
+            <Text style={styles.suave}>Soma ao frete total da viagem e à base da comissão.</Text>
             <View style={styles.linha}>
               <Botao titulo={editandoId ? 'Salvar alteração' : 'Lançar'} compacto onPress={lancar} />
               <Botao titulo="Cancelar" variante="link" compacto onPress={fechar} />
@@ -655,6 +673,10 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
 
 const styles = StyleSheet.create({
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
+  // valores adicionais: valor e data estreitos, a descrição ocupa o resto
+  linhaAdicional: { flexDirection: 'row', flexWrap: 'wrap', gap: Espaco.md },
+  campoCurto: { flexGrow: 1, flexBasis: 140, maxWidth: 200 },
+  campoLongo: { flexGrow: 1, flexBasis: 260, minWidth: 0 },
   percurso: {
     gap: Espaco.sm,
     paddingHorizontal: Espaco.lg,

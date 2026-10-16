@@ -891,7 +891,18 @@ test('gestor lança complemento de frete e ele soma ao frete total', async () =>
   const mc = await novoMotorista('Carlos', '90000000001', vc);
   const vg = await programar(mc, vc, 1000);
   await como(gestorA, () =>
-    q(`insert into complementos (viagem_id, origem_lancamento, tipo, valor) values ($1, 'gestor', 'complemento', 250)`, [vg]),
+    q(
+      `insert into complementos (viagem_id, origem_lancamento, tipo, valor, descricao)
+       values ($1, 'gestor', 'complemento', 250, 'Chapecó → Xanxerê, 2 paletes')`,
+      [vg],
+    ),
   );
   assert.equal(Number((await viagemGestor(vg)).valor_frete_total), 1250);
+  // sem descrição não entra
+  await assert.rejects(
+    como(gestorA, () =>
+      q(`insert into complementos (viagem_id, origem_lancamento, tipo, valor) values ($1, 'gestor', 'complemento', 10)`, [vg]),
+    ),
+    /complementos_complemento_descrito/,
+  );
 });
