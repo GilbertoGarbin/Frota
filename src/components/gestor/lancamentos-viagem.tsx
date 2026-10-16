@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { CamposPagamento, dadosDoPagamento } from '@/components/campos-pagamento';
+import { BotaoLerNota, ResumoNota, separarNota } from '@/components/leitor-nota';
 import { CampoAnexo } from '@/components/motorista/base';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
@@ -20,11 +21,13 @@ import {
   lancarDespesaGestor,
   type TipoDocumento,
 } from '@/services/lancamentos-gestor.service';
+import type { ItemNota, NotaLida } from '@/services/nota.service';
 import type { FormaPagamento, Viagem } from '@/services/viagens.service';
 import { totalAbastecimento } from '@/utils/dinheiro';
 import { mensagemDeErro } from '@/utils/erros';
 import {
   formatarData,
+  formatarDecimal,
   formatarMoeda,
   hojeIso,
   lerData,
@@ -36,7 +39,13 @@ import {
 // Formulários do gestor dentro do detalhe da viagem: abrem no próprio bloco (Abastecimentos,
 // Despesas, Documentos) e fecham ao salvar.
 
-type PropsForm = { viagem: Viagem; aoSalvar: () => void; aoCancelar: () => void };
+type PropsForm = {
+  viagem: Viagem;
+  /** placa do caminhão da viagem (confere com a da nota lida) */
+  placa?: string;
+  aoSalvar: () => void;
+  aoCancelar: () => void;
+};
 
 const SIM_NAO = [
   { valor: 'sim', rotulo: 'Sim' },
@@ -88,7 +97,7 @@ function Botoes({ titulo, salvando, aoSalvar, aoCancelar }: { titulo: string; sa
   );
 }
 
-export function FormAbastecimentoGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
+export function FormAbastecimentoGestor({ viagem, placa, aoSalvar, aoCancelar }: PropsForm) {
   const { acesso } = useSessao();
   const { mensagem, setMensagem, salvando, enviar } = useEnvio(aoSalvar);
   const [data, setData] = useState(formatarData(hojeIso()));
@@ -102,10 +111,33 @@ export function FormAbastecimentoGestor({ viagem, aoSalvar, aoCancelar }: PropsF
   const [chavePix, setChavePix] = useState('');
   const [vencimento, setVencimento] = useState('');
   const [anexo, setAnexo] = useState<Anexo | null>(null);
+  // nota fiscal lida: o diesel preenche o formulário; Arla e outros combustíveis vão junto
+  const [nota, setNota] = useState<NotaLida | null>(null);
+  const [extras, setExtras] = useState<ItemNota[]>([]);
+  const [lancarExtras, setLancarExtras] = useState(true);
+  // preço digitado tem 3 casas; o da nota (com desconto) vem com 4
+  const [casasPreco, setCasasPreco] = useState(3);
 
   const litrosLidos = lerDecimal(litros);
   const precoLido = lerDecimal(preco);
   const total = litrosLidos && precoLido ? totalAbastecimento(litrosLidos, precoLido) : null;
+
+  function aplicarNota(lida: NotaLida, arquivo: Anexo | null) {
+    const { principal, extras: outros } = separarNota(lida);
+    setNota(lida);
+    setExtras(outros);
+    setLancarExtras(true);
+    if (lida.data) setData(formatarData(lida.data));
+    if (lida.km) setKm(mascararInteiro(String(Math.round(lida.km))));
+    if (lida.emitente) setPosto(lida.emitente);
+    if (principal) {
+      setCombustivel(principal.combustivel);
+      setLitros(formatarDecimal(principal.quantidade, 3));
+      setPreco(formatarDecimal(principal.precoUnitario, 4));
+      setCasasPreco(4);
+    }
+    if (arquivo && !anexo) setAnexo(arquivo);
+  }
 
   function salvar() {
     const faltando = preenchidos([
@@ -126,28 +158,47 @@ export function FormAbastecimentoGestor({ viagem, aoSalvar, aoCancelar }: PropsF
     if (!pagamento || !acesso) return;
     const extra = dadosDoPagamento(pagamento, chavePix, vencimento);
     if (typeof extra === 'string') return invalido(extra);
-    enviar(() =>
-      lancarAbastecimentoGestor(
-        acesso.tenantId,
+    const comum = { data: dataIso, km: kmLido, forma_pagamento: pagamento, ...extra, posto: posto.trim() || null };
+    const tenantId = acesso.tenantId;
+    enviar(async () => {
+      await lancarAbastecimentoGestor(
+        tenantId,
         viagem,
-        {
-          data: dataIso,
-          km: kmLido,
-          litros: litrosLidos,
-          preco_litro: precoLido,
-          combustivel,
-          forma_pagamento: pagamento,
-          ...extra,
-          tanque_cheio: cheio === 'sim',
-          posto: posto.trim() || null,
-        },
+        { ...comum, litros: litrosLidos, preco_litro: precoLido, combustivel, tanque_cheio: cheio === 'sim' },
         anexo,
-      ),
-    );
+      );
+      // Arla e outros itens da mesma nota: mesmo dia, km e pagamento (o comprovante fica no principal)
+      if (lancarExtras) {
+        for (const item of extras) {
+          await lancarAbastecimentoGestor(
+            tenantId,
+            viagem,
+            {
+              ...comum,
+              litros: item.quantidade,
+              preco_litro: item.precoUnitario,
+              combustivel: item.combustivel ?? 'arla32',
+              tanque_cheio: false,
+            },
+            null,
+          );
+        }
+      }
+    });
   }
 
   return (
     <Moldura mensagem={mensagem} aoFecharMensagem={() => setMensagem(null)}>
+      <BotaoLerNota aoLer={aplicarNota} />
+      {nota ? (
+        <ResumoNota
+          nota={nota}
+          placa={placa ?? null}
+          extras={extras}
+          lancarExtras={lancarExtras}
+          aoMudarLancarExtras={setLancarExtras}
+        />
+      ) : null}
       <LinhaForm minimo={160}>
         <CampoData rotulo="Data *" valor={data} onChange={setData} />
         <Campo
@@ -161,7 +212,10 @@ export function FormAbastecimentoGestor({ viagem, aoSalvar, aoCancelar }: PropsF
         <Campo
           rotulo="Preço por litro (R$) *"
           value={preco}
-          onChangeText={(t) => setPreco(mascararDecimal(t, 3))}
+          onChangeText={(t) => {
+            if (!t) setCasasPreco(3);
+            setPreco(mascararDecimal(t, casasPreco));
+          }}
           keyboardType="numeric"
           inputMode="decimal"
           placeholder="Ex.: 5,899"

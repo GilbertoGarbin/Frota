@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CamposPagamento, dadosDoPagamento } from '@/components/campos-pagamento';
+import { BotaoLerNota, ResumoNota, separarNota } from '@/components/leitor-nota';
 import { CampoAnexo, Cartao, Dado, estilosMotorista as em, ValorCalculado } from '@/components/motorista/base';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
@@ -14,6 +15,7 @@ import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useMotorista } from '@/context/MotoristaContext';
 import type { Anexo } from '@/services/anexo.service';
 import type { Registro, ViagemMotorista } from '@/services/motorista.service';
+import type { ItemNota, NotaLida } from '@/services/nota.service';
 import type { FormaPagamento } from '@/services/viagens.service';
 import { somar, totalAbastecimento } from '@/utils/dinheiro';
 import { mensagemDeErro } from '@/utils/erros';
@@ -74,7 +76,7 @@ const numerico = { keyboardType: 'numeric', inputMode: 'decimal' } as const;
 // --- 5.9 Novo abastecimento ---------------------------------------------------------
 
 export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
-  const { lancarAbastecimento } = useMotorista();
+  const { lancarAbastecimento, perfil } = useMotorista();
   const { erro, setErro, salvando, enviar } = useEnvio(aoFechar);
   const [data, setData] = useState(formatarData(hojeIso()));
   const [km, setKm] = useState('');
@@ -87,10 +89,34 @@ export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
   const [chavePix, setChavePix] = useState('');
   const [vencimento, setVencimento] = useState('');
   const [anexo, setAnexo] = useState<Anexo | null>(null);
+  // nota fiscal lida: o diesel preenche o formulário; Arla e outros combustíveis vão junto
+  const [nota, setNota] = useState<NotaLida | null>(null);
+  const [extras, setExtras] = useState<ItemNota[]>([]);
+  const [lancarExtras, setLancarExtras] = useState(true);
+  // preço digitado tem 3 casas; o da nota (com desconto) vem com 4
+  const [casasPreco, setCasasPreco] = useState(3);
+  const placa = perfil.veiculos.find((v) => v.id === viagem.veiculo_id)?.placa ?? null;
 
   const litrosLidos = lerDecimal(litros);
   const precoLido = lerDecimal(preco);
   const total = litrosLidos && precoLido ? totalAbastecimento(litrosLidos, precoLido) : null;
+
+  function aplicarNota(lida: NotaLida, arquivo: Anexo | null) {
+    const { principal, extras: outros } = separarNota(lida);
+    setNota(lida);
+    setExtras(outros);
+    setLancarExtras(true);
+    if (lida.data) setData(formatarData(lida.data));
+    if (lida.km) setKm(formatarDecimal(lida.km, 0));
+    if (lida.emitente) setPosto(lida.emitente);
+    if (principal) {
+      setCombustivel(principal.combustivel);
+      setLitros(formatarDecimal(principal.quantidade, 3));
+      setPreco(formatarDecimal(principal.precoUnitario, 4));
+      setCasasPreco(4);
+    }
+    if (arquivo && !anexo) setAnexo(arquivo);
+  }
 
   function salvar() {
     const dataIso = lerData(data);
@@ -105,34 +131,61 @@ export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
     if (!pagamento) return setErro('Escolha a forma de pagamento.');
     const extra = dadosDoPagamento(pagamento, chavePix, vencimento);
     if (typeof extra === 'string') return setErro(extra);
-    enviar(() =>
-      lancarAbastecimento(
+    const comum = { data: dataIso, km: kmLido, posto: posto.trim() || null, forma_pagamento: pagamento, ...extra };
+    enviar(async () => {
+      await lancarAbastecimento(
         viagem,
         {
-          data: dataIso,
-          km: kmLido,
-          posto: posto.trim() || null,
+          ...comum,
           combustivel,
           litros: litrosLidos,
           preco_litro: precoLido,
           total: totalAbastecimento(litrosLidos, precoLido),
           tanque_cheio: cheio,
-          forma_pagamento: pagamento,
-          ...extra,
         },
         anexo,
-      ),
-    );
+      );
+      // Arla e outros itens da mesma nota: mesmo dia, km e pagamento (o comprovante fica no principal)
+      if (lancarExtras) {
+        for (const item of extras) {
+          await lancarAbastecimento(
+            viagem,
+            {
+              ...comum,
+              combustivel: item.combustivel ?? 'arla32',
+              litros: item.quantidade,
+              preco_litro: item.precoUnitario,
+              total: totalAbastecimento(item.quantidade, item.precoUnitario),
+              tanque_cheio: false,
+            },
+            null,
+          );
+        }
+      }
+    });
   }
 
   return (
     <Moldura titulo="Novo abastecimento" erro={erro} aoFechar={aoFechar}>
+      <BotaoLerNota aoLer={aplicarNota} />
+      {nota ? (
+        <ResumoNota nota={nota} placa={placa} extras={extras} lancarExtras={lancarExtras} aoMudarLancarExtras={setLancarExtras} />
+      ) : null}
       <CampoData rotulo="Data" valor={data} onChange={setData} />
       <Campo rotulo="Km (odômetro)" value={km} onChangeText={setKm} {...numerico} />
       <Campo rotulo="Posto" value={posto} onChangeText={setPosto} />
       <Segmentado rotulo="Combustível" opcoes={COMBUSTIVEIS} valor={combustivel} onChange={setCombustivel} />
       <Campo rotulo="Litros" value={litros} onChangeText={setLitros} {...numerico} />
-      <Campo rotulo="Preço por litro (R$)" value={preco} onChangeText={(t) => setPreco(mascararDecimal(t, 3))} placeholder="Ex.: 5,899" {...numerico} />
+      <Campo
+        rotulo="Preço por litro (R$)"
+        value={preco}
+        onChangeText={(t) => {
+          if (!t) setCasasPreco(3);
+          setPreco(mascararDecimal(t, casasPreco));
+        }}
+        placeholder="Ex.: 5,899"
+        {...numerico}
+      />
       <ValorCalculado rotulo="Total" valor={total === null ? '—' : formatarMoeda(total)} nota="Litros × preço por litro" />
       <Segmentado rotulo="Forma de pagamento" opcoes={PAGAMENTOS} valor={pagamento} onChange={setPagamento} />
       <CamposPagamento

@@ -21,3 +21,8 @@ enable_anonymous_sign_ins = false
 # função (auth.getUser), por isso a verificação automática de JWT fica desligada.
 [functions.gerenciar-usuario]
 verify_jwt = false
+
+# Lê a nota fiscal do posto (PDF/XML) para preencher o abastecimento. Confere o login dentro
+# da função, como a gerenciar-usuario.
+[functions.ler-nota]
+verify_jwt = false

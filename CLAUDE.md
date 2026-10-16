@@ -29,8 +29,9 @@ Mesma do projeto FLUXO (`D:\Projetos\FLUXO`), usado como referência de organiza
 - **expo-sqlite** — fila offline do motorista (novidade em relação ao FLUXO).
 - **Android:** APK via EAS Build; correções de JS via EAS Update.
 - **Web:** `npm run build:web` (`expo export -p web`), publicado na Vercel por deploy automático do GitHub.
-- Sem API/servidor separado no MVP. Única Edge Function: `gerenciar-usuario` (criar login e redefinir
-  senha precisam da `service_role`).
+- Sem API/servidor separado no MVP. Edge Functions: `gerenciar-usuario` (criar login e redefinir
+  senha precisam da `service_role`) e `ler-nota` (lê o PDF/XML da nota fiscal do posto e devolve os
+  dados para preencher o abastecimento; as regras ficam em `supabase/functions/ler-nota/nota.ts`).
 
 ## Organização
 

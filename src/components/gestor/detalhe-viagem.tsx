@@ -211,6 +211,7 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
       <BlocoRegistros
         dados={dados}
         aoErro={setErroAcao}
+        placa={placa}
         aoLancar={recarregar}
         aoMarcarPago={(tabela, id, pago) => executar(() => marcarPago(tabela, id, pago))}
       />
@@ -434,6 +435,7 @@ const NOME_DOCUMENTO: Record<string, string> = {
 
 type PropsRegistros = {
   dados: Detalhe;
+  placa: string;
   aoErro: (mensagem: string) => void;
   aoLancar: () => void;
   aoMarcarPago: (tabela: 'abastecimentos' | 'despesas', id: string, pago: boolean) => void;
@@ -463,7 +465,7 @@ function SituacaoPagamento({ item, aoMarcar }: { item: PagamentoDireto; aoMarcar
   );
 }
 
-function BlocoRegistros({ dados, aoErro, aoLancar, aoMarcarPago }: PropsRegistros) {
+function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsRegistros) {
   const { viagem, abastecimentos, despesas, paradas, documentos } = dados;
   // qual formulário de lançamento está aberto (um por vez)
   const [aberto, setAberto] = useState<'abastecimento' | 'despesa' | 'documento' | null>(null);
@@ -488,13 +490,13 @@ function BlocoRegistros({ dados, aoErro, aoLancar, aoMarcarPago }: PropsRegistro
   return (
     <>
       <Secao titulo="Abastecimentos" acao={botaoLancar('abastecimento', '+ Lançar abastecimento')}>
-        {aberto === 'abastecimento' ? <FormAbastecimentoGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} /> : null}
+        {aberto === 'abastecimento' ? <FormAbastecimentoGestor viagem={viagem} placa={placa} aoSalvar={salvo} aoCancelar={fechar} /> : null}
         {abastecimentos.length === 0 ? <Text style={styles.suave}>Nenhum abastecimento nesta viagem.</Text> : null}
         {abastecimentos.map((a) => (
           <View key={a.id} style={styles.item}>
             <View style={styles.itemTexto}>
               <Text style={styles.texto}>
-                {formatarMoeda(a.total)} · {formatarDecimal(a.litros, 1)} L a {formatarDecimal(a.preco_litro, 3)}
+                {formatarMoeda(a.total)} · {formatarDecimal(a.litros, a.litros % 1 === 0 ? 0 : 3)} L a {formatarDecimal(a.preco_litro, Math.round(a.preco_litro * 10_000) % 10 === 0 ? 3 : 4)}
               </Text>
               <Text style={styles.suave}>
                 {formatarData(a.data)} · {formatarKm(a.km)}

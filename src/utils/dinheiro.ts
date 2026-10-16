@@ -11,9 +11,9 @@ export function somar(valores: (number | null | undefined)[]): number {
 
 /** litros × preço por litro, arredondado para centavos (igual à coluna "total" do banco) */
 export function totalAbastecimento(litros: number, precoLitro: number): number {
-  // milésimos de litro × milésimos de real = milionésimos de real
-  const milionesimos = Math.round(litros * 1000) * Math.round(precoLitro * 1000);
-  return emReais(Math.round(milionesimos / 10_000));
+  // milésimos de litro × décimos de milésimo de real (preço com 4 casas, como no banco)
+  const partes = Math.round(litros * 1000) * Math.round(precoLitro * 10_000);
+  return emReais(Math.round(partes / 100_000));
 }
 
 /** percentual de um valor, arredondado para centavos (igual à comissão do banco) */

@@ -877,3 +877,11 @@ test('pagamento direto ao posto: não mexe no adiantamento e só o gestor marca 
     /despesas_forma_pagamento_check/,
   );
 });
+
+test('preço por litro com 4 casas: total bate com a nota com desconto', async () => {
+  const vn = await novoVeiculo('NOT4A44');
+  await abastecer(vn, 1000, 420, 6.7402, true);
+  const a = await um(`select preco_litro, total from abastecimentos where veiculo_id = $1`, [vn]);
+  assert.equal(Number(a.preco_litro), 6.7402);
+  assert.equal(Number(a.total), 2830.88);
+});
