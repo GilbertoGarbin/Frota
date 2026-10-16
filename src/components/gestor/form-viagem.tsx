@@ -17,7 +17,7 @@ import { mensagemDeErro } from '@/utils/erros';
 import { formatarData, formatarDecimal, formatarMoeda, hojeIso, lerData, lerDecimal, mascararDecimal } from '@/utils/formato';
 
 type Props = {
-  /** null = nova viagem; Viagem = editar viagem ainda programada */
+  /** null = nova viagem; Viagem = editar (depois de iniciada, motorista e veículo ficam travados) */
   viagem: Viagem | null;
   motoristas: Motorista[];
   veiculos: Veiculo[];
@@ -43,6 +43,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
   );
   const [sugestao, setSugestao] = useState<Sugestao | null>(null);
   const [mensagem, setMensagem] = useState<ConteudoMensagem | null>(null);
+  const iniciada = viagem !== null && viagem.status !== 'programada';
   const [salvando, setSalvando] = useState(false);
 
   const opcoesMotorista = motoristas
@@ -131,14 +132,33 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
 
       <Bloco>
         <LinhaForm minimo={260}>
-          <Seletor rotulo="Motorista *" opcoes={opcoesMotorista} valor={motoristaId} onChange={aoEscolherMotorista} />
-          <Seletor
-            rotulo="Veículo *"
-            opcoes={opcoesVeiculo}
-            valor={veiculoId}
-            onChange={setVeiculoId}
-            ajuda={opcoesVeiculo.length === 0 ? 'Cadastre um veículo ativo em “Veículos”.' : undefined}
-          />
+          {iniciada ? (
+            // depois de iniciada a viagem está no app do motorista e o combustível sai do km do caminhão
+            <>
+              <Campo
+                rotulo="Motorista"
+                value={opcoesMotorista.find((o) => o.valor === motoristaId)?.rotulo ?? '—'}
+                editable={false}
+                ajuda="Não muda depois que a viagem começou."
+              />
+              <Campo
+                rotulo="Veículo"
+                value={opcoesVeiculo.find((o) => o.valor === veiculoId)?.rotulo ?? '—'}
+                editable={false}
+              />
+            </>
+          ) : (
+            <>
+              <Seletor rotulo="Motorista *" opcoes={opcoesMotorista} valor={motoristaId} onChange={aoEscolherMotorista} />
+              <Seletor
+                rotulo="Veículo *"
+                opcoes={opcoesVeiculo}
+                valor={veiculoId}
+                onChange={setVeiculoId}
+                ajuda={opcoesVeiculo.length === 0 ? 'Cadastre um veículo ativo em “Veículos”.' : undefined}
+              />
+            </>
+          )}
         </LinhaForm>
       </Bloco>
 

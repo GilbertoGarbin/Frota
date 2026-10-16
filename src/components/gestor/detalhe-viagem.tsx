@@ -168,6 +168,12 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
           {status === 'em_andamento' && operacao === null ? (
             <View style={[styles.linha, styles.percursoAcoes]}>
               <Botao titulo="Finalizar viagem" compacto onPress={() => setOperacao('finalizar')} />
+              <Botao titulo="Editar viagem" variante="contorno" compacto onPress={() => aoEditar(v)} />
+            </View>
+          ) : null}
+          {status === 'finalizada' ? (
+            <View style={[styles.linha, styles.percursoAcoes]}>
+              <Botao titulo="Editar viagem" variante="contorno" compacto onPress={() => aoEditar(v)} />
             </View>
           ) : null}
           {status === 'programada' && operacao === null ? (
