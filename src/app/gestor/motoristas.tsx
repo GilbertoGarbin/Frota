@@ -6,6 +6,7 @@ import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { Janela } from '@/components/ui/janela';
 import { CampoData } from '@/components/ui/campo-data';
 import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
@@ -52,8 +53,8 @@ export default function Motoristas() {
   // undefined = lista; null = novo motorista; Motorista = editando
   const [editando, setEditando] = useState<Motorista | null | undefined>(undefined);
 
-  if (editando !== undefined && dados) {
-    return (
+  const formulario =
+    editando !== undefined && dados ? (
       <FormMotorista
         motorista={editando}
         veiculos={dados.veiculos}
@@ -64,13 +65,25 @@ export default function Motoristas() {
           if (salvou) recarregar();
         }}
       />
-    );
-  }
+    ) : null;
 
   const placaDe = (id: string | null) => dados?.veiculos.find((v) => v.id === id)?.placa ?? '—';
 
   const colunas: Coluna<Motorista>[] = [
-    { titulo: 'Nome', flex: 2, celula: (m) => m.nome },
+    {
+      titulo: 'Nome',
+      flex: 2,
+      celula: (m) => (
+        <View style={styles.nome}>
+          <View style={styles.inicial}>
+            <Text style={styles.inicialTexto}>{m.nome.trim().charAt(0).toUpperCase()}</Text>
+          </View>
+          <Text style={styles.texto} numberOfLines={1}>
+            {m.nome}
+          </Text>
+        </View>
+      ),
+    },
     { titulo: 'Veículo', celula: (m) => placaDe(m.veiculo_vinculado_id) },
     {
       titulo: 'Remuneração',
@@ -116,6 +129,7 @@ export default function Motoristas() {
       ) : erro ? null : (
         <ActivityIndicator color={Cores.primaria} />
       )}
+      {formulario}
     </Pagina>
   );
 }
@@ -211,9 +225,7 @@ function FormMotorista({ motorista, veiculos, motoristas, temAcesso, aoFechar }:
   }
 
   return (
-    <Pagina
-      titulo={motorista ? motorista.nome : 'Novo motorista'}
-      media>
+    <Janela visivel titulo={motorista ? 'Editar motorista' : 'Novo motorista'} aoFechar={() => aoFechar(false)}>
       <Mensagem mensagem={mensagem} aoFechar={() => setMensagem(null)} />
       <LinhaForm minimo={280}>
         <Campo rotulo="Nome completo *" value={nome} onChangeText={setNome} autoComplete="name" />
@@ -288,13 +300,12 @@ function FormMotorista({ motorista, veiculos, motoristas, temAcesso, aoFechar }:
         onChange={setStatus}
         ajuda="Motorista inativo perde o acesso ao app."
       />
+      <AcessoAoApp temAcesso={temAcesso} />
       <View style={styles.botoes}>
         <Botao titulo="Salvar" onPress={aoSalvar} carregando={salvando} />
-        <Botao titulo="Voltar" variante="link" onPress={() => aoFechar(false)} />
+        <Botao titulo="Cancelar" variante="link" onPress={() => aoFechar(false)} />
       </View>
-
-      <AcessoAoApp temAcesso={temAcesso} />
-    </Pagina>
+    </Janela>
   );
 }
 
@@ -319,6 +330,16 @@ function AcessoAoApp({ temAcesso }: { temAcesso: boolean }) {
 
 const styles = StyleSheet.create({
   texto: { fontSize: 14, color: Cores.texto },
+  nome: { flexDirection: 'row', alignItems: 'center', gap: Espaco.sm, flexShrink: 1 },
+  inicial: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Cores.chipClaro,
+  },
+  inicialTexto: { fontSize: 13, fontWeight: '700', color: Cores.primariaEscura },
   botoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
   secao: {
     gap: Espaco.md,

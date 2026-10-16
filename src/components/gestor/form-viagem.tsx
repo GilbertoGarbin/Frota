@@ -1,10 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { Janela } from '@/components/ui/janela';
 import { CampoData } from '@/components/ui/campo-data';
 import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
@@ -123,7 +123,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
   }
 
   return (
-    <Pagina titulo={viagem ? 'Editar viagem' : 'Nova viagem'} media>
+    <Janela visivel titulo={viagem ? 'Editar viagem' : 'Nova viagem'} aoFechar={() => aoFechar(false)}>
       <Mensagem mensagem={mensagem} aoFechar={() => setMensagem(null)} />
       {opcoesMotorista.length === 0 ? (
         <Aviso tipo="info">Cadastre um motorista ativo em “Motoristas” antes de criar a viagem.</Aviso>
@@ -208,7 +208,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
           inicial não é pedido aqui — o motorista informa ao confirmar a saída.
         </Text>
       )}
-    </Pagina>
+    </Janela>
   );
 }
 

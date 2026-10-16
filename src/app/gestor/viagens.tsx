@@ -52,8 +52,8 @@ export default function Viagens() {
   const nomeMotorista = (id: string) => dados?.motoristas.find((m) => m.id === id)?.nome ?? '—';
   const placa = (id: string) => dados?.veiculos.find((v) => v.id === id)?.placa ?? '—';
 
-  if (dados && (modo.tipo === 'nova' || modo.tipo === 'editar')) {
-    return (
+  const formulario =
+    dados && (modo.tipo === 'nova' || modo.tipo === 'editar') ? (
       <FormViagem
         viagem={modo.tipo === 'editar' ? modo.viagem : null}
         motoristas={dados.motoristas}
@@ -63,23 +63,27 @@ export default function Viagens() {
           setModo(modo.tipo === 'editar' ? { tipo: 'detalhe', id: modo.viagem.id } : { tipo: 'lista' });
         }}
       />
-    );
-  }
+    ) : null;
 
-  if (dados && modo.tipo === 'detalhe') {
-    const viagem = dados.viagens.find((v) => v.id === modo.id);
+  // editar abre a janela por cima do detalhe da viagem
+  const detalheId = modo.tipo === 'detalhe' ? modo.id : modo.tipo === 'editar' ? modo.viagem.id : null;
+  if (dados && detalheId) {
+    const viagem = dados.viagens.find((v) => v.id === detalheId);
     return (
-      <DetalheViagem
-        key={`${modo.id}-${viagem?.atualizado_em}`}
-        viagemId={modo.id}
-        nomeMotorista={viagem ? nomeMotorista(viagem.motorista_id) : '—'}
-        placa={viagem ? placa(viagem.veiculo_id) : '—'}
-        aoVoltar={() => {
-          recarregar();
-          setModo({ tipo: 'lista' });
-        }}
-        aoEditar={(v) => setModo({ tipo: 'editar', viagem: v })}
-      />
+      <>
+        <DetalheViagem
+          key={`${detalheId}-${viagem?.atualizado_em}`}
+          viagemId={detalheId}
+          nomeMotorista={viagem ? nomeMotorista(viagem.motorista_id) : '—'}
+          placa={viagem ? placa(viagem.veiculo_id) : '—'}
+          aoVoltar={() => {
+            recarregar();
+            setModo({ tipo: 'lista' });
+          }}
+          aoEditar={(v) => setModo({ tipo: 'editar', viagem: v })}
+        />
+        {formulario}
+      </>
     );
   }
 
@@ -125,6 +129,7 @@ export default function Viagens() {
           />
         ))
       )}
+      {formulario}
     </Pagina>
   );
 }

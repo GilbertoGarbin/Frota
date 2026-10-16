@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useState } from 'react';
 import { Slot, usePathname, useRouter, type Href } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -8,17 +9,18 @@ import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useSessao } from '@/context/SessaoContext';
 
 // Menu da spec do gestor (seção 4).
-const MENU: { rotulo: string; rota: Href }[] = [
-  { rotulo: 'Visão Geral', rota: '/gestor' },
-  { rotulo: 'Viagens', rota: '/gestor/viagens' },
-  { rotulo: 'Veículos & Pneus', rota: '/gestor/veiculos' },
-  { rotulo: 'Motoristas', rota: '/gestor/motoristas' },
-  { rotulo: 'Manutenções', rota: '/gestor/manutencoes' },
-  { rotulo: 'Custos Fixos', rota: '/gestor/custos-fixos' },
-  { rotulo: 'Financeiro', rota: '/gestor/financeiro' },
+type ItemMenu = { rotulo: string; rota: Href; icone: keyof typeof MaterialCommunityIcons.glyphMap };
+const MENU: ItemMenu[] = [
+  { rotulo: 'Visão Geral', rota: '/gestor', icone: 'view-dashboard-outline' },
+  { rotulo: 'Viagens', rota: '/gestor/viagens', icone: 'map-outline' },
+  { rotulo: 'Veículos & Pneus', rota: '/gestor/veiculos', icone: 'truck-outline' },
+  { rotulo: 'Motoristas', rota: '/gestor/motoristas', icone: 'account-group-outline' },
+  { rotulo: 'Manutenções', rota: '/gestor/manutencoes', icone: 'wrench-outline' },
+  { rotulo: 'Custos Fixos', rota: '/gestor/custos-fixos', icone: 'archive-outline' },
+  { rotulo: 'Financeiro', rota: '/gestor/financeiro', icone: 'currency-usd' },
 ];
 // Só o admin da transportadora cadastra usuários
-const MENU_ADMIN: { rotulo: string; rota: Href }[] = [{ rotulo: 'Usuários', rota: '/gestor/usuarios' }];
+const MENU_ADMIN: ItemMenu[] = [{ rotulo: 'Usuários', rota: '/gestor/usuarios', icone: 'account-key-outline' }];
 
 const LARGURA_DESKTOP = 900;
 
@@ -58,7 +60,10 @@ function Menu({ largo, aoReabrir }: { largo: boolean; aoReabrir: () => void }) {
           if (ativo) aoReabrir();
           router.navigate(item.rota);
         }}
-        style={[styles.item, ativo && styles.itemAtivo]}>
+        style={[styles.item, styles.itemComIcone, ativo && styles.itemAtivo]}>
+        {largo ? (
+          <MaterialCommunityIcons name={item.icone} size={18} color={ativo ? Cores.branco : TEXTO_MENU} />
+        ) : null}
         <Text style={[styles.itemTexto, ativo && styles.itemTextoAtivo, !item.rota && styles.itemEmBreve]}>
           {item.rotulo}
         </Text>
@@ -145,6 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: Raio.sm,
   },
   itemAtivo: { backgroundColor: Cores.primaria },
+  itemComIcone: { justifyContent: 'flex-start' },
   itemTexto: { fontSize: 14, color: TEXTO_MENU },
   itemTextoAtivo: { color: Cores.branco, fontWeight: '600' },
   itemEmBreve: { color: '#64748B' },

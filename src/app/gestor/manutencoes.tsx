@@ -6,6 +6,7 @@ import { CampoAnexo } from '@/components/motorista/base';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { Janela } from '@/components/ui/janela';
 import { CampoData } from '@/components/ui/campo-data';
 import { Grade, Indicador } from '@/components/ui/cartao';
 import { Segmentado } from '@/components/ui/segmentado';
@@ -69,8 +70,8 @@ export default function Manutencoes() {
   // undefined = lista; null = nova; Manutencao = editando
   const [editando, setEditando] = useState<Manutencao | null | undefined>(undefined);
 
-  if (editando !== undefined && dados) {
-    return (
+  const formulario =
+    editando !== undefined && dados ? (
       <FormManutencao
         manutencao={editando}
         veiculos={dados.veiculos}
@@ -80,8 +81,7 @@ export default function Manutencoes() {
           if (salvou) recarregar();
         }}
       />
-    );
-  }
+    ) : null;
 
   const placa = (id: string) => dados?.veiculos.find((v) => v.id === id)?.placa ?? '—';
   const proximas = dados ? proximasPorVeiculo(dados.manutencoes, dados.veiculos) : [];
@@ -139,6 +139,7 @@ export default function Manutencoes() {
       ) : erro ? null : (
         <ActivityIndicator color={Cores.primaria} />
       )}
+      {formulario}
     </Pagina>
   );
 }
@@ -227,7 +228,7 @@ function FormManutencao({ manutencao: m, veiculos, viagens, aoFechar }: PropsFor
   }
 
   return (
-    <Pagina titulo={m ? 'Editar manutenção' : 'Nova manutenção'} estreita>
+    <Janela visivel titulo={m ? 'Editar manutenção' : 'Nova manutenção'} aoFechar={() => aoFechar(false)}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       <Seletor
         rotulo="Veículo"
@@ -275,6 +276,6 @@ function FormManutencao({ manutencao: m, veiculos, viagens, aoFechar }: PropsFor
           <Botao titulo="Excluir manutenção" variante="link" onPress={() => setConfirmandoExcluir(true)} />
         )
       ) : null}
-    </Pagina>
+    </Janela>
   );
 }

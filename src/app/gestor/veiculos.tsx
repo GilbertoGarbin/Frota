@@ -6,6 +6,7 @@ import { SecaoAbastecimento, SecaoPneus } from '@/components/gestor/veiculo-extr
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { Janela } from '@/components/ui/janela';
 import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
 import { Segmentado } from '@/components/ui/segmentado';
@@ -34,8 +35,8 @@ export default function Veiculos() {
   // undefined = lista; null = novo veículo; Veiculo = editando
   const [editando, setEditando] = useState<Veiculo | null | undefined>(undefined);
 
-  if (editando !== undefined) {
-    return (
+  const formulario =
+    editando !== undefined ? (
       <FormVeiculo
         veiculo={editando}
         aoFechar={(salvou) => {
@@ -43,8 +44,7 @@ export default function Veiculos() {
           if (salvou) recarregar();
         }}
       />
-    );
-  }
+    ) : null;
 
   const colunas: Coluna<Veiculo>[] = [
     { titulo: 'Placa', celula: (v) => v.placa },
@@ -84,6 +84,7 @@ export default function Veiculos() {
       ) : erro ? null : (
         <ActivityIndicator color={Cores.primaria} />
       )}
+      {formulario}
     </Pagina>
   );
 }
@@ -127,9 +128,10 @@ function FormVeiculo({ veiculo, aoFechar }: { veiculo: Veiculo | null; aoFechar:
   }
 
   return (
-    <Pagina
+    <Janela
+      visivel
       titulo={veiculo ? `Editar ${veiculo.placa}` : 'Novo veículo'}
-      media>
+      aoFechar={() => aoFechar(mudou)}>
       <Mensagem mensagem={mensagem} aoFechar={() => setMensagem(null)} />
       <LinhaForm minimo={220}>
         <Campo
@@ -170,7 +172,7 @@ function FormVeiculo({ veiculo, aoFechar }: { veiculo: Veiculo | null; aoFechar:
       <Segmentado rotulo="Status" opcoes={STATUS_VEICULO} valor={status} onChange={setStatus} />
       <View style={styles.botoes}>
         <Botao titulo="Salvar" onPress={aoSalvar} carregando={salvando} />
-        <Botao titulo="Voltar" variante="link" onPress={() => aoFechar(mudou)} />
+        <Botao titulo="Cancelar" variante="link" onPress={() => aoFechar(mudou)} />
       </View>
       {veiculo ? (
         <>
@@ -178,7 +180,7 @@ function FormVeiculo({ veiculo, aoFechar }: { veiculo: Veiculo | null; aoFechar:
           <SecaoAbastecimento veiculo={veiculo} aoRegistrar={() => setMudou(true)} />
         </>
       ) : null}
-    </Pagina>
+    </Janela>
   );
 }
 

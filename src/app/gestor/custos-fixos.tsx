@@ -5,6 +5,7 @@ import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { Janela } from '@/components/ui/janela';
 import { CampoData } from '@/components/ui/campo-data';
 import { Grade, Indicador } from '@/components/ui/cartao';
 import { Selo } from '@/components/ui/selo';
@@ -37,8 +38,8 @@ export default function CustosFixos() {
   const { dados: custos, erro, recarregar } = useCarregar(listarCustosFixos);
   const [editando, setEditando] = useState<CustoFixo | null | undefined>(undefined);
 
-  if (editando !== undefined) {
-    return (
+  const formulario =
+    editando !== undefined ? (
       <FormCustoFixo
         custo={editando}
         aoFechar={(salvou) => {
@@ -46,8 +47,7 @@ export default function CustosFixos() {
           if (salvou) recarregar();
         }}
       />
-    );
-  }
+    ) : null;
 
   const mes = mesAtual();
   const { inicio, fim } = periodoDoMes(mes);
@@ -94,6 +94,7 @@ export default function CustosFixos() {
       ) : erro ? null : (
         <ActivityIndicator color={Cores.primaria} />
       )}
+      {formulario}
     </Pagina>
   );
 }
@@ -140,7 +141,7 @@ function FormCustoFixo({ custo, aoFechar }: { custo: CustoFixo | null; aoFechar:
   }
 
   return (
-    <Pagina titulo={custo ? 'Editar custo fixo' : 'Novo custo fixo'} estreita>
+    <Janela visivel titulo={custo ? 'Editar custo fixo' : 'Novo custo fixo'} aoFechar={() => aoFechar(false)}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       <Campo rotulo="Descrição" value={descricao} onChangeText={setDescricao} placeholder="Ex.: Seguro do caminhão" />
       <Campo rotulo="Categoria (opcional)" value={categoria} onChangeText={setCategoria} placeholder="Ex.: Seguro, Financiamento, Rastreador" />
@@ -166,6 +167,6 @@ function FormCustoFixo({ custo, aoFechar }: { custo: CustoFixo | null; aoFechar:
           <Botao titulo="Excluir custo fixo" variante="link" onPress={() => setConfirmandoExcluir(true)} />
         )
       ) : null}
-    </Pagina>
+    </Janela>
   );
 }

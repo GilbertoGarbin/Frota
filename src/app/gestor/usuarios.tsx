@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
+import { Janela } from '@/components/ui/janela';
 import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
@@ -60,39 +61,38 @@ export default function Usuarios() {
     );
   }
 
+  // formulários e o resultado abrem numa janela por cima da lista
+  let janela: ReactNode = null;
   if (tela.tipo === 'gestor') {
-    return (
+    janela = (
       <FormGestor
         aoCancelar={voltar}
         aoCriar={(nome, email, senha) => concluir(`${nome} já pode entrar`, email, senha)}
       />
     );
-  }
-  if (tela.tipo === 'motorista' && dados) {
-    return (
+  } else if (tela.tipo === 'motorista' && dados) {
+    janela = (
       <FormMotorista
         motoristas={dados.motoristasSemAcesso}
         aoCancelar={voltar}
         aoCriar={(m, senha) => concluir(`${m.nome} já pode entrar`, formatarCpf(m.cpf), senha)}
       />
     );
-  }
-  if (tela.tipo === 'senha') {
+  } else if (tela.tipo === 'senha') {
     const u = tela.usuario;
-    return (
+    janela = (
       <FormSenha
         usuario={u}
         aoCancelar={voltar}
         aoRedefinir={(senha) => concluir(`Senha de ${u.nome ?? 'usuário'} redefinida`, loginVisivel(u), senha)}
       />
     );
-  }
-  if (tela.tipo === 'pronto') {
-    return (
-      <Pagina titulo={tela.titulo} estreita>
+  } else if (tela.tipo === 'pronto') {
+    janela = (
+      <Janela visivel titulo={tela.titulo} aoFechar={voltar}>
         <DadosDeAcesso login={tela.login} senha={tela.senha} />
-        <Botao titulo="Voltar para Usuários" onPress={voltar} />
-      </Pagina>
+        <Botao titulo="Fechar" onPress={voltar} />
+      </Janela>
     );
   }
 
@@ -191,6 +191,7 @@ export default function Usuarios() {
       ) : erro ? null : (
         <ActivityIndicator color={Cores.primaria} />
       )}
+      {janela}
     </Pagina>
   );
 }
@@ -267,7 +268,7 @@ function FormGestor({ aoCancelar, aoCriar }: PropsGestor) {
   };
 
   return (
-    <Pagina titulo="Novo gestor" subtitulo="Usa o painel inteiro, mas não cadastra usuários." estreita>
+    <Janela visivel titulo="Novo gestor" subtitulo="Usa o painel inteiro, mas não cadastra usuários." aoFechar={aoCancelar}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       <Campo rotulo="Nome" value={nome} onChangeText={setNome} autoComplete="name" />
       <Campo
@@ -283,7 +284,7 @@ function FormGestor({ aoCancelar, aoCriar }: PropsGestor) {
       <CampoSenha valor={senha} aoMudar={setSenha} />
       <Botao titulo="Criar gestor" onPress={aoSalvar} carregando={enviando} desativado={!nome.trim() || !email.trim()} />
       <Botao titulo="Cancelar" variante="link" onPress={aoCancelar} />
-    </Pagina>
+    </Janela>
   );
 }
 
@@ -309,7 +310,7 @@ function FormMotorista({ motoristas, aoCancelar, aoCriar }: PropsMotorista) {
   };
 
   return (
-    <Pagina titulo="Acesso de motorista" subtitulo="O motorista entra no app ou na web com o CPF." estreita>
+    <Janela visivel titulo="Acesso de motorista" subtitulo="O motorista entra no app ou na web com o CPF." aoFechar={aoCancelar}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {motoristas.length === 0 ? (
         <Aviso tipo="info">
@@ -329,7 +330,7 @@ function FormMotorista({ motoristas, aoCancelar, aoCriar }: PropsMotorista) {
         </>
       )}
       <Botao titulo="Cancelar" variante="link" onPress={aoCancelar} />
-    </Pagina>
+    </Janela>
   );
 }
 
@@ -348,15 +349,16 @@ function FormSenha({ usuario, aoCancelar, aoRedefinir }: PropsSenha) {
   };
 
   return (
-    <Pagina
+    <Janela
+      visivel
       titulo="Redefinir senha"
       subtitulo={`${usuario.nome ?? ''} · ${loginVisivel(usuario)}. No próximo login, a pessoa cria uma senha nova.`}
-      estreita>
+      aoFechar={aoCancelar}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       <CampoSenha valor={senha} aoMudar={setSenha} />
       <Botao titulo="Redefinir senha" onPress={aoSalvar} carregando={enviando} />
       <Botao titulo="Cancelar" variante="link" onPress={aoCancelar} />
-    </Pagina>
+    </Janela>
   );
 }
 

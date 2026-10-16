@@ -7,6 +7,7 @@ import { Cores, Espaco, Raio } from '@/constants/tema';
 type Props = {
   visivel: boolean;
   titulo: string;
+  subtitulo?: string;
   aoFechar: () => void;
   children: ReactNode;
 };
@@ -15,15 +16,18 @@ type Props = {
  * Janela por cima da tela para formulários de lançamento (como o "+" do FLUXO): fundo
  * escurecido, título com botão de fechar e conteúdo rolável. No celular ocupa quase a tela toda.
  */
-export function Janela({ visivel, titulo, aoFechar, children }: Props) {
+export function Janela({ visivel, titulo, subtitulo, aoFechar, children }: Props) {
   return (
     <Modal visible={visivel} transparent animationType="fade" onRequestClose={aoFechar}>
       <KeyboardAvoidingView style={styles.fundo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.janela}>
           <View style={styles.cabecalho}>
-            <Text accessibilityRole="header" style={styles.titulo}>
-              {titulo}
-            </Text>
+            <View style={styles.titulos}>
+              <Text accessibilityRole="header" style={styles.titulo}>
+                {titulo}
+              </Text>
+              {subtitulo ? <Text style={styles.subtitulo}>{subtitulo}</Text> : null}
+            </View>
             <Pressable accessibilityRole="button" accessibilityLabel="Fechar" onPress={aoFechar} hitSlop={10}>
               <MaterialCommunityIcons name="close" size={24} color={Cores.textoSuave} />
             </Pressable>
@@ -63,6 +67,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Cores.borda,
   },
-  titulo: { flex: 1, fontSize: 18, fontWeight: '700', color: Cores.texto },
+  titulos: { flex: 1, gap: 2 },
+  titulo: { fontSize: 18, fontWeight: '700', color: Cores.texto },
+  subtitulo: { fontSize: 13, color: Cores.textoSuave },
   conteudo: { gap: Espaco.lg, padding: Espaco.xl },
 });
