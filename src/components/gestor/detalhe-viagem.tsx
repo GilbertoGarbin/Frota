@@ -5,6 +5,7 @@ import { FormAbastecimentoGestor, FormDespesaGestor, FormDocumentoGestor } from 
 import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
+import { BotaoIcone } from '@/components/ui/botao-icone';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
 import { Faixa, Grade, Indicador, ItemFaixa, Secao, SecaoRecolhivel } from '@/components/ui/cartao';
@@ -421,7 +422,7 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
       resumo={resumoLista(complementos.length, 'valor adicional', 'valores adicionais', somar(complementos.map((c) => c.valor)))}
       acao={
         editavel && !aberto ? (
-          <Botao titulo="+ Lançar valor adicional" variante="contorno" compacto onPress={() => setAberto(true)} />
+          <BotaoIcone icone="plus" rotulo="Lançar valor adicional" onPress={() => setAberto(true)} />
         ) : undefined
       }>
       {complementos.length === 0 ? (
@@ -621,7 +622,7 @@ function FormOperacao({ operacao, viagem, temCanhoto, aoConcluir, aoCancelar }: 
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {!iniciar && !temCanhoto ? (
         <Aviso tipo="info">
-          Para finalizar, anexe antes o canhoto em Documentos (+ Adicionar documento, tipo Canhoto).
+          Para finalizar, anexe antes o canhoto: no bloco Documentos, toque no + e escolha o tipo Canhoto.
         </Aviso>
       ) : null}
       <View style={styles.linhaAdicional}>
@@ -701,7 +702,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
     aoLancar();
   };
   const botaoLancar = (qual: NonNullable<typeof aberto>, titulo: string) => (
-    <Botao titulo={titulo} variante="contorno" compacto onPress={() => setAberto(qual)} />
+    <BotaoIcone icone="plus" rotulo={titulo} onPress={() => setAberto(qual)} />
   );
 
   async function abrir(caminho: string) {
@@ -720,7 +721,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
         titulo="Abastecimentos"
         resumo={resumoLista(abastecimentos.length, 'abastecimento', 'abastecimentos', somar(abastecimentos.map((a) => a.total)))}
         extra={seloAPagar(abastecimentos.map((a) => ({ ...a, valor: a.total ?? 0 })))}
-        acao={botaoLancar('abastecimento', '+ Lançar abastecimento')}>
+        acao={botaoLancar('abastecimento', 'Lançar abastecimento')}>
         {abastecimentos.length === 0 ? <Text style={styles.suave}>Nenhum abastecimento nesta viagem.</Text> : null}
         {abastecimentos.map((a) => (
           <View key={a.id} style={styles.item}>
@@ -746,7 +747,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
             titulo="Despesas"
             resumo={resumoLista(despesas.length, 'despesa', 'despesas', somar(despesas.map((d) => d.valor)), 'Nenhuma despesa')}
             extra={seloAPagar(despesas)}
-            acao={botaoLancar('despesa', '+ Lançar despesa')}>
+            acao={botaoLancar('despesa', 'Lançar despesa')}>
             {despesas.length === 0 ? <Text style={styles.suave}>Nenhuma despesa nesta viagem.</Text> : null}
             {despesas.map((d) => (
               <View key={d.id} style={styles.item}>
@@ -773,7 +774,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
             extra={
               documentos.some((d) => d.tipo === 'canhoto') ? <Selo tipo="sucesso">Canhoto enviado</Selo> : null
             }
-            acao={botaoLancar('documento', '+ Adicionar documento')}>
+            acao={botaoLancar('documento', 'Adicionar documento')}>
             {documentos.length === 0 ? <Text style={styles.suave}>Nenhum documento enviado.</Text> : null}
             {documentos.map((d) => (
               <View key={d.id} style={styles.item}>
