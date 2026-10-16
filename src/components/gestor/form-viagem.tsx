@@ -173,35 +173,29 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
           />
         </LinhaForm>
         <LinhaForm minimo={260}>
-          <Campo
-            rotulo="Adiantamento (R$)"
-            ajuda="Valor que a empresa entrega ao motorista antes da viagem. Deixe vazio se não houver."
-            value={adiantamento}
-            onChangeText={(t) => setAdiantamento(mascararDecimal(t))}
-            keyboardType="numeric"
-            inputMode="decimal"
-          />
-          {/* Valor calculado: chip claro, nunca com cara de campo (spec, seção 2) */}
-          <View style={styles.sugestao}>
-            <Text style={styles.sugestaoRotulo}>Adiantamento sugerido</Text>
-            <Text style={styles.sugestaoValor}>
-              {!rota
-                ? 'Informe origem e destino.'
-                : !sugestaoDaRota
-                  ? 'Calculando…'
-                  : sugestaoDaRota.valor === null
-                    ? 'Sem histórico nesta rota — defina o valor manualmente.'
-                    : `${formatarMoeda(sugestaoDaRota.valor)} (média de ${sugestaoDaRota.quantidade} ${sugestaoDaRota.quantidade === 1 ? 'viagem' : 'viagens'} nesta rota)`}
-            </Text>
-            {sugestaoDaRota?.valor != null ? (
-              <Botao
-                titulo="Usar este valor"
-                variante="link"
-                compacto
-                onPress={() => setAdiantamento(formatarDecimal(sugestaoDaRota.valor))}
-              />
+          <View>
+            {/* a sugestão (média da rota) fica dentro do campo e some quando a pessoa digita */}
+            <Campo
+              rotulo="Adiantamento ao motorista (R$)"
+              ajuda="Dinheiro que a empresa entrega ao motorista para a viagem. Deixe vazio se não houver."
+              value={adiantamento}
+              onChangeText={(t) => setAdiantamento(mascararDecimal(t))}
+              keyboardType="numeric"
+              inputMode="decimal"
+              placeholder={placeholderAdiantamento(rota, sugestaoDaRota)}
+            />
+            {sugestaoDaRota?.valor != null && !adiantamento ? (
+              <View style={styles.adiantamento}>
+                <Botao
+                  titulo="Usar o sugerido"
+                  variante="link"
+                  compacto
+                  onPress={() => setAdiantamento(formatarDecimal(sugestaoDaRota.valor))}
+                />
+              </View>
             ) : null}
           </View>
+          <View />
         </LinhaForm>
       </Bloco>
 
@@ -217,6 +211,15 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
       )}
     </Pagina>
   );
+}
+
+/** Texto cinza dentro do campo de adiantamento: a média da rota, quando houver. */
+function placeholderAdiantamento(rota: string | null, sugestao: Sugestao | null): string {
+  if (!rota) return 'Informe origem e destino para sugerir';
+  if (!sugestao) return 'Calculando a sugestão…';
+  if (sugestao.valor === null) return 'Sem histórico nesta rota';
+  const viagens = `${sugestao.quantidade} ${sugestao.quantidade === 1 ? 'viagem' : 'viagens'}`;
+  return `Sugerido: ${formatarMoeda(sugestao.valor)} (média de ${viagens})`;
 }
 
 /** Grupo de campos com um título pequeno, para a tela não virar uma lista comprida de campos. */
@@ -240,8 +243,6 @@ const styles = StyleSheet.create({
   },
   blocoTitulo: { fontSize: 13, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', color: Cores.textoSuave },
   botoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
-  sugestao: { gap: 2, padding: Espaco.md, borderRadius: Raio.sm, backgroundColor: Cores.chipClaro },
-  sugestaoRotulo: { fontSize: 13, fontWeight: '600', color: Cores.primariaEscura },
-  sugestaoValor: { fontSize: 14, color: Cores.primariaEscura },
+  adiantamento: { alignItems: 'flex-start' },
   nota: { fontSize: 13, lineHeight: 19, color: Cores.textoSuave },
 });

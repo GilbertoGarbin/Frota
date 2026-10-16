@@ -264,7 +264,7 @@ function BlocoAdiantamento({ viagem, aoSalvar }: { viagem: Viagem; aoSalvar: (va
     <View style={estilosAdiant.cartao}>
       <View style={estilosAdiant.topo}>
         <View style={estilosAdiant.principal}>
-          <Text style={estilosAdiant.rotulo}>Adiantamento</Text>
+          <Text style={estilosAdiant.rotulo}>Adiantamento ao motorista</Text>
           <Text style={[estilosAdiant.valor, !definido && estilosAdiant.valorVazio]}>
             {definido ? formatarMoeda(viagem.valor_adiantamento) : 'Sem adiantamento'}
           </Text>
@@ -317,9 +317,11 @@ function BlocoAdiantamento({ viagem, aoSalvar }: { viagem: Viagem; aoSalvar: (va
       ) : null}
 
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-      <Text style={estilosAdiant.sugestao}>
-        {editando ? `${textoSugestao} Se o motorista já iniciou a viagem, o valor novo aparece no app dele.` : textoSugestao}
-      </Text>
+      {editando ? (
+        <Text style={estilosAdiant.sugestao}>
+          {`${textoSugestao} Se o motorista já iniciou a viagem, o valor novo aparece no app dele.`}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -464,7 +466,7 @@ function BlocoPrestacao({ viagem: v, aoMarcar }: { viagem: Viagem; aoMarcar: (ac
   return (
     <Secao titulo="Prestação de contas do adiantamento">
       <Grade>
-        <Indicador rotulo="Adiantamento" valor={formatarMoeda(v.valor_adiantamento)} />
+        <Indicador rotulo="Adiantamento ao motorista" valor={formatarMoeda(v.valor_adiantamento)} />
         <Indicador rotulo="Gasto pelo motorista" valor={formatarMoeda(v.adiantamento_gasto)} />
         <Indicador
           rotulo={saldo >= 0 ? 'Saldo a devolver pelo motorista' : 'Saldo a reembolsar ao motorista'}
