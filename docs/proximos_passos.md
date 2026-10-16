@@ -46,6 +46,13 @@ Implementado e publicado em 14/10/2026. Leia antes a seção
 2. Dar acesso aos motoristas da Garbin em Gestor > Usuários > "+ Acesso de motorista" e
    passar o CPF e a senha temporária para cada um.
 
+3. **E-mail próprio (SMTP) — adiado pelo Gilberto em 16/10/2026.** O Frota (e o FLUXO) usam o
+   envio gratuito do Supabase: ~2 e-mails/hora e só para quem é da equipe no Supabase. Clientes
+   não recebem a confirmação do cadastro nem o link de "Esqueci minha senha". Plano: conta no
+   Resend, domínio g2fluxo.com.br (ex.: nao-responda@), SMTP no painel do Supabase e então
+   ativar o modelo em português (`supabase/templates/recuperar-senha.html`, bloco comentado
+   no `config.toml`). No FLUXO, só com autorização dele.
+
 ## Decisões já tomadas com o Gilberto
 
 - A transportadora se cadastra sozinha pelo site, com período de avaliação.
