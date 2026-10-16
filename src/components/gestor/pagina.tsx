@@ -12,15 +12,17 @@ type Props = PropsWithChildren<{
   estreita?: boolean;
   /** formulário grande com campos lado a lado (LinhaForm) */
   media?: boolean;
+  /** subtítulo na mesma linha do título (quebra para baixo se não couber) */
+  subtituloAoLado?: boolean;
 }>;
 
 /** Área de conteúdo de uma tela do painel do gestor (ao lado do menu). */
-export function Pagina({ titulo, subtitulo, acao, estreita, media, children }: Props) {
+export function Pagina({ titulo, subtitulo, acao, estreita, media, subtituloAoLado, children }: Props) {
   return (
     <ScrollView contentContainerStyle={styles.rolagem} keyboardShouldPersistTaps="handled">
       <View style={[styles.conteudo, estreita && styles.estreita, media && styles.media]}>
         <View style={styles.cabecalho}>
-          <View style={styles.titulos}>
+          <View style={[styles.titulos, subtituloAoLado && styles.titulosLado]}>
             <Text accessibilityRole="header" style={styles.titulo}>
               {titulo}
             </Text>
@@ -41,6 +43,7 @@ const styles = StyleSheet.create({
   media: { maxWidth: 920 },
   cabecalho: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
   titulos: { flex: 1, minWidth: 200, gap: 2 },
+  titulosLado: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: Espaco.md },
   titulo: { fontSize: 24, fontWeight: '700', color: Cores.texto },
   subtitulo: { fontSize: 14, color: Cores.textoSuave },
 });

@@ -108,6 +108,7 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
     <Pagina
       titulo={`${v.origem} → ${v.destino}`}
       subtitulo={`${nomeMotorista} · ${placa} · ${formatarData(v.data_prevista)}`}
+      subtituloAoLado
       acao={<Botao titulo="Voltar" variante="contorno" compacto onPress={aoVoltar} />}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {erroAcao ? <Aviso tipo="erro">{erroAcao}</Aviso> : null}
@@ -149,47 +150,53 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         />
       </Faixa>
 
-      <Secao titulo="Percurso">
-        <View style={styles.linha}>
-          <Text style={styles.texto}>Km inicial: {formatarKm(v.km_inicial)}</Text>
-          <Text style={styles.texto}>Km final: {formatarKm(v.km_final)}</Text>
+      <View style={styles.percurso}>
+        <View style={styles.percursoLinha}>
+          <Text style={styles.percursoRotulo}>Percurso</Text>
+          <Dado rotulo="Km inicial" valor={formatarKm(v.km_inicial)} />
+          <Dado rotulo="Km final" valor={formatarKm(v.km_final)} />
           {v.km_inicial !== null && v.km_final !== null ? (
-            <Text style={styles.texto}>Rodado: {formatarKm(v.km_final - v.km_inicial)}</Text>
+            <Dado rotulo="Rodado" valor={formatarKm(v.km_final - v.km_inicial)} />
+          ) : null}
+          {status === 'programada' ? (
+            <View style={[styles.linha, styles.percursoAcoes]}>
+              <Botao titulo="Editar viagem" variante="contorno" compacto onPress={() => aoEditar(v)} />
+              {confirmandoExcluir ? (
+                <>
+                  <Botao
+                    titulo="Confirmar exclusão"
+                    variante="perigo"
+                    compacto
+                    onPress={() =>
+                      executar(async () => {
+                        await excluirViagem(v.id);
+                        aoVoltar();
+                      })
+                    }
+                  />
+                  <Botao titulo="Cancelar" variante="link" compacto onPress={() => setConfirmandoExcluir(false)} />
+                </>
+              ) : (
+                <Botao titulo="Excluir viagem" variante="link" compacto onPress={() => setConfirmandoExcluir(true)} />
+              )}
+            </View>
           ) : null}
         </View>
-        {v.iniciada_em ? <Text style={styles.suave}>Iniciada em {formatarDataHora(v.iniciada_em)}</Text> : null}
-        {v.data_hora_chegada ? (
+        {v.iniciada_em || v.data_hora_chegada ? (
           <Text style={styles.suave}>
-            Chegada em {formatarDataHora(v.data_hora_chegada)}
-            {v.local_chegada ? ` · ${v.local_chegada}` : ''}
+            {[
+              v.iniciada_em ? `Iniciada em ${formatarDataHora(v.iniciada_em)}` : null,
+              v.data_hora_chegada
+                ? `Chegada em ${formatarDataHora(v.data_hora_chegada)}${v.local_chegada ? ` · ${v.local_chegada}` : ''}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         ) : null}
         {v.observacoes ? <Text style={styles.suave}>Observações: {v.observacoes}</Text> : null}
         {v.observacoes_finais ? <Text style={styles.suave}>Observações finais: {v.observacoes_finais}</Text> : null}
-        {status === 'programada' ? (
-          <View style={styles.linha}>
-            <Botao titulo="Editar viagem" variante="contorno" compacto onPress={() => aoEditar(v)} />
-            {confirmandoExcluir ? (
-              <>
-                <Botao
-                  titulo="Confirmar exclusão"
-                  variante="perigo"
-                  compacto
-                  onPress={() =>
-                    executar(async () => {
-                      await excluirViagem(v.id);
-                      aoVoltar();
-                    })
-                  }
-                />
-                <Botao titulo="Cancelar" variante="link" compacto onPress={() => setConfirmandoExcluir(false)} />
-              </>
-            ) : (
-              <Botao titulo="Excluir viagem" variante="link" compacto onPress={() => setConfirmandoExcluir(true)} />
-            )}
-          </View>
-        ) : null}
-      </Secao>
+      </View>
 
       <BlocoAdiantamento viagem={v} aoSalvar={(valor) => executar(() => atualizarViagem(v.id, { valor_adiantamento: valor }))} />
 
@@ -524,6 +531,16 @@ type PropsRegistros = {
 type PagamentoDireto = { forma_pagamento: string; chave_pix: string | null; vencimento: string | null; pago_em: string | null };
 
 /** PIX ou nota a prazo pagos pela empresa: situação e botão para marcar como pago. */
+/** "Km inicial" pequeno em cima, valor embaixo */
+function Dado({ rotulo, valor }: { rotulo: string; valor: string }) {
+  return (
+    <View style={styles.dado}>
+      <Text style={styles.dadoRotulo}>{rotulo}</Text>
+      <Text style={styles.dadoValor}>{valor}</Text>
+    </View>
+  );
+}
+
 function SituacaoPagamento({ item, aoMarcar }: { item: PagamentoDireto; aoMarcar: (pago: boolean) => void }) {
   if (!pagaDireto(item.forma_pagamento)) return null;
   return (
@@ -666,6 +683,21 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
 
 const styles = StyleSheet.create({
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
+  percurso: {
+    gap: Espaco.sm,
+    paddingHorizontal: Espaco.lg,
+    paddingVertical: Espaco.md,
+    borderWidth: 1,
+    borderColor: Cores.borda,
+    borderRadius: Raio.md,
+    backgroundColor: Cores.branco,
+  },
+  percursoLinha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: Espaco.xl, rowGap: Espaco.sm },
+  percursoRotulo: { fontSize: 16, fontWeight: '700', color: Cores.texto },
+  percursoAcoes: { marginLeft: 'auto' },
+  dado: { gap: 1 },
+  dadoRotulo: { fontSize: 11, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase', color: Cores.textoSuave },
+  dadoValor: { fontSize: 15, fontWeight: '600', color: Cores.texto },
   // no celular a situação do pagamento quebra linha em vez de passar da borda
   situacao: { flexShrink: 1, maxWidth: '100%' },
   texto: { fontSize: 14, color: Cores.texto },
