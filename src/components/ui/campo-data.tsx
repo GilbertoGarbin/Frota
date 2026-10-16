@@ -151,7 +151,7 @@ function Calendario({ titulo, iso, aoEscolher, aoFechar }: PropsCalendario) {
 }
 
 const styles = StyleSheet.create({
-  botao: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  botao: { width: 48, height: '100%', alignItems: 'center', justifyContent: 'center' },
   fundo: {
     flex: 1,
     alignItems: 'center',

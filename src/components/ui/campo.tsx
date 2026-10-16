@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useState, type ReactNode } from 'react';
+import { createContext, use, useState, type PropsWithChildren, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
 import { Cores, Espaco, Raio } from '@/constants/tema';
@@ -11,22 +11,32 @@ type Props = TextInputProps & {
   acessorio?: ReactNode;
 };
 
+// Formulários densos (janelas do painel): campos mais baixos, sem mudar cada campo um a um
+const Compacto = createContext(false);
+export const useCampoCompacto = () => use(Compacto);
+
+/** Todos os Campo, CampoData e Seletor dentro deste bloco ficam mais baixos. */
+export function FormularioCompacto({ children }: PropsWithChildren) {
+  return <Compacto value>{children}</Compacto>;
+}
+
 /** Campo com rótulo. Campo de senha ganha o botão de olho para mostrar o que foi digitado. */
 export function Campo({ rotulo, ajuda, style, secureTextEntry, acessorio, ...resto }: Props) {
   const [mostrar, setMostrar] = useState(false);
+  const compacto = useCampoCompacto();
   const temBotao = secureTextEntry || acessorio !== undefined;
   const entrada = (
     <TextInput
       accessibilityLabel={rotulo}
       placeholderTextColor={Cores.textoSuave}
-      style={[styles.entrada, temBotao && styles.comOlho, style]}
+      style={[styles.entrada, compacto && styles.entradaCompacta, temBotao && styles.comOlho, style]}
       secureTextEntry={secureTextEntry && !mostrar}
       {...resto}
     />
   );
   return (
     <View style={styles.grupo}>
-      <Text style={styles.rotulo}>{rotulo}</Text>
+      <Text style={[styles.rotulo, compacto && styles.rotuloCompacto]}>{rotulo}</Text>
       {acessorio !== undefined ? (
         <View>
           {entrada}
@@ -65,6 +75,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Cores.texto,
   },
+  entradaCompacta: { minHeight: 40, fontSize: 15 },
+  rotuloCompacto: { fontSize: 13 },
   comOlho: { paddingRight: 48 },
   olho: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 48, alignItems: 'center', justifyContent: 'center' },
   ajuda: { fontSize: 13, color: Cores.textoSuave },

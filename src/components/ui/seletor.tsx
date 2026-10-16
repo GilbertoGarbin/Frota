@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useCampoCompacto } from '@/components/ui/campo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 
 type Props<T extends string> = {
@@ -30,17 +31,18 @@ export function Seletor<T extends string>({
   compacto,
 }: Props<T>) {
   const [aberto, setAberto] = useState(false);
+  const denso = useCampoCompacto();
   const escolhida = opcoes.find((o) => o.valor === valor);
 
   return (
     <View style={[styles.grupo, compacto && styles.grupoCompacto]}>
-      {compacto ? null : <Text style={styles.rotulo}>{rotulo}</Text>}
+      {compacto ? null : <Text style={[styles.rotulo, denso && styles.rotuloDenso]}>{rotulo}</Text>}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={rotulo}
         accessibilityHint="Abre a lista para escolher"
         onPress={() => setAberto(true)}
-        style={({ pressed }) => [styles.caixa, compacto && styles.caixaCompacta, pressed && styles.pressionado]}>
+        style={({ pressed }) => [styles.caixa, denso && styles.caixaDensa, compacto && styles.caixaCompacta, pressed && styles.pressionado]}>
         <Text style={[styles.valor, compacto && styles.valorCompacto, !escolhida && styles.vazio]} numberOfLines={1}>
           {escolhida?.rotulo ?? placeholder}
         </Text>
@@ -98,6 +100,8 @@ const styles = StyleSheet.create({
   valor: { flex: 1, fontSize: 16, color: Cores.texto },
   grupoCompacto: { minWidth: 150 },
   caixaCompacta: { minHeight: 36 },
+  caixaDensa: { minHeight: 40 },
+  rotuloDenso: { fontSize: 13 },
   valorCompacto: { fontSize: 14 },
   vazio: { color: Cores.textoSuave },
   ajuda: { fontSize: 13, color: Cores.textoSuave },

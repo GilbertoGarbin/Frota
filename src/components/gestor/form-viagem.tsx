@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
-import { Campo } from '@/components/ui/campo';
+import { Campo, FormularioCompacto } from '@/components/ui/campo';
 import { Janela } from '@/components/ui/janela';
 import { CampoData } from '@/components/ui/campo-data';
 import { LinhaForm } from '@/components/ui/linha-form';
@@ -125,6 +125,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
 
   return (
     <Janela visivel titulo={viagem ? 'Editar viagem' : 'Nova viagem'} aoFechar={() => aoFechar(false)}>
+      <FormularioCompacto>
       <Mensagem mensagem={mensagem} aoFechar={() => setMensagem(null)} />
       {opcoesMotorista.length === 0 ? (
         <Aviso tipo="info">Cadastre um motorista ativo em “Motoristas” antes de criar a viagem.</Aviso>
@@ -223,6 +224,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
           inicial não é pedido aqui — o motorista informa ao confirmar a saída.
         </Text>
       )}
+      </FormularioCompacto>
     </Janela>
   );
 }
@@ -247,8 +249,8 @@ function Bloco({ titulo, children }: { titulo?: string; children: ReactNode }) {
 
 const styles = StyleSheet.create({
   bloco: {
-    gap: Espaco.md,
-    padding: Espaco.lg,
+    gap: Espaco.sm,
+    padding: Espaco.md,
     borderWidth: 1,
     borderColor: Cores.borda,
     borderRadius: Raio.md,
