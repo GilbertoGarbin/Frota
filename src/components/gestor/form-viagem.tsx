@@ -133,33 +133,28 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
       <Bloco>
         <LinhaForm minimo={260}>
           {iniciada ? (
-            // depois de iniciada a viagem está no app do motorista e o combustível sai do km do caminhão
-            <>
-              <Campo
-                rotulo="Motorista"
-                value={opcoesMotorista.find((o) => o.valor === motoristaId)?.rotulo ?? '—'}
-                editable={false}
-                ajuda="Não muda depois que a viagem começou."
-              />
-              <Campo
-                rotulo="Veículo"
-                value={opcoesVeiculo.find((o) => o.valor === veiculoId)?.rotulo ?? '—'}
-                editable={false}
-              />
-            </>
+            <Campo
+              rotulo="Motorista"
+              value={opcoesMotorista.find((o) => o.valor === motoristaId)?.rotulo ?? '—'}
+              editable={false}
+            />
           ) : (
-            <>
-              <Seletor rotulo="Motorista *" opcoes={opcoesMotorista} valor={motoristaId} onChange={aoEscolherMotorista} />
-              <Seletor
-                rotulo="Veículo *"
-                opcoes={opcoesVeiculo}
-                valor={veiculoId}
-                onChange={setVeiculoId}
-                ajuda={opcoesVeiculo.length === 0 ? 'Cadastre um veículo ativo em “Veículos”.' : undefined}
-              />
-            </>
+            <Seletor rotulo="Motorista *" opcoes={opcoesMotorista} valor={motoristaId} onChange={aoEscolherMotorista} />
+          )}
+          {iniciada ? (
+            <Campo rotulo="Veículo" value={opcoesVeiculo.find((o) => o.valor === veiculoId)?.rotulo ?? '—'} editable={false} />
+          ) : (
+            <Seletor
+              rotulo="Veículo *"
+              opcoes={opcoesVeiculo}
+              valor={veiculoId}
+              onChange={setVeiculoId}
+              ajuda={opcoesVeiculo.length === 0 ? 'Cadastre um veículo ativo em “Veículos”.' : undefined}
+            />
           )}
         </LinhaForm>
+        {/* depois de iniciada a viagem está no app do motorista e o combustível sai do km do caminhão */}
+        {iniciada ? <Text style={styles.nota}>Motorista e veículo não mudam depois que a viagem começou.</Text> : null}
       </Bloco>
 
       <Bloco titulo="Rota e carga">
