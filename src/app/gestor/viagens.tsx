@@ -123,15 +123,17 @@ export default function Viagens() {
           </Text>
         </View>
       ) : (
-        visiveis.map((v) => (
-          <CartaoViagem
-            key={v.id}
-            viagem={v}
-            motorista={nomeMotorista(v.motorista_id)}
-            veiculo={veiculoTexto(v.veiculo_id)}
-            aoAbrir={() => setModo({ tipo: 'detalhe', id: v.id })}
-          />
-        ))
+        <View style={styles.lista}>
+          {visiveis.map((v) => (
+            <CartaoViagem
+              key={v.id}
+              viagem={v}
+              motorista={nomeMotorista(v.motorista_id)}
+              veiculo={veiculoTexto(v.veiculo_id)}
+              aoAbrir={() => setModo({ tipo: 'detalhe', id: v.id })}
+            />
+          ))}
+        </View>
       )}
       {formulario}
     </Pagina>
@@ -179,11 +181,7 @@ function CartaoViagem({ viagem: v, motorista, veiculo, aoAbrir }: PropsCartao) {
         </View>
       </View>
       <View style={styles.numeros}>
-        <Numero
-          rotulo="Frete Bruto"
-          valor={formatarMoeda(v.valor_frete_total)}
-          nota={v.valor_frete_total !== v.valor_frete ? 'Com adicionais' : undefined}
-        />
+        <Numero rotulo="Frete Bruto" valor={formatarMoeda(v.valor_frete_total)} />
         <Numero
           rotulo="Combustível"
           valor={formatarMoeda(v.combustivel_valor ?? 0)}
@@ -195,7 +193,6 @@ function CartaoViagem({ viagem: v, motorista, veiculo, aoAbrir }: PropsCartao) {
           rotulo="Margem Operacional"
           valor={finalizada ? `${formatarMoeda(v.resultado_operacional)} (${formatarPercentual(margem)})` : '—'}
           tom={tomMargem}
-          nota={finalizada ? undefined : 'Ao finalizar'}
         />
       </View>
     </Pressable>
@@ -260,13 +257,14 @@ const styles = StyleSheet.create({
   status_aviso: { backgroundColor: Cores.avisoFundo },
   status_neutro: { backgroundColor: Cores.fundo },
   statusTexto: { fontSize: 12, fontWeight: '600' },
-  numeros: { flexDirection: 'row', flexWrap: 'wrap', gap: Espaco.sm },
+  lista: { gap: Espaco.sm },
+  numeros: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   numero: {
     flexGrow: 1,
     flexBasis: 150,
     gap: 0,
     paddingHorizontal: Espaco.md,
-    paddingVertical: 6,
+    paddingVertical: 4,
     borderRadius: Raio.sm,
     backgroundColor: Cores.fundo,
   },
@@ -285,9 +283,9 @@ const styles = StyleSheet.create({
     backgroundColor: Cores.branco,
   },
   cartao: {
-    gap: Espaco.sm,
+    gap: 6,
     paddingHorizontal: Espaco.lg,
-    paddingVertical: Espaco.md,
+    paddingVertical: Espaco.sm,
     borderWidth: 1,
     borderColor: Cores.borda,
     borderRadius: Raio.md,
