@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Slot, usePathname, useRouter, type Href } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,19 +25,21 @@ const LARGURA_DESKTOP = 900;
 export default function GestorLayout() {
   const { width } = useWindowDimensions();
   const largo = width >= LARGURA_DESKTOP;
+  // Clicar no item do menu da tela aberta recomeça a tela (volta para a lista, fecha o formulário)
+  const [reinicio, setReinicio] = useState(0);
   return (
     <SafeAreaView style={[styles.raiz, largo && styles.raizLarga]}>
-      <Menu largo={largo} />
+      <Menu largo={largo} aoReabrir={() => setReinicio((n) => n + 1)} />
       <View style={styles.conteudo}>
         <FaixaAssinatura />
-        <Slot />
+        <Slot key={reinicio} />
       </View>
     </SafeAreaView>
   );
 }
 
 // Desktop: barra lateral fixa escura (layout escolhido na spec). Tela estreita: faixa no topo.
-function Menu({ largo }: { largo: boolean }) {
+function Menu({ largo, aoReabrir }: { largo: boolean; aoReabrir: () => void }) {
   const router = useRouter();
   const caminho = usePathname();
   const { acesso, sair } = useSessao();
@@ -50,7 +53,11 @@ function Menu({ largo }: { largo: boolean }) {
         accessibilityRole="link"
         accessibilityState={{ selected: ativo, disabled: !item.rota }}
         disabled={!item.rota}
-        onPress={() => item.rota && router.navigate(item.rota)}
+        onPress={() => {
+          if (!item.rota) return;
+          if (ativo) aoReabrir();
+          router.navigate(item.rota);
+        }}
         style={[styles.item, ativo && styles.itemAtivo]}>
         <Text style={[styles.itemTexto, ativo && styles.itemTextoAtivo, !item.rota && styles.itemEmBreve]}>
           {item.rotulo}
