@@ -177,7 +177,6 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
             {/* a sugestão (média da rota) fica dentro do campo e some quando a pessoa digita */}
             <Campo
               rotulo="Adiantamento ao motorista (R$)"
-              ajuda="Dinheiro que a empresa entrega ao motorista para a viagem. Deixe vazio se não houver."
               value={adiantamento}
               onChangeText={(t) => setAdiantamento(mascararDecimal(t))}
               keyboardType="numeric"
@@ -213,11 +212,10 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
   );
 }
 
-/** Texto cinza dentro do campo de adiantamento: a média da rota, quando houver. */
+/** Texto cinza dentro do campo de adiantamento: a média da rota, quando houver; senão, o que é o campo. */
 function placeholderAdiantamento(rota: string | null, sugestao: Sugestao | null): string {
-  if (!rota) return 'Informe origem e destino para sugerir';
-  if (!sugestao) return 'Calculando a sugestão…';
-  if (sugestao.valor === null) return 'Sem histórico nesta rota';
+  const explicacao = 'Dinheiro para a viagem — deixe vazio se não houver';
+  if (!rota || !sugestao || sugestao.valor === null) return explicacao;
   const viagens = `${sugestao.quantidade} ${sugestao.quantidade === 1 ? 'viagem' : 'viagens'}`;
   return `Sugerido: ${formatarMoeda(sugestao.valor)} (média de ${viagens})`;
 }
