@@ -10,7 +10,7 @@ import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
 import { Segmentado } from '@/components/ui/segmentado';
-import { CATEGORIAS_DESPESA, COMBUSTIVEIS, PAGAMENTOS, type Combustivel } from '@/constants/lancamentos';
+import { CATEGORIAS_DESPESA, COMBUSTIVEIS, despesaExigeComprovante, PAGAMENTOS, type Combustivel } from '@/constants/lancamentos';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useMotorista } from '@/context/MotoristaContext';
 import type { Anexo } from '@/services/anexo.service';
@@ -233,6 +233,9 @@ export function PainelDespesa({ viagem, aoFechar }: PropsPainel) {
     if (!categoria) return setErro('Escolha a categoria.');
     if (!valorLido || Number.isNaN(valorLido)) return setErro('Informe o valor.');
     if (!pagamento) return setErro('Escolha a forma de pagamento.');
+    if (despesaExigeComprovante(pagamento) && !anexo) {
+      return setErro('Tire a foto ou anexe o comprovante. Ele é obrigatório para esta forma de pagamento.');
+    }
     const extra = dadosDoPagamento(pagamento, chavePix, vencimento);
     if (typeof extra === 'string') return setErro(extra);
     enviar(() =>
@@ -274,7 +277,11 @@ export function PainelDespesa({ viagem, aoFechar }: PropsPainel) {
       />
       <Campo rotulo="Local / estabelecimento (opcional)" value={local} onChangeText={setLocal} />
       <Campo rotulo="Descrição (opcional)" value={descricao} onChangeText={setDescricao} />
-      <CampoAnexo rotulo="Comprovante" anexo={anexo} onChange={setAnexo} />
+      <CampoAnexo
+        rotulo={despesaExigeComprovante(pagamento) ? 'Comprovante (obrigatório)' : 'Comprovante (opcional)'}
+        anexo={anexo}
+        onChange={setAnexo}
+      />
       <Campo rotulo="Observações (opcional)" value={observacoes} onChangeText={setObservacoes} multiline />
       <Botao titulo="Salvar despesa" onPress={salvar} carregando={salvando} />
     </Moldura>

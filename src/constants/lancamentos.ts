@@ -20,3 +20,7 @@ export type Combustivel = (typeof COMBUSTIVEIS)[number]['valor'];
 export const CATEGORIAS_DESPESA = ['Alimentação', 'Pedágio', 'Estacionamento', 'Hospedagem', 'Borracharia', 'Outros'].map(
   (c) => ({ valor: c, rotulo: c }),
 );
+
+/** Despesa paga assim precisa do comprovante (o banco também exige: despesas_comprovante_obrigatorio). */
+export const despesaExigeComprovante = (forma: FormaPagamento | null) =>
+  forma === 'adiantamento' || forma === 'proprio_bolso' || forma === 'a_prazo';

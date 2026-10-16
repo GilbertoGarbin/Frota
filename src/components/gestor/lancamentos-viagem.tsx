@@ -11,7 +11,7 @@ import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Seletor } from '@/components/ui/seletor';
-import { CATEGORIAS_DESPESA, COMBUSTIVEIS, PAGAMENTOS, type Combustivel } from '@/constants/lancamentos';
+import { CATEGORIAS_DESPESA, COMBUSTIVEIS, despesaExigeComprovante, PAGAMENTOS, type Combustivel } from '@/constants/lancamentos';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useSessao } from '@/context/SessaoContext';
 import type { Anexo } from '@/services/anexo.service';
@@ -264,6 +264,7 @@ export function FormDespesaGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
       !categoria && 'Categoria',
       !valor.trim() && 'Valor',
       !pagamento && 'Forma de pagamento',
+      despesaExigeComprovante(pagamento) && !anexo && 'Comprovante (foto ou arquivo)',
     ]);
     if (faltando.length > 0) return setMensagem({ titulo: 'Preencha os campos obrigatórios', itens: faltando });
     const invalido = (texto: string) => setMensagem({ titulo: 'Confira a despesa', texto });
@@ -317,7 +318,11 @@ export function FormDespesaGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
         <Campo rotulo="Local / estabelecimento (opcional)" value={local} onChangeText={setLocal} />
         <Campo rotulo="Descrição (opcional)" value={descricao} onChangeText={setDescricao} />
       </LinhaForm>
-      <CampoAnexo rotulo="Comprovante (opcional)" anexo={anexo} onChange={setAnexo} />
+      <CampoAnexo
+        rotulo={despesaExigeComprovante(pagamento) ? 'Comprovante *' : 'Comprovante (opcional)'}
+        anexo={anexo}
+        onChange={setAnexo}
+      />
       <Botoes titulo="Lançar despesa" salvando={salvando} aoSalvar={salvar} aoCancelar={aoCancelar} />
     </Moldura>
   );

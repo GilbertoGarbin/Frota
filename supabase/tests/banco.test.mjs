@@ -167,8 +167,8 @@ test('viagem do motorista: totais, comissão e adiantamento em tempo real', asyn
   await como(loginM1, async () => {
     await q('select iniciar_viagem($1, 1000)', [t1]);
     await q('select iniciar_viagem($1, 9999)', [t1]); // reenvio da fila: não muda nada
-    await q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'Alimentação', 100, 'adiantamento')`, [t1]);
-    await q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'Pedágio', 50, 'proprio_bolso')`, [t1]);
+    await q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento, comprovante_path) values ($1, 'Alimentação', 100, 'adiantamento', 'c.jpg')`, [t1]);
+    await q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento, comprovante_path) values ($1, 'Pedágio', 50, 'proprio_bolso', 'c.jpg')`, [t1]);
     await q(`insert into complementos (viagem_id, valor, cliente_carga_adicional) values ($1, 800, 'Cliente X')`, [t1]);
   });
 
@@ -361,7 +361,7 @@ test('isolamento entre tenants', async () => {
     assert.equal((await q('select id from janelas_consumo')).length, 0);
     assert.equal((await q('select id from tenants')).length, 1);
     await assert.rejects(
-      q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'X', 10, 'adiantamento')`, [t1]),
+      q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento, comprovante_path) values ($1, 'X', 10, 'adiantamento', 'c.jpg')`, [t1]),
     );
     await assert.rejects(
       q(`insert into viagens (tenant_id, motorista_id, veiculo_id, origem, destino) values ($1, $2, $3, 'A', 'B')`, [tenantA, m1, v1]),
@@ -384,12 +384,12 @@ test('limites do motorista', async () => {
     assert.equal((await q('select * from viagens_do_motorista() where id = $1', [aberta])).length, 0);
     // viagem de outro motorista
     await assert.rejects(
-      q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'X', 10, 'adiantamento')`, [aberta]),
+      q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento, comprovante_path) values ($1, 'X', 10, 'adiantamento', 'c.jpg')`, [aberta]),
     );
     await assert.rejects(q('select finalizar_viagem($1, 2000)', [aberta]), /não encontrada/);
     // viagem própria já finalizada
     await assert.rejects(
-      q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'X', 10, 'adiantamento')`, [t1]),
+      q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento, comprovante_path) values ($1, 'X', 10, 'adiantamento', 'c.jpg')`, [t1]),
     );
     assert.ok((await q('select id from despesas where viagem_id = $1', [t1])).length > 0, 'mas ainda lê');
     await assert.rejects(q(`update veiculos set km_atual = 1 where id = $1 returning id`, [v1]).then((r) => {
@@ -528,8 +528,8 @@ test('relatórios do gestor: resumo, desempenho por placa e alertas', async () =
   const viagem = await c(async () => (await um(
     `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, valor_adiantamento, status, km_inicial, km_final, data_hora_chegada)
      values ($1, $2, 'A', 'B', 5000, 300, 'finalizada', 1000, 1500, now()) returning id`, [mc, vc])).id);
-  await c(() => q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'Pedágio', 120, 'adiantamento')`, [viagem]));
-  await c(() => q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'Almoço', 40, 'proprio_bolso')`, [viagem]));
+  await c(() => q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento, comprovante_path) values ($1, 'Pedágio', 120, 'adiantamento', 'c.jpg')`, [viagem]));
+  await c(() => q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento, comprovante_path) values ($1, 'Almoço', 40, 'proprio_bolso', 'c.jpg')`, [viagem]));
   await c(() => q(`insert into complementos (viagem_id, valor, tipo) values ($1, 500, 'diaria_espera')`, [viagem]));
   await c(() => q(
     `insert into manutencoes (veiculo_id, tipo, descricao, valor, km, proxima_em_km) values ($1, 'preventiva', 'troca de óleo', 480, 1000, 800)`, [vc]));
@@ -854,8 +854,8 @@ test('pagamento direto ao posto: não mexe no adiantamento e só o gestor marca 
       [vg, vp],
     ));
     const prazo = (await um(
-      `insert into despesas (viagem_id, categoria, valor, forma_pagamento, vencimento)
-       values ($1, 'Borracharia', 150, 'a_prazo', current_date + 5) returning id`,
+      `insert into despesas (viagem_id, categoria, valor, forma_pagamento, vencimento, comprovante_path)
+       values ($1, 'Borracharia', 150, 'a_prazo', current_date + 5, 'c.jpg') returning id`,
       [vg],
     ));
     assert.equal(pix.pago_em, null, 'motorista não marca como pago');
@@ -925,4 +925,22 @@ test('gestor inicia e finaliza a viagem pelo painel, com as mesmas regras do app
   v = await viagemGestor(vg);
   assert.equal(v.status, 'finalizada');
   assert.equal(Number(v.km_final), 50800);
+});
+
+test('despesa com adiantamento, próprio bolso ou a prazo exige comprovante', async () => {
+  const vd = await novoVeiculo('CPV1A11');
+  const md = await novoMotorista('Diego', '92000000001', vd);
+  const vg = await programar(md, vd, 1000);
+  for (const forma of ['adiantamento', 'proprio_bolso', 'a_prazo']) {
+    await assert.rejects(
+      como(gestorA, () =>
+        q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'X', 10, $2)`, [vg, forma]),
+      ),
+      /despesas_comprovante_obrigatorio/,
+    );
+  }
+  // cartão da empresa e PIX da empresa não exigem
+  await como(gestorA, () =>
+    q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'X', 10, 'cartao_empresa')`, [vg]),
+  );
 });
