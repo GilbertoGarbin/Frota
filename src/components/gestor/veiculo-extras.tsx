@@ -119,7 +119,7 @@ export function SecaoPneus({ veiculoId }: { veiculoId: string }) {
             <Segmentado rotulo="Lado" opcoes={LADOS} valor={lado} onChange={setLado} />
           </LinhaForm>
           <LinhaForm minimo={200}>
-            <Segmentado rotulo="Posição" opcoes={POSICOES} valor={posicao} onChange={setPosicao} />
+            <Seletor rotulo="Posição" opcoes={POSICOES} valor={posicao} onChange={setPosicao} />
             <Campo rotulo="Marca / modelo (opcional)" value={marca} onChangeText={setMarca} />
           </LinhaForm>
           <View style={styles.linha}>
@@ -137,7 +137,7 @@ export function SecaoPneus({ veiculoId }: { veiculoId: string }) {
             {p.marca ? <Text style={styles.suave}>{p.marca}</Text> : null}
           </View>
           <View style={styles.pneuEstado}>
-            <Segmentado
+            <Seletor
               rotulo="Estado"
               opcoes={ESTADOS}
               valor={p.estado as EstadoPneu}

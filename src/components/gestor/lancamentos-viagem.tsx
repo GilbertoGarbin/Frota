@@ -220,8 +220,10 @@ export function FormAbastecimentoGestor({ viagem, placa, aoSalvar, aoCancelar }:
           placeholder="Ex.: 5,899"
         />
       </LinhaForm>
-      <Segmentado rotulo="Combustível" opcoes={COMBUSTIVEIS} valor={combustivel} onChange={setCombustivel} />
-      <Segmentado rotulo="Forma de pagamento *" opcoes={PAGAMENTOS} valor={pagamento} onChange={setPagamento} />
+      <LinhaForm minimo={220}>
+        <Seletor rotulo="Combustível" opcoes={COMBUSTIVEIS} valor={combustivel} onChange={setCombustivel} />
+        <Seletor rotulo="Forma de pagamento *" opcoes={PAGAMENTOS} valor={pagamento} onChange={setPagamento} />
+      </LinhaForm>
       <CamposPagamento
         pagamento={pagamento}
         chavePix={chavePix}
@@ -303,7 +305,7 @@ export function FormDespesaGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
           inputMode="decimal"
         />
       </LinhaForm>
-      <Segmentado rotulo="Forma de pagamento *" opcoes={PAGAMENTOS} valor={pagamento} onChange={setPagamento} />
+      <Seletor rotulo="Forma de pagamento *" opcoes={PAGAMENTOS} valor={pagamento} onChange={setPagamento} />
       <CamposPagamento
         pagamento={pagamento}
         chavePix={chavePix}
@@ -336,7 +338,7 @@ export function FormDocumentoGestor({ viagem, aoSalvar, aoCancelar }: PropsForm)
 
   return (
     <Moldura mensagem={mensagem} aoFecharMensagem={() => setMensagem(null)}>
-      <Segmentado rotulo="Tipo de documento *" opcoes={TIPOS_DOCUMENTO} valor={tipo} onChange={setTipo} />
+      <Seletor rotulo="Tipo de documento *" opcoes={TIPOS_DOCUMENTO} valor={tipo} onChange={setTipo} />
       <CampoAnexo rotulo="Arquivo * (foto ou PDF)" anexo={anexo} onChange={setAnexo} />
       <Botoes titulo="Enviar documento" salvando={salvando} aoSalvar={salvar} aoCancelar={aoCancelar} />
     </Moldura>

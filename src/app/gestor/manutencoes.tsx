@@ -240,7 +240,7 @@ function FormManutencao({ manutencao: m, veiculos, viagens, aoFechar }: PropsFor
       {veiculoId ? (
         <Seletor rotulo="Viagem relacionada (opcional)" opcoes={opcoesViagem} valor={viagemId} onChange={setViagemId} />
       ) : null}
-      <Segmentado rotulo="Tipo" opcoes={TIPOS_MANUTENCAO} valor={tipo} onChange={setTipo} />
+      <Seletor rotulo="Tipo" opcoes={TIPOS_MANUTENCAO} valor={tipo} onChange={setTipo} />
       <Campo rotulo="Descrição" value={descricao} onChangeText={setDescricao} placeholder="Ex.: troca de óleo" />
       <Campo rotulo="Valor (R$)" value={valor} onChangeText={(t) => setValor(mascararDecimal(t))} keyboardType="numeric" inputMode="decimal" />
       <CampoData

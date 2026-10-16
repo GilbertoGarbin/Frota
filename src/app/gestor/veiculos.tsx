@@ -9,7 +9,7 @@ import { Campo } from '@/components/ui/campo';
 import { Janela } from '@/components/ui/janela';
 import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
-import { Segmentado } from '@/components/ui/segmentado';
+import { Seletor } from '@/components/ui/seletor';
 import { Selo, type TipoSelo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
 import { Cores, Espaco } from '@/constants/tema';
@@ -169,7 +169,7 @@ function FormVeiculo({ veiculo, aoFechar }: { veiculo: Veiculo | null; aoFechar:
           placeholder="Ex.: 2,50"
         />
       </LinhaForm>
-      <Segmentado rotulo="Status" opcoes={STATUS_VEICULO} valor={status} onChange={setStatus} />
+      <Seletor rotulo="Status" opcoes={STATUS_VEICULO} valor={status} onChange={setStatus} />
       <View style={styles.botoes}>
         <Botao titulo="Salvar" onPress={aoSalvar} carregando={salvando} />
         <Botao titulo="Cancelar" variante="link" onPress={() => aoFechar(mudou)} />
