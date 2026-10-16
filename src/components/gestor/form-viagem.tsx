@@ -129,7 +129,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
         <Aviso tipo="info">Cadastre um motorista ativo em “Motoristas” antes de criar a viagem.</Aviso>
       ) : null}
 
-      <Bloco titulo="Quem leva">
+      <Bloco>
         <LinhaForm minimo={260}>
           <Seletor rotulo="Motorista *" opcoes={opcoesMotorista} valor={motoristaId} onChange={aoEscolherMotorista} />
           <Seletor
@@ -137,11 +137,7 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
             opcoes={opcoesVeiculo}
             valor={veiculoId}
             onChange={setVeiculoId}
-            ajuda={
-              opcoesVeiculo.length === 0
-                ? 'Cadastre um veículo ativo em “Veículos”.'
-                : 'Ao escolher o motorista, o caminhão dele já vem marcado.'
-            }
+            ajuda={opcoesVeiculo.length === 0 ? 'Cadastre um veículo ativo em “Veículos”.' : undefined}
           />
         </LinhaForm>
       </Bloco>
@@ -224,10 +220,10 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
 }
 
 /** Grupo de campos com um título pequeno, para a tela não virar uma lista comprida de campos. */
-function Bloco({ titulo, children }: { titulo: string; children: ReactNode }) {
+function Bloco({ titulo, children }: { titulo?: string; children: ReactNode }) {
   return (
     <View style={styles.bloco}>
-      <Text style={styles.blocoTitulo}>{titulo}</Text>
+      {titulo ? <Text style={styles.blocoTitulo}>{titulo}</Text> : null}
       {children}
     </View>
   );

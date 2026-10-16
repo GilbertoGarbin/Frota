@@ -7,7 +7,7 @@ import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
-import { Grade, Indicador, Secao } from '@/components/ui/cartao';
+import { Faixa, Grade, Indicador, ItemFaixa, Secao } from '@/components/ui/cartao';
 import { Segmentado } from '@/components/ui/segmentado';
 import { Selo } from '@/components/ui/selo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
@@ -121,33 +121,33 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         {v.forma_pagamento_frete ? <Text style={styles.suave}>Pagamento do frete: {v.forma_pagamento_frete}</Text> : null}
       </View>
 
-      <Grade>
-        <Indicador rotulo="Frete bruto" valor={formatarMoeda(v.valor_frete_total)} detalhe={notaDoFrete(dados)} />
-        <Indicador
+      <Faixa>
+        <ItemFaixa rotulo="Frete bruto" valor={formatarMoeda(v.valor_frete_total)} detalhe={notaDoFrete(dados)} />
+        <ItemFaixa
           rotulo="Combustível"
           valor={formatarMoeda(v.combustivel_valor)}
           extra={<SeloCombustivel status={v.combustivel_status} />}
           detalhe={
             v.combustivel_status === 'estimado'
-              ? 'Calculado por km rodado × consumo médio do veículo. Será corrigido quando o motorista reabastecer com tanque cheio.'
+              ? 'Km rodado × consumo médio; corrige no próximo tanque cheio.'
               : v.combustivel_status === 'apurado'
-                ? 'Valor real, rateado a partir dos abastecimentos com tanque cheio.'
-                : 'Calculado quando a viagem finalizar.'
+                ? 'Rateado dos abastecimentos com tanque cheio.'
+                : 'Calculado ao finalizar.'
           }
         />
-        <Indicador
-          rotulo="Comissão do motorista"
+        <ItemFaixa
+          rotulo="Comissão"
           valor={formatarMoeda(v.comissao_valor)}
           detalhe={v.comissao_percentual > 0 ? `${formatarDecimal(v.comissao_percentual)}% do frete` : 'Motorista assalariado'}
         />
-        <Indicador rotulo="Outras despesas" valor={formatarMoeda(v.total_despesas)} />
-        <Indicador
-          rotulo="Margem operacional"
+        <ItemFaixa rotulo="Outras despesas" valor={formatarMoeda(v.total_despesas)} />
+        <ItemFaixa
+          rotulo="Margem"
           tom={status === 'finalizada' ? tomDaMargem(margem) : 'neutro'}
           valor={status === 'finalizada' ? formatarMoeda(v.resultado_operacional) : '—'}
           detalhe={status === 'finalizada' ? formatarPercentual(margem) : 'Disponível ao finalizar'}
         />
-      </Grade>
+      </Faixa>
 
       <Secao titulo="Percurso">
         <View style={styles.linha}>

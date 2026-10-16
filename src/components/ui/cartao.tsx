@@ -46,6 +46,28 @@ export function Indicador({ rotulo, valor, detalhe, tom = 'neutro', extra, onPre
   );
 }
 
+/**
+ * Resumo compacto: vários números num cartão só, separados por linhas finas. Quebra em
+ * duas ou três colunas no celular. Para o topo de telas de detalhe.
+ */
+export function Faixa({ children }: PropsWithChildren) {
+  return <View style={styles.faixa}>{children}</View>;
+}
+
+/** Um número da Faixa. O tom muda só a cor do valor (sem fundo colorido). */
+export function ItemFaixa({ rotulo, valor, detalhe, tom = 'neutro', extra }: Omit<PropsIndicador, 'onPress'>) {
+  return (
+    <View style={styles.itemFaixa}>
+      <View style={styles.linhaRotulo}>
+        <Text style={styles.rotuloFaixa}>{rotulo}</Text>
+        {extra}
+      </View>
+      <Text style={[styles.valorFaixa, { color: TOM[tom].texto }]}>{valor}</Text>
+      {detalhe ? <Text style={styles.detalheFaixa}>{detalhe}</Text> : null}
+    </View>
+  );
+}
+
 /** Linha de cartões que quebra em telas estreitas */
 export function Grade({ children }: PropsWithChildren) {
   return <View style={styles.grade}>{children}</View>;
@@ -74,6 +96,31 @@ const styles = StyleSheet.create({
   rotulo: { fontSize: 13, color: Cores.textoSuave },
   valor: { fontSize: 22, fontWeight: '700' },
   detalhe: { fontSize: 12, color: Cores.textoSuave },
+  faixa: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    borderWidth: 1,
+    borderColor: Cores.borda,
+    borderRadius: Raio.md,
+    backgroundColor: Cores.branco,
+    overflow: 'hidden',
+  },
+  // borda à esquerda e embaixo de cada item: vira grade de linhas finas quando quebra
+  itemFaixa: {
+    flexGrow: 1,
+    flexBasis: 150,
+    gap: 2,
+    paddingHorizontal: Espaco.lg,
+    paddingVertical: Espaco.md,
+    marginLeft: -1,
+    marginBottom: -1,
+    borderLeftWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Cores.borda,
+  },
+  rotuloFaixa: { fontSize: 11, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase', color: Cores.textoSuave },
+  valorFaixa: { fontSize: 18, fontWeight: '700' },
+  detalheFaixa: { fontSize: 11, lineHeight: 15, color: Cores.textoSuave },
   secao: {
     gap: Espaco.md,
     padding: Espaco.lg,
