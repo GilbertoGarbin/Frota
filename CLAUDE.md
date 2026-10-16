@@ -144,6 +144,8 @@ num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer e
 - Formulários de cadastro e de lançamento abrem numa **janela por cima** (`Janela`,
   `src/components/ui/janela.tsx`), com a lista visível atrás. Rodapé sempre com **Salvar e Cancelar**
   juntos. Campos lado a lado com `LinhaForm`; obrigatórios com `*`; faltas e erros na `Mensagem`.
+- Escolhas no painel: **3 opções ou mais = lista** (`Seletor`); **2 opções = botões** (`Segmentado`).
+  No app do motorista as escolhas continuam em botões grandes (celular, uso no posto).
 - Dados: `useCarregar(funcaoDoService)`; acesso ao Supabase só em `src/services/*.service.ts`.
 - Entrada e exibição pt-BR em `src/utils/formato.ts`; erros do banco traduzidos em `src/utils/erros.ts`.
 
