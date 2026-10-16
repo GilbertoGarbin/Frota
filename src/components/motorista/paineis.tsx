@@ -8,6 +8,7 @@ import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
 import { Segmentado } from '@/components/ui/segmentado';
+import { CATEGORIAS_DESPESA, COMBUSTIVEIS, PAGAMENTOS, type Combustivel } from '@/constants/lancamentos';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useMotorista } from '@/context/MotoristaContext';
 import type { Anexo } from '@/services/anexo.service';
@@ -32,12 +33,6 @@ import {
 export type TipoPainel = 'abastecimento' | 'despesa' | 'parada' | 'carga' | 'documentos' | 'conferencia';
 
 type PropsPainel = { viagem: ViagemMotorista; aoFechar: () => void };
-
-const PAGAMENTOS: { valor: FormaPagamento; rotulo: string }[] = [
-  { valor: 'adiantamento', rotulo: 'Adiantamento' },
-  { valor: 'cartao_empresa', rotulo: 'Cartão da empresa' },
-  { valor: 'proprio_bolso', rotulo: 'Próprio bolso' },
-];
 
 function Moldura({ titulo, erro, children, aoFechar }: { titulo: string; erro: string | null; children: ReactNode; aoFechar: () => void }) {
   return (
@@ -77,19 +72,13 @@ const numerico = { keyboardType: 'numeric', inputMode: 'decimal' } as const;
 
 // --- 5.9 Novo abastecimento ---------------------------------------------------------
 
-const COMBUSTIVEIS = [
-  { valor: 'diesel_s10', rotulo: 'Diesel S10' },
-  { valor: 'diesel_s500', rotulo: 'Diesel S500' },
-  { valor: 'arla32', rotulo: 'Arla 32' },
-] as const;
-
 export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
   const { lancarAbastecimento } = useMotorista();
   const { erro, setErro, salvando, enviar } = useEnvio(aoFechar);
   const [data, setData] = useState(formatarData(hojeIso()));
   const [km, setKm] = useState('');
   const [posto, setPosto] = useState('');
-  const [combustivel, setCombustivel] = useState<(typeof COMBUSTIVEIS)[number]['valor']>('diesel_s10');
+  const [combustivel, setCombustivel] = useState<Combustivel>('diesel_s10');
   const [litros, setLitros] = useState('');
   const [preco, setPreco] = useState('');
   const [pagamento, setPagamento] = useState<FormaPagamento | null>(viagem.valor_adiantamento > 0 ? 'adiantamento' : null);
@@ -158,11 +147,6 @@ export function PainelAbastecimento({ viagem, aoFechar }: PropsPainel) {
 
 // --- 5.7 Nova despesa ---------------------------------------------------------------
 
-const CATEGORIAS = ['Alimentação', 'Pedágio', 'Estacionamento', 'Hospedagem', 'Borracharia', 'Outros'].map((c) => ({
-  valor: c,
-  rotulo: c,
-}));
-
 export function PainelDespesa({ viagem, aoFechar }: PropsPainel) {
   const { lancarDespesa } = useMotorista();
   const { erro, setErro, salvando, enviar } = useEnvio(aoFechar);
@@ -202,7 +186,7 @@ export function PainelDespesa({ viagem, aoFechar }: PropsPainel) {
   return (
     <Moldura titulo="Nova despesa" erro={erro} aoFechar={aoFechar}>
       <CampoData rotulo="Data" valor={data} onChange={setData} />
-      <Segmentado rotulo="Categoria" opcoes={CATEGORIAS} valor={categoria} onChange={setCategoria} />
+      <Segmentado rotulo="Categoria" opcoes={CATEGORIAS_DESPESA} valor={categoria} onChange={setCategoria} />
       <Campo rotulo="Valor (R$)" value={valor} onChangeText={(t) => setValor(mascararDecimal(t))} {...numerico} />
       <Segmentado
         rotulo="Forma de pagamento"

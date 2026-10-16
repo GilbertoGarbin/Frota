@@ -13,6 +13,16 @@ const QUALIDADE = 0.6;
 export const TAMANHO_MAXIMO_BYTES = 10 * 1024 * 1024; // limite do bucket
 
 async function prepararFoto(uri: string): Promise<Anexo> {
+  try {
+    return await reduzirFoto(uri);
+  } catch (e) {
+    // na web, imagem que o navegador não abre (ex.: HEIC do iPhone) chega aqui sem mensagem
+    if (e instanceof Error) throw e;
+    throw new Error('Não foi possível abrir esta imagem. Use uma foto JPG, PNG ou WEBP.');
+  }
+}
+
+async function reduzirFoto(uri: string): Promise<Anexo> {
   // renderiza uma vez para conhecer o tamanho real; só reduz (nunca amplia).
   // Só a largura é informada: a altura acompanha a proporção (passar height: null quebra na web).
   let imagem = await ImageManipulator.manipulate(uri).renderAsync();

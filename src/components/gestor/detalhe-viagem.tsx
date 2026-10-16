@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
 
+import { FormAbastecimentoGestor, FormDespesaGestor, FormDocumentoGestor } from '@/components/gestor/lancamentos-viagem';
 import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
@@ -205,7 +206,7 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         />
       ) : null}
 
-      <BlocoRegistros dados={dados} aoErro={setErroAcao} />
+      <BlocoRegistros dados={dados} aoErro={setErroAcao} aoLancar={recarregar} />
     </Pagina>
   );
 }
@@ -416,8 +417,27 @@ function BlocoPrestacao({ viagem: v, aoMarcar }: { viagem: Viagem; aoMarcar: (ac
   );
 }
 
-function BlocoRegistros({ dados, aoErro }: { dados: Detalhe; aoErro: (mensagem: string) => void }) {
-  const { abastecimentos, despesas, paradas, documentos } = dados;
+const NOME_DOCUMENTO: Record<string, string> = {
+  canhoto: 'Canhoto',
+  cte: 'CT-e',
+  nota_fiscal: 'Nota fiscal',
+  comprovante: 'Comprovante',
+  outro: 'Outro documento',
+};
+
+type PropsRegistros = { dados: Detalhe; aoErro: (mensagem: string) => void; aoLancar: () => void };
+
+function BlocoRegistros({ dados, aoErro, aoLancar }: PropsRegistros) {
+  const { viagem, abastecimentos, despesas, paradas, documentos } = dados;
+  // qual formulário de lançamento está aberto (um por vez)
+  const [aberto, setAberto] = useState<'abastecimento' | 'despesa' | 'documento' | null>(null);
+  const fechar = () => setAberto(null);
+  const salvo = () => {
+    setAberto(null);
+    aoLancar();
+  };
+  const botaoLancar = (qual: NonNullable<typeof aberto>, titulo: string) =>
+    aberto === qual ? undefined : <Botao titulo={titulo} variante="contorno" compacto onPress={() => setAberto(qual)} />;
 
   async function abrir(caminho: string) {
     try {
@@ -431,7 +451,8 @@ function BlocoRegistros({ dados, aoErro }: { dados: Detalhe; aoErro: (mensagem: 
 
   return (
     <>
-      <Secao titulo="Abastecimentos">
+      <Secao titulo="Abastecimentos" acao={botaoLancar('abastecimento', '+ Lançar abastecimento')}>
+        {aberto === 'abastecimento' ? <FormAbastecimentoGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} /> : null}
         {abastecimentos.length === 0 ? <Text style={styles.suave}>Nenhum abastecimento nesta viagem.</Text> : null}
         {abastecimentos.map((a) => (
           <View key={a.id} style={styles.item}>
@@ -450,7 +471,8 @@ function BlocoRegistros({ dados, aoErro }: { dados: Detalhe; aoErro: (mensagem: 
         ))}
       </Secao>
 
-      <Secao titulo="Despesas">
+      <Secao titulo="Despesas" acao={botaoLancar('despesa', '+ Lançar despesa')}>
+        {aberto === 'despesa' ? <FormDespesaGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} /> : null}
         {despesas.length === 0 ? <Text style={styles.suave}>Nenhuma despesa nesta viagem.</Text> : null}
         {despesas.map((d) => (
           <View key={d.id} style={styles.item}>
@@ -487,12 +509,13 @@ function BlocoRegistros({ dados, aoErro }: { dados: Detalhe; aoErro: (mensagem: 
         </Secao>
       ) : null}
 
-      <Secao titulo="Documentos">
+      <Secao titulo="Documentos" acao={botaoLancar('documento', '+ Adicionar documento')}>
+        {aberto === 'documento' ? <FormDocumentoGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} /> : null}
         {documentos.length === 0 ? <Text style={styles.suave}>Nenhum documento enviado.</Text> : null}
         {documentos.map((d) => (
           <View key={d.id} style={styles.item}>
             <View style={styles.itemTexto}>
-              <Text style={styles.texto}>{d.tipo === 'canhoto' ? 'Canhoto' : d.tipo}</Text>
+              <Text style={styles.texto}>{NOME_DOCUMENTO[d.tipo] ?? d.tipo}</Text>
               <Text style={styles.suave}>Enviado em {formatarDataHora(d.enviado_em)}</Text>
             </View>
             <Botao titulo="Abrir" variante="link" compacto onPress={() => abrir(d.arquivo_path)} />
