@@ -35,7 +35,7 @@ export function Segmentado<T extends string>({ rotulo, opcoes, valor, onChange, 
           );
         })}
       </View>
-      {ajuda ? <Text style={styles.ajuda}>{ajuda}</Text> : null}
+      {ajuda ? <Text style={[styles.ajuda, compacto && styles.ajudaCompacta]}>{ajuda}</Text> : null}
     </View>
   );
 }
@@ -60,5 +60,6 @@ const styles = StyleSheet.create({
   opcaoCompacta: { minHeight: 40, paddingHorizontal: Espaco.md },
   textoCompacto: { fontSize: 14 },
   rotuloCompacto: { fontSize: 13 },
+  ajudaCompacta: { fontSize: 11, lineHeight: 14 },
   ajuda: { fontSize: 13, color: Cores.textoSuave },
 });

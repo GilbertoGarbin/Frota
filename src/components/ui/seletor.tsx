@@ -48,7 +48,7 @@ export function Seletor<T extends string>({
         </Text>
         <MaterialCommunityIcons name="chevron-down" size={22} color={Cores.textoSuave} />
       </Pressable>
-      {ajuda ? <Text style={styles.ajuda}>{ajuda}</Text> : null}
+      {ajuda ? <Text style={[styles.ajuda, denso && styles.ajudaDensa]}>{ajuda}</Text> : null}
 
       <Modal visible={aberto} transparent animationType="fade" onRequestClose={() => setAberto(false)}>
         <Pressable style={styles.fundo} onPress={() => setAberto(false)} accessibilityLabel="Fechar a lista">
@@ -102,6 +102,7 @@ const styles = StyleSheet.create({
   caixaCompacta: { minHeight: 36 },
   caixaDensa: { minHeight: 40 },
   rotuloDenso: { fontSize: 13 },
+  ajudaDensa: { fontSize: 11, lineHeight: 14 },
   valorCompacto: { fontSize: 14 },
   vazio: { color: Cores.textoSuave },
   ajuda: { fontSize: 13, color: Cores.textoSuave },
