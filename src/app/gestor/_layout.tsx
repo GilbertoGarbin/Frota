@@ -9,7 +9,13 @@ import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useSessao } from '@/context/SessaoContext';
 
 // Menu da spec do gestor (seção 4).
-type ItemMenu = { rotulo: string; rota: Href; icone: keyof typeof MaterialCommunityIcons.glyphMap };
+type ItemMenu = {
+  rotulo: string;
+  rota: Href;
+  icone: keyof typeof MaterialCommunityIcons.glyphMap;
+  /** subitem (recuado, menor) do item de cima */
+  sub?: boolean;
+};
 const MENU: ItemMenu[] = [
   { rotulo: 'Visão Geral', rota: '/gestor', icone: 'view-dashboard-outline' },
   { rotulo: 'Viagens', rota: '/gestor/viagens', icone: 'map-outline' },
@@ -19,6 +25,7 @@ const MENU: ItemMenu[] = [
   { rotulo: 'Manutenções', rota: '/gestor/manutencoes', icone: 'wrench-outline' },
   { rotulo: 'Custos Fixos', rota: '/gestor/custos-fixos', icone: 'archive-outline' },
   { rotulo: 'Financeiro', rota: '/gestor/financeiro', icone: 'currency-usd' },
+  { rotulo: 'Formas de recebimento', rota: '/gestor/formas-recebimento', icone: 'cash-multiple', sub: true },
 ];
 // Só o admin da transportadora cadastra usuários
 const MENU_ADMIN: ItemMenu[] = [{ rotulo: 'Usuários', rota: '/gestor/usuarios', icone: 'account-key-outline' }];
@@ -61,11 +68,12 @@ function Menu({ largo, aoReabrir }: { largo: boolean; aoReabrir: () => void }) {
           if (ativo) aoReabrir();
           router.navigate(item.rota);
         }}
-        style={[styles.item, styles.itemComIcone, ativo && styles.itemAtivo]}>
+        style={[styles.item, styles.itemComIcone, item.sub && largo && styles.itemSub, ativo && styles.itemAtivo]}>
         {largo ? (
-          <MaterialCommunityIcons name={item.icone} size={18} color={ativo ? Cores.branco : TEXTO_MENU} />
+          <MaterialCommunityIcons name={item.icone} size={item.sub ? 15 : 18} color={ativo ? Cores.branco : TEXTO_MENU} />
         ) : null}
-        <Text style={[styles.itemTexto, ativo && styles.itemTextoAtivo, !item.rota && styles.itemEmBreve]}>
+        <Text
+          style={[styles.itemTexto, item.sub && styles.itemTextoSub, ativo && styles.itemTextoAtivo, !item.rota && styles.itemEmBreve]}>
           {item.rotulo}
         </Text>
         {!item.rota && largo ? <Text style={styles.emBreve}>em breve</Text> : null}
@@ -152,7 +160,9 @@ const styles = StyleSheet.create({
   },
   itemAtivo: { backgroundColor: Cores.primaria },
   itemComIcone: { justifyContent: 'flex-start' },
+  itemSub: { minHeight: 32, marginLeft: Espaco.lg },
   itemTexto: { fontSize: 14, color: TEXTO_MENU },
+  itemTextoSub: { fontSize: 13 },
   itemTextoAtivo: { color: Cores.branco, fontWeight: '600' },
   itemEmBreve: { color: '#64748B' },
   emBreve: { fontSize: 11, color: '#64748B' },

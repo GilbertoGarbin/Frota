@@ -7,7 +7,6 @@ import { FormFormaRecebimento } from '@/components/gestor/forma-recebimento';
 import { Botao } from '@/components/ui/botao';
 import { BotaoIcone } from '@/components/ui/botao-icone';
 import { Campo } from '@/components/ui/campo';
-import { Secao } from '@/components/ui/cartao';
 import { CampoBusca } from '@/components/ui/campo-busca';
 import { Janela } from '@/components/ui/janela';
 import { LinhaForm } from '@/components/ui/linha-form';
@@ -43,8 +42,6 @@ async function carregarTela() {
 export default function Clientes() {
   const { dados: tela, erro, recarregar } = useCarregar(carregarTela);
   const dados = tela?.clientes;
-  // forma de recebimento aberta na janela: undefined = nenhuma; null = nova
-  const [formaAberta, setFormaAberta] = useState<FormaRecebimento | null | undefined>(undefined);
   // undefined = só a lista; null = novo cliente; Cliente = editando
   const [editando, setEditando] = useState<Cliente | null | undefined>(undefined);
   const [busca, setBusca] = useState('');
@@ -100,32 +97,6 @@ export default function Clientes() {
       ) : erro ? null : (
         <ActivityIndicator color={Cores.primaria} />
       )}
-      {tela ? (
-        <Secao
-          titulo="Formas de recebimento"
-          acao={<BotaoIcone icone="plus" rotulo="Nova forma de recebimento" onPress={() => setFormaAberta(null)} />}>
-          <Text style={styles.nota}>Como os clientes pagam o frete. Usadas no cadastro do cliente e na viagem.</Text>
-          {tela.formas.length === 0 ? <Text style={styles.suave}>Nenhuma forma cadastrada ainda.</Text> : null}
-          {tela.formas.map((f) => (
-            <View key={f.id} style={styles.forma}>
-              <View style={styles.formaTexto}>
-                <Text style={styles.formaNome}>{f.nome}</Text>
-                <Text style={styles.suave}>{descreverParcelas(f.parcelas)}</Text>
-              </View>
-              <Botao titulo="Editar" variante="link" compacto onPress={() => setFormaAberta(f)} />
-            </View>
-          ))}
-        </Secao>
-      ) : null}
-      {formaAberta !== undefined ? (
-        <FormFormaRecebimento
-          forma={formaAberta}
-          aoFechar={(id) => {
-            setFormaAberta(undefined);
-            if (id) recarregar();
-          }}
-        />
-      ) : null}
       {editando !== undefined && tela ? (
         <FormCliente
           cliente={editando}
@@ -267,17 +238,6 @@ const styles = StyleSheet.create({
   },
   botoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
   nota: { fontSize: 11, color: Cores.textoSuave },
-  suave: { fontSize: 13, color: Cores.textoSuave },
-  forma: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Espaco.md,
-    paddingVertical: Espaco.sm,
-    borderTopWidth: 1,
-    borderTopColor: Cores.borda,
-  },
-  formaTexto: { flex: 1, minWidth: 0, gap: 2 },
-  formaNome: { fontSize: 14, fontWeight: '600', color: Cores.texto },
   formaLinha: { flexDirection: 'row', alignItems: 'flex-start', gap: Espaco.sm },
   formaCampo: { flex: 1, minWidth: 0 },
   formaMais: { paddingTop: 22 },

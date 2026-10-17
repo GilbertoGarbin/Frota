@@ -27,6 +27,10 @@ const TIPOS_DIAS = [
   { valor: 'corridos', rotulo: 'Corridos' },
   { valor: 'uteis', rotulo: 'Úteis' },
 ] as const;
+const SITUACOES = [
+  { valor: 'ativa', rotulo: 'Ativa' },
+  { valor: 'inativa', rotulo: 'Inativa' },
+] as const;
 const QUALQUER = 'qualquer';
 const DIAS = [
   { valor: QUALQUER, rotulo: 'Qualquer dia' },
@@ -59,6 +63,7 @@ export function FormFormaRecebimento({ forma, aoFechar }: Props) {
   const [parcelas, setParcelas] = useState<ParcelaTela[]>(
     forma ? forma.parcelas.map(paraTela) : [novaParcela(100, 'entrega')],
   );
+  const [situacao, setSituacao] = useState<'ativa' | 'inativa'>(forma && !forma.ativo ? 'inativa' : 'ativa');
   const [mensagem, setMensagem] = useState<ConteudoMensagem | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -87,7 +92,7 @@ export function FormFormaRecebimento({ forma, aoFechar }: Props) {
         // sem nome, usa a própria descrição ("70% na saída + 30% na entrega")
         nome: nome.trim() || descreverParcelas(lidas),
         parcelas: lidas,
-        ativo: forma?.ativo ?? true,
+        ativo: situacao === 'ativa',
       });
       aoFechar(id);
     } catch (e) {
@@ -162,6 +167,16 @@ export function FormFormaRecebimento({ forma, aoFechar }: Props) {
       <View style={styles.resumo}>
         <Text style={styles.resumoTexto}>{descreverParcelas(lidas)}</Text>
       </View>
+
+      {forma ? (
+        <Segmentado
+          rotulo="Situação"
+          opcoes={SITUACOES}
+          valor={situacao}
+          onChange={setSituacao}
+          ajuda="Inativa não aparece para escolher no cliente nem na viagem."
+        />
+      ) : null}
 
       <View style={styles.botoes}>
         <Botao titulo="Salvar" onPress={salvar} carregando={salvando} />
