@@ -62,6 +62,7 @@ export default function Viagens() {
         viagem={modo.tipo === 'editar' ? modo.viagem : null}
         motoristas={dados.motoristas}
         veiculos={dados.veiculos}
+        clientes={dados.clientes}
         aoFechar={(salvou) => {
           if (salvou) recarregar();
           setModo(modo.tipo === 'editar' ? { tipo: 'detalhe', id: modo.viagem.id } : { tipo: 'lista' });

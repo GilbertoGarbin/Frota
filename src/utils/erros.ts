@@ -13,6 +13,7 @@ const MENSAGENS: [RegExp, string][] = [
   [/motoristas_tenant_id_cpf_key/, 'Já existe um motorista com este CPF.'],
   [/usuarios_um_admin_por_tenant/, 'A transportadora já tem um admin.'],
   [/veiculos_tenant_id_placa_key/, 'Já existe um veículo com esta placa.'],
+  [/clientes_documento_unico/, 'Já existe um cliente com este CPF/CNPJ.'],
   [/despesas_comprovante_obrigatorio/, 'Anexe o comprovante: despesa paga com adiantamento, do próprio bolso ou a prazo precisa dele.'],
   [/complementos_complemento_descrito/, 'Descreva o complemento: de onde para onde e o que está levando.'],
   [/motoristas_um_ativo_por_veiculo/, 'Este caminhão já está vinculado a outro motorista ativo.'],

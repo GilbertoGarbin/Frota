@@ -147,6 +147,53 @@ export type Database = {
           },
         ]
       }
+      clientes: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          cidade: string | null
+          criado_em: string
+          criado_por: string | null
+          documento: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          tenant_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          cidade?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documento?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          tenant_id?: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          cidade?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          documento?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complementos: {
         Row: {
           atualizado_em: string
@@ -911,6 +958,7 @@ export type Database = {
           atualizado_em: string
           carga: string | null
           cliente: string | null
+          cliente_id: string | null
           combustivel_status: string | null
           combustivel_valor: number | null
           comissao_percentual: number
@@ -948,6 +996,7 @@ export type Database = {
           atualizado_em?: string
           carga?: string | null
           cliente?: string | null
+          cliente_id?: string | null
           combustivel_status?: string | null
           combustivel_valor?: number | null
           comissao_percentual?: number
@@ -985,6 +1034,7 @@ export type Database = {
           atualizado_em?: string
           carga?: string | null
           cliente?: string | null
+          cliente_id?: string | null
           combustivel_status?: string | null
           combustivel_valor?: number | null
           comissao_percentual?: number
@@ -1015,6 +1065,13 @@ export type Database = {
           veiculo_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "viagens_cliente_fk"
+            columns: ["tenant_id", "cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["tenant_id", "id"]
+          },
           {
             foreignKeyName: "viagens_tenant_id_fkey"
             columns: ["tenant_id"]

@@ -10,6 +10,7 @@ import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
 import { Seletor } from '@/components/ui/seletor';
 import { Cores, Espaco, Raio } from '@/constants/tema';
+import type { Cliente } from '@/services/clientes.service';
 import type { Motorista } from '@/services/motoristas.service';
 import type { Veiculo } from '@/services/veiculos.service';
 import { atualizarViagem, criarViagem, sugerirAdiantamento, type Viagem } from '@/services/viagens.service';
@@ -21,17 +22,22 @@ type Props = {
   viagem: Viagem | null;
   motoristas: Motorista[];
   veiculos: Veiculo[];
+  clientes: Cliente[];
   aoFechar: (salvou: boolean) => void;
 };
+
+const AVULSO = 'avulso';
 
 type Sugestao = { rota: string; valor: number | null; quantidade: number };
 
 // Despacho (spec do gestor 6.3): o gestor cria a viagem e atribui a um motorista.
 // O km inicial não é pedido aqui — o motorista informa ao confirmar a saída.
-export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
+export function FormViagem({ viagem, motoristas, veiculos, clientes, aoFechar }: Props) {
   const [motoristaId, setMotoristaId] = useState(viagem?.motorista_id ?? null);
   const [veiculoId, setVeiculoId] = useState(viagem?.veiculo_id ?? null);
-  const [cliente, setCliente] = useState(viagem?.cliente ?? '');
+  // cliente cadastrado (id) ou avulso: só o nome digitado (ex.: uma mudança)
+  const [clienteId, setClienteId] = useState<string>(viagem?.cliente_id ?? AVULSO);
+  const [cliente, setCliente] = useState(viagem && !viagem.cliente_id ? (viagem.cliente ?? '') : '');
   const [origem, setOrigem] = useState(viagem?.origem ?? '');
   const [destino, setDestino] = useState(viagem?.destino ?? '');
   const [carga, setCarga] = useState(viagem?.carga ?? '');
@@ -49,6 +55,12 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
   const opcoesMotorista = motoristas
     .filter((m) => m.status === 'ativo' || m.id === viagem?.motorista_id)
     .map((m) => ({ valor: m.id, rotulo: m.nome }));
+  const opcoesCliente = [
+    { valor: AVULSO, rotulo: 'Sem cadastro (digitar o nome)' },
+    ...clientes
+      .filter((c) => c.ativo || c.id === viagem?.cliente_id)
+      .map((c) => ({ valor: c.id, rotulo: c.cidade ? `${c.nome} · ${c.cidade}` : c.nome })),
+  ];
   const opcoesVeiculo = veiculos
     .filter((v) => v.status === 'ativo' || v.id === viagem?.veiculo_id)
     .map((v) => ({ valor: v.id, rotulo: `${v.placa} · ${v.modelo}` }));
@@ -104,7 +116,8 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
     const dados = {
       motorista_id: motoristaId,
       veiculo_id: veiculoId,
-      cliente: cliente.trim() || null,
+      cliente_id: clienteId === AVULSO ? null : clienteId,
+      cliente: clienteId === AVULSO ? cliente.trim() || null : null,
       origem: origem.trim(),
       destino: destino.trim(),
       carga: carga.trim() || null,
@@ -164,7 +177,10 @@ export function FormViagem({ viagem, motoristas, veiculos, aoFechar }: Props) {
           <CampoData rotulo="Data prevista *" valor={data} onChange={setData} />
         </LinhaForm>
         <LinhaForm minimo={260}>
-          <Campo rotulo="Cliente / embarcador (opcional)" value={cliente} onChangeText={setCliente} />
+          <Seletor rotulo="Cliente" opcoes={opcoesCliente} valor={clienteId} onChange={setClienteId} />
+          {clienteId === AVULSO ? (
+            <Campo rotulo="Nome do cliente (opcional)" value={cliente} onChangeText={setCliente} placeholder="Ex.: mudança do Gilberto" />
+          ) : null}
           <Campo rotulo="Carga (opcional)" value={carga} onChangeText={setCarga} placeholder="Ex.: soja a granel" />
         </LinhaForm>
       </Bloco>

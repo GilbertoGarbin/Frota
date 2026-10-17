@@ -13,6 +13,7 @@ type ItemMenu = { rotulo: string; rota: Href; icone: keyof typeof MaterialCommun
 const MENU: ItemMenu[] = [
   { rotulo: 'Visão Geral', rota: '/gestor', icone: 'view-dashboard-outline' },
   { rotulo: 'Viagens', rota: '/gestor/viagens', icone: 'map-outline' },
+  { rotulo: 'Clientes', rota: '/gestor/clientes', icone: 'domain' },
   { rotulo: 'Veículos & Pneus', rota: '/gestor/veiculos', icone: 'truck-outline' },
   { rotulo: 'Motoristas', rota: '/gestor/motoristas', icone: 'account-group-outline' },
   { rotulo: 'Manutenções', rota: '/gestor/manutencoes', icone: 'wrench-outline' },

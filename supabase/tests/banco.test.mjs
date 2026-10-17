@@ -944,3 +944,47 @@ test('despesa com adiantamento, próprio bolso ou a prazo exige comprovante', as
     q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'X', 10, 'cartao_empresa')`, [vg]),
   );
 });
+
+test('clientes: cadastro por transportadora e viagem com ou sem cliente cadastrado', async () => {
+  const cli = await como(gestorA, async () =>
+    (await um(`insert into clientes (nome, documento, cidade) values ('Cooperativa X', '12345678000199', 'Pato Branco') returning id`)).id,
+  );
+  // outra transportadora não vê
+  await como(gestorB, async () => assert.equal((await q('select id from clientes')).length, 0));
+  // motorista não lê clientes
+  await como(loginM1, async () => assert.equal((await q('select id from clientes')).length, 0));
+  // documento repetido na mesma transportadora não entra
+  await assert.rejects(
+    como(gestorA, () => q(`insert into clientes (nome, documento) values ('Outra', '12345678000199')`)),
+    /clientes_documento_unico/,
+  );
+
+  const vc = await novoVeiculo('CLI1A11');
+  const mc = await novoMotorista('Cláudio', '93000000001', vc);
+  // com cliente cadastrado: o nome vem do cadastro
+  const v1c = await como(gestorA, async () =>
+    (await um(
+      `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, cliente_id, cliente)
+       values ($1, $2, 'A', 'B', 1000, $3, 'qualquer coisa') returning id, cliente`,
+      [mc, vc, cli],
+    )),
+  );
+  assert.equal(v1c.cliente, 'Cooperativa X');
+  // avulso: só o nome digitado
+  const avulsa = await como(gestorA, async () =>
+    (await um(
+      `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, cliente)
+       values ($1, $2, 'A', 'B', 800, 'Mudança do Gilberto') returning cliente, cliente_id`,
+      [mc, vc],
+    )),
+  );
+  assert.equal(avulsa.cliente, 'Mudança do Gilberto');
+  assert.equal(avulsa.cliente_id, null);
+  // cliente de outra transportadora não pode ser usado
+  const cliB = await como(gestorB, async () => (await um(`insert into clientes (nome) values ('Do B') returning id`)).id);
+  await assert.rejects(
+    como(gestorA, () =>
+      q(`insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, cliente_id) values ($1, $2, 'A', 'B', 1, $3)`, [mc, vc, cliB]),
+    ),
+  );
+});

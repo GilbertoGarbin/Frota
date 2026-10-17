@@ -22,3 +22,10 @@ export function cpfValido(texto: string): boolean {
   };
   return digito(9) === Number(d[9]) && digito(10) === Number(d[10]);
 }
+
+/** CPF (11) ou CNPJ (14) enquanto digita: "12345678000199" → "12.345.678/0001-99" */
+export function formatarDocumento(texto: string): string {
+  const d = soDigitos(texto).slice(0, 14);
+  if (d.length <= 11) return formatarCpf(d);
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
