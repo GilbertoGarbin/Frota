@@ -849,8 +849,8 @@ test('pagamento direto ao posto: não mexe no adiantamento e só o gestor marca 
   const ids = await como(login, async () => {
     await q('select iniciar_viagem($1, 5000)', [vg]);
     const pix = (await um(
-      `insert into abastecimentos (viagem_id, veiculo_id, km, litros, preco_litro, forma_pagamento, chave_pix, pago_em)
-       values ($1, $2, 5300, 200, 6, 'pix_empresa', 'posto@pix.com', current_date) returning id, pago_em`,
+      `insert into abastecimentos (viagem_id, veiculo_id, km, litros, preco_litro, forma_pagamento, chave_pix)
+       values ($1, $2, 5300, 200, 6, 'pix_empresa', 'posto@pix.com') returning id`,
       [vg, vp],
     ));
     const prazo = (await um(
@@ -858,9 +858,8 @@ test('pagamento direto ao posto: não mexe no adiantamento e só o gestor marca 
        values ($1, 'Borracharia', 150, 'a_prazo', current_date + 5, 'c.jpg') returning id`,
       [vg],
     ));
-    assert.equal(pix.pago_em, null, 'motorista não marca como pago');
-    // nem depois, numa correção
-    await q(`update abastecimentos set pago_em = current_date where id = $1`, [pix.id]);
+    // motorista não enxerga nem mexe nos pagamentos
+    assert.equal((await q('select id from pagamentos')).length, 0);
     return { pix: pix.id, prazo: prazo.id };
   });
 
@@ -868,10 +867,15 @@ test('pagamento direto ao posto: não mexe no adiantamento e só o gestor marca 
   assert.equal(Number(v.adiantamento_gasto), 0);
   assert.equal(Number(v.gasto_proprio_bolso), 0);
   assert.equal(Number(v.total_despesas), 150);
-  assert.equal((await um('select pago_em from abastecimentos where id = $1', [ids.pix])).pago_em, null);
+  const pg = await um('select * from pagamentos where abastecimento_id = $1', [ids.pix]);
+  assert.equal(pg.pago_em, null);
+  assert.equal(pg.chave_pix, 'posto@pix.com');
+  assert.equal(Number(pg.valor), 1200);
+  const pd = await um('select * from pagamentos where despesa_id = $1', [ids.prazo]);
+  assert.equal(pd.forma, 'a_prazo');
 
-  await como(gestorA, () => q(`update abastecimentos set pago_em = current_date where id = $1`, [ids.pix]));
-  assert.notEqual((await um('select pago_em from abastecimentos where id = $1', [ids.pix])).pago_em, null);
+  await como(gestorA, () => q(`update pagamentos set pago_em = current_date where abastecimento_id = $1`, [ids.pix]));
+  assert.notEqual((await um('select pago_em from pagamentos where abastecimento_id = $1', [ids.pix])).pago_em, null);
   await assert.rejects(
     como(gestorA, () => q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'X', 1, 'boleto')`, [vg])),
     /despesas_forma_pagamento_check/,
@@ -1031,4 +1035,100 @@ test('formas de recebimento: parcelas somam 100% e a viagem herda a forma do cli
   );
   assert.equal(v.forma_recebimento_id, forma);
   assert.equal(v.forma_pagamento_frete, '70/30 — 10 dias');
+});
+
+test('financeiro: recebimentos pela forma, complemento, adiantamento e pagamentos automáticos', async () => {
+  const dia = (d) => d.toISOString().slice(0, 10);
+  const vf = await novoVeiculo('FIN1A11');
+  const mf = await novoMotorista('Fábio', '95000000001', vf);
+  // 70% na saída + 30% em 10 dias corridos após a entrega, pago só na quarta (3)
+  const forma = await como(gestorA, async () =>
+    (await um(`insert into formas_recebimento (nome, parcelas) values ('70/30 quarta', $1) returning id`, [
+      JSON.stringify([
+        { percentual: 70, base: 'saida', dias: 0, tipo_dias: 'corridos', dia_semana: null },
+        { percentual: 30, base: 'entrega', dias: 10, tipo_dias: 'corridos', dia_semana: 3 },
+      ]),
+    ])).id,
+  );
+  // data prevista: sexta 02/10/2026
+  const vg = await como(gestorA, async () =>
+    (await um(
+      `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, valor_adiantamento, data_prevista, forma_recebimento_id)
+       values ($1, $2, 'A', 'B', 1000.01, 300, '2026-10-02', $3) returning id`,
+      [mf, vf, forma],
+    )).id,
+  );
+  // adiantamento vira pagamento ao motorista, ainda não pago (viagem não saiu)
+  let ad = await um(`select * from pagamentos where viagem_id = $1 and origem = 'adiantamento'`, [vg]);
+  assert.equal(Number(ad.valor), 300);
+  assert.equal(ad.favorecido, 'Fábio');
+  assert.equal(ad.pago_em, null);
+
+  await como(gestorA, () => q('select gerar_recebimentos($1)', [vg]));
+  let rs = await q(`select * from recebimentos where viagem_id = $1 order by ordem`, [vg]);
+  assert.equal(rs.length, 2);
+  assert.equal(Number(rs[0].valor), 700.01);
+  assert.equal(Number(rs[1].valor), 300); // 1000,01 - 700,01
+  // antes de sair: data prevista (sexta 02/10); +10 corridos = 12/10 (segunda) → quarta 14/10
+  assert.equal(dia(rs[0].vencimento), '2026-10-02');
+  assert.equal(dia(rs[1].vencimento), '2026-10-14');
+
+  // saída real em 05/10 e entrega em 08/10 (quinta) → +10 = 18/10 (domingo) → quarta 21/10
+  await como(gestorA, () => q(`select iniciar_viagem($1, 1000, '2026-10-05T12:00:00-03')`, [vg]));
+  await como(gestorA, () => q(`insert into documentos (viagem_id, tipo, arquivo_path) values ($1, 'canhoto', 'c.jpg')`, [vg]));
+  await como(gestorA, () => q(`select finalizar_viagem($1, 1500, '2026-10-08T15:00:00-03')`, [vg]));
+  rs = await q(`select * from recebimentos where viagem_id = $1 order by ordem`, [vg]);
+  assert.equal(dia(rs[0].vencimento), '2026-10-05');
+  assert.equal(dia(rs[1].vencimento), '2026-10-21');
+  ad = await um(`select * from pagamentos where viagem_id = $1 and origem = 'adiantamento'`, [vg]);
+  assert.equal(dia(ad.pago_em), '2026-10-05', 'adiantamento pago na saída');
+
+  // recebe a 1ª parcela; um pedágio adicional de 100 muda o frete → só a parcela em aberto muda
+  await como(gestorA, () => q(`update recebimentos set recebido_em = '2026-10-05' where viagem_id = $1 and ordem = 1`, [vg]));
+  await como(gestorA, () =>
+    q(`insert into complementos (viagem_id, origem_lancamento, tipo, valor) values ($1, 'gestor', 'pedagio_adicional', 100)`, [vg]),
+  );
+  rs = await q(`select * from recebimentos where viagem_id = $1 and origem = 'frete' order by ordem`, [vg]);
+  assert.equal(Number(rs[0].valor), 700.01, 'recebida fica como está');
+  assert.equal(Number(rs[1].valor), 400, 'em aberto absorve o pedágio');
+
+  // complemento gera recebimento próprio (prazo da última parcela) e não entra nas parcelas
+  await como(gestorA, () =>
+    q(
+      `insert into complementos (viagem_id, origem_lancamento, tipo, valor, descricao) values ($1, 'gestor', 'complemento', 250, 'Retorno com paletes')`,
+      [vg],
+    ),
+  );
+  const rc = await um(`select * from recebimentos where viagem_id = $1 and origem = 'complemento'`, [vg]);
+  assert.equal(Number(rc.valor), 250);
+  assert.equal(dia(rc.vencimento), '2026-10-21');
+  rs = await q(`select * from recebimentos where viagem_id = $1 and origem = 'frete' order by ordem`, [vg]);
+  assert.equal(Number(rs[1].valor), 400, 'o complemento não soma às parcelas');
+
+  // cartão da empresa: já pago; próprio bolso: reembolso ao motorista; adiantamento: não gera
+  const vg2 = await programar(mf, vf, 500);
+  await como(gestorA, () => q(`select iniciar_viagem($1, 2000)`, [vg2]));
+  await como(gestorA, () =>
+    q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'Pedágio', 40, 'cartao_empresa')`, [vg2]),
+  );
+  await como(gestorA, () =>
+    q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento, comprovante_path) values ($1, 'Almoço', 35, 'proprio_bolso', 'c.jpg')`, [vg2]),
+  );
+  await como(gestorA, () =>
+    q(`insert into despesas (viagem_id, categoria, valor, forma_pagamento, comprovante_path) values ($1, 'Café', 10, 'adiantamento', 'c.jpg')`, [vg2]),
+  );
+  const pgs = await q(`select * from pagamentos where viagem_id = $1 and origem = 'despesa' order by valor`, [vg2]);
+  assert.equal(pgs.length, 2, 'adiantamento não gera pagamento');
+  assert.equal(pgs[0].forma, 'proprio_bolso');
+  assert.equal(pgs[0].favorecido, 'Fábio');
+  assert.equal(pgs[0].pago_em, null);
+  assert.equal(pgs[1].forma, 'cartao_empresa');
+  assert.notEqual(pgs[1].pago_em, null);
+
+  // outra transportadora não vê
+  await como(gestorB, async () => {
+    assert.equal((await q('select id from recebimentos')).length, 0);
+    assert.equal((await q('select id from pagamentos')).length, 0);
+    await assert.rejects(q('select gerar_recebimentos($1)', [vg]), /não encontrada/);
+  });
 });

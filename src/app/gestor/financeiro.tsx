@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Text } from 'react-native';
 
-import { ContasAPagar } from '@/components/gestor/contas-a-pagar';
 import { tomDaMargem } from '@/components/gestor/detalhe-viagem';
 import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
@@ -13,12 +12,31 @@ import { Selo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
 import { Cores } from '@/constants/tema';
 import { useCarregar } from '@/hooks/use-carregar';
+import { dataDeHoje, listarPagamentos, listarRecebimentos } from '@/services/financeiro.service';
 import {
   buscarDesempenhoPorVeiculo,
   buscarResumoFinanceiro,
   type DesempenhoVeiculo,
 } from '@/services/gestao.service';
+import { somar } from '@/utils/dinheiro';
 import { formatarKm, formatarMoeda, formatarPercentual, mesAtual, periodoDoMes, rotuloMes } from '@/utils/formato';
+
+// Totais em aberto e atrasados (quadros que levam a Receber e Pagar)
+async function carregarContas() {
+  const [receber, pagar] = await Promise.all([listarRecebimentos(), listarPagamentos()]);
+  const hoje = dataDeHoje();
+  const resumo = (lista: { valor: number; vencimento: string | null; quitado: string | null }[]) => {
+    const abertas = lista.filter((c) => !c.quitado);
+    return {
+      total: somar(abertas.map((c) => c.valor)),
+      atrasado: somar(abertas.filter((c) => c.vencimento && c.vencimento < hoje).map((c) => c.valor)),
+    };
+  };
+  return {
+    receber: resumo(receber.map((r) => ({ valor: r.valor, vencimento: r.vencimento, quitado: r.recebido_em }))),
+    pagar: resumo(pagar.map((p) => ({ valor: p.valor, vencimento: p.vencimento, quitado: p.pago_em }))),
+  };
+}
 
 // Tela 6 — Financeiro e fechamento mensal (DRE consolidado)
 export default function Financeiro() {
@@ -32,6 +50,7 @@ export default function Financeiro() {
     }),
     [inicio, fim],
   );
+  const { dados: contas } = useCarregar(carregarContas);
   const { dados, erro } = useCarregar(buscar);
   const r = dados?.resumo;
 
@@ -64,12 +83,29 @@ export default function Financeiro() {
       titulo="Financeiro"
       subtitulo={`Fechamento de ${rotuloMes(mes)}, por placa.`}
       acao={<SeletorMes mes={mes} onChange={setMes} />}>
-      <ContasAPagar />
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {!r || !dados ? (
         erro ? null : <ActivityIndicator color={Cores.primaria} />
       ) : (
         <>
+          {contas ? (
+            <Grade>
+              <Indicador
+                rotulo="A receber"
+                valor={formatarMoeda(contas.receber.total)}
+                detalhe={contas.receber.atrasado > 0 ? `${formatarMoeda(contas.receber.atrasado)} atrasado` : 'Nada atrasado'}
+                tom={contas.receber.atrasado > 0 ? 'perigo' : 'destaque'}
+                onPress={() => router.push('/gestor/receber')}
+              />
+              <Indicador
+                rotulo="A pagar"
+                valor={formatarMoeda(contas.pagar.total)}
+                detalhe={contas.pagar.atrasado > 0 ? `${formatarMoeda(contas.pagar.atrasado)} atrasado` : 'Nada atrasado'}
+                tom={contas.pagar.atrasado > 0 ? 'perigo' : 'neutro'}
+                onPress={() => router.push('/gestor/pagar')}
+              />
+            </Grade>
+          ) : null}
           <Grade>
             <Indicador rotulo="Faturamento bruto" valor={formatarMoeda(r.faturamento)} detalhe={`${r.viagens} viagem(ns) finalizada(s)`} />
             <Indicador

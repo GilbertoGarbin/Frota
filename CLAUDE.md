@@ -127,7 +127,12 @@ num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer e
   `parcelas` jsonb: percentual, base saída/entrega, dias, corridos/úteis, dia da semana; o trigger
   confere que somam 100). A viagem tem `cliente_id` opcional (sem cadastro = só `cliente` em texto,
   frete avulso) e `forma_recebimento_id`; sem forma escolhida herda a do cliente, e o nome da forma vai
-  para `forma_pagamento_frete` (texto que o motorista vê). Vencimentos/"A receber": próxima etapa.
+  para `forma_pagamento_frete` (texto que o motorista vê).
+- Contas: `recebimentos` (parcelas do frete pelo botão "Gerar recebimentos" = `gerar_recebimentos`, e
+  complementos do tipo 'complemento') e `pagamentos` (criados por trigger ao lançar abastecimento/despesa
+  e pelo adiantamento da viagem; `cartao_empresa` nasce pago, `adiantamento` não gera). Valor e
+  vencimento do que não foi quitado se refazem quando a viagem muda (`app.recalcular_recebimentos`).
+  Marcar recebido/pago é só no Financeiro > Receber / Pagar; o lançamento só mostra a situação.
 - Combustível: `app.recalcular_combustivel(veiculo_id)` refaz janelas, rateio e estimativas do
   veículo inteiro a partir dos dados gravados (ver comentário na migration). `janelas_consumo`
   é tabela derivada — nunca gravar nela.

@@ -27,7 +27,6 @@ export type Database = {
           id: string
           km: number
           litros: number
-          pago_em: string | null
           posto: string | null
           preco_litro: number
           tanque_cheio: boolean
@@ -49,7 +48,6 @@ export type Database = {
           id?: string
           km: number
           litros: number
-          pago_em?: string | null
           posto?: string | null
           preco_litro: number
           tanque_cheio?: boolean
@@ -71,7 +69,6 @@ export type Database = {
           id?: string
           km?: number
           litros?: number
-          pago_em?: string | null
           posto?: string | null
           preco_litro?: number
           tanque_cheio?: boolean
@@ -347,7 +344,6 @@ export type Database = {
           id: string
           local: string | null
           observacoes: string | null
-          pago_em: string | null
           tenant_id: string
           valor: number
           vencimento: string | null
@@ -366,7 +362,6 @@ export type Database = {
           id?: string
           local?: string | null
           observacoes?: string | null
-          pago_em?: string | null
           tenant_id?: string
           valor: number
           vencimento?: string | null
@@ -385,7 +380,6 @@ export type Database = {
           id?: string
           local?: string | null
           observacoes?: string | null
-          pago_em?: string | null
           tenant_id?: string
           valor?: number
           vencimento?: string | null
@@ -712,6 +706,89 @@ export type Database = {
           },
         ]
       }
+      pagamentos: {
+        Row: {
+          abastecimento_id: string | null
+          atualizado_em: string
+          chave_pix: string | null
+          criado_em: string
+          descricao: string
+          despesa_id: string | null
+          favorecido: string | null
+          forma: string | null
+          id: string
+          origem: string
+          pago_em: string | null
+          tenant_id: string
+          valor: number
+          vencimento: string | null
+          viagem_id: string | null
+        }
+        Insert: {
+          abastecimento_id?: string | null
+          atualizado_em?: string
+          chave_pix?: string | null
+          criado_em?: string
+          descricao: string
+          despesa_id?: string | null
+          favorecido?: string | null
+          forma?: string | null
+          id?: string
+          origem: string
+          pago_em?: string | null
+          tenant_id: string
+          valor: number
+          vencimento?: string | null
+          viagem_id?: string | null
+        }
+        Update: {
+          abastecimento_id?: string | null
+          atualizado_em?: string
+          chave_pix?: string | null
+          criado_em?: string
+          descricao?: string
+          despesa_id?: string | null
+          favorecido?: string | null
+          forma?: string | null
+          id?: string
+          origem?: string
+          pago_em?: string | null
+          tenant_id?: string
+          valor?: number
+          vencimento?: string | null
+          viagem_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_abastecimento_id_fkey"
+            columns: ["abastecimento_id"]
+            isOneToOne: false
+            referencedRelation: "abastecimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_despesa_id_fkey"
+            columns: ["despesa_id"]
+            isOneToOne: false
+            referencedRelation: "despesas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_tenant_id_viagem_id_fkey"
+            columns: ["tenant_id", "viagem_id"]
+            isOneToOne: false
+            referencedRelation: "viagens"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
       paradas: {
         Row: {
           atualizado_em: string
@@ -859,6 +936,88 @@ export type Database = {
             columns: ["tenant_id", "veiculo_id"]
             isOneToOne: false
             referencedRelation: "veiculos"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
+      recebimentos: {
+        Row: {
+          atualizado_em: string
+          base: string
+          complemento_id: string | null
+          criado_em: string
+          descricao: string
+          dia_semana: number | null
+          dias: number
+          id: string
+          ordem: number
+          origem: string
+          percentual: number | null
+          recebido_em: string | null
+          tenant_id: string
+          tipo_dias: string
+          valor: number
+          vencimento: string | null
+          viagem_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          base?: string
+          complemento_id?: string | null
+          criado_em?: string
+          descricao: string
+          dia_semana?: number | null
+          dias?: number
+          id?: string
+          ordem?: number
+          origem: string
+          percentual?: number | null
+          recebido_em?: string | null
+          tenant_id: string
+          tipo_dias?: string
+          valor: number
+          vencimento?: string | null
+          viagem_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          base?: string
+          complemento_id?: string | null
+          criado_em?: string
+          descricao?: string
+          dia_semana?: number | null
+          dias?: number
+          id?: string
+          ordem?: number
+          origem?: string
+          percentual?: number | null
+          recebido_em?: string | null
+          tenant_id?: string
+          tipo_dias?: string
+          valor?: number
+          vencimento?: string | null
+          viagem_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recebimentos_complemento_id_fkey"
+            columns: ["complemento_id"]
+            isOneToOne: false
+            referencedRelation: "complementos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_tenant_id_viagem_id_fkey"
+            columns: ["tenant_id", "viagem_id"]
+            isOneToOne: false
+            referencedRelation: "viagens"
             referencedColumns: ["tenant_id", "id"]
           },
         ]
@@ -1243,6 +1402,7 @@ export type Database = {
         Args: { p_motorista_id: string }
         Returns: string
       }
+      gerar_recebimentos: { Args: { p_viagem_id: string }; Returns: undefined }
       iniciar_viagem: {
         Args: {
           p_iniciada_em?: string

@@ -15,6 +15,12 @@ import { Selo } from '@/components/ui/selo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useCarregar } from '@/hooks/use-carregar';
 import {
+  gerarRecebimentos,
+  situacaoDaConta,
+  type Pagamento,
+  type Recebimento,
+} from '@/services/financeiro.service';
+import {
   atualizarComplementoGestor,
   atualizarViagem,
   carregarDetalheViagem,
@@ -23,8 +29,6 @@ import {
   finalizarViagemGestor,
   iniciarViagemGestor,
   lancarComplementoGestor,
-  marcarPago,
-  pagaDireto,
   ROTULO_COMPLEMENTO,
   ROTULO_PAGAMENTO,
   ROTULO_STATUS,
@@ -234,12 +238,17 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         {v.observacoes_finais ? <Text style={styles.suave}>Observações finais: {v.observacoes_finais}</Text> : null}
       </View>
 
+      <BlocoRecebimentos
+        viagem={v}
+        recebimentos={dados.recebimentos}
+        aoGerar={() => executar(() => gerarRecebimentos(v.id))}
+      />
+
       <BlocoRegistros
         dados={dados}
         aoErro={setErroAcao}
         placa={placa}
         aoLancar={recarregar}
-        aoMarcarPago={(tabela, id, pago) => executar(() => marcarPago(tabela, id, pago))}
       />
 
       {status === 'finalizada' && (v.valor_adiantamento > 0 || v.gasto_proprio_bolso > 0) ? (
@@ -561,10 +570,10 @@ const resumoLista = (n: number, um: string, varios: string, total: number, vazio
   n === 0 ? vazio : `${n} ${n === 1 ? um : varios} · ${formatarMoeda(total)}`;
 
 /** Selo com o que ainda falta a empresa pagar ao posto/fornecedor (PIX ou a prazo). */
-function seloAPagar(itens: { forma_pagamento: string; pago_em: string | null; valor: number }[]) {
-  const pendentes = itens.filter((i) => pagaDireto(i.forma_pagamento) && !i.pago_em);
+function seloAPagar(pagamentos: Pagamento[]) {
+  const pendentes = pagamentos.filter((p) => !p.pago_em);
   if (pendentes.length === 0) return null;
-  return <Selo tipo="aviso">{`${formatarMoeda(somar(pendentes.map((i) => i.valor)))} a pagar`}</Selo>;
+  return <Selo tipo="aviso">{`${formatarMoeda(somar(pendentes.map((p) => p.valor)))} a pagar`}</Selo>;
 }
 
 type PropsRegistros = {
@@ -572,12 +581,8 @@ type PropsRegistros = {
   placa: string;
   aoErro: (mensagem: string) => void;
   aoLancar: () => void;
-  aoMarcarPago: (tabela: 'abastecimentos' | 'despesas', id: string, pago: boolean) => void;
 };
 
-type PagamentoDireto = { forma_pagamento: string; chave_pix: string | null; vencimento: string | null; pago_em: string | null };
-
-/** PIX ou nota a prazo pagos pela empresa: situação e botão para marcar como pago. */
 type PropsOperacao = {
   operacao: 'iniciar' | 'finalizar';
   viagem: Viagem;
@@ -677,29 +682,93 @@ function Dado({ rotulo, valor, negativo }: { rotulo: string; valor: string; nega
   );
 }
 
-function SituacaoPagamento({ item, aoMarcar }: { item: PagamentoDireto; aoMarcar: (pago: boolean) => void }) {
-  if (!pagaDireto(item.forma_pagamento)) return null;
+type PropsRecebimentos = { viagem: Viagem; recebimentos: Recebimento[]; aoGerar: () => Promise<void> };
+
+/** Recebimentos da viagem: parcelas da forma de recebimento e complementos (receber é em Financeiro). */
+function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos) {
+  const [gerando, setGerando] = useState(false);
+  const temParcelas = recebimentos.some((r) => r.origem === 'frete');
+  const aReceber = recebimentos.filter((r) => !r.recebido_em);
+  const total = somar(recebimentos.map((r) => r.valor));
+
+  async function gerar() {
+    setGerando(true);
+    await aoGerar();
+    setGerando(false);
+  }
+
+  return (
+    <SecaoRecolhivel
+      titulo="Recebimentos"
+      resumo={
+        recebimentos.length === 0
+          ? viagem.forma_recebimento_id
+            ? 'Ainda não gerados'
+            : 'Sem forma de recebimento'
+          : `${recebimentos.length} ${recebimentos.length === 1 ? 'recebimento' : 'recebimentos'} · ${formatarMoeda(total)}`
+      }
+      extra={
+        aReceber.length > 0 ? (
+          <Selo tipo="info">{`${formatarMoeda(somar(aReceber.map((r) => r.valor)))} a receber`}</Selo>
+        ) : null
+      }
+      acao={
+        viagem.forma_recebimento_id ? (
+          <Botao
+            titulo={temParcelas ? 'Gerar de novo' : 'Gerar recebimentos'}
+            variante="contorno"
+            compacto
+            carregando={gerando}
+            onPress={gerar}
+          />
+        ) : undefined
+      }>
+      {!viagem.forma_recebimento_id ? (
+        <Text style={styles.suave}>Escolha a forma de recebimento em “Editar viagem” para gerar as parcelas.</Text>
+      ) : null}
+      {temParcelas ? (
+        <Text style={styles.suave}>“Gerar de novo” refaz as parcelas ainda não recebidas; as recebidas ficam.</Text>
+      ) : null}
+      {recebimentos.map((r) => {
+        const situacao = situacaoDaConta(r.vencimento, r.recebido_em);
+        return (
+          <View key={r.id} style={styles.item}>
+            <View style={styles.itemTexto}>
+              <Text style={styles.texto}>{`${r.descricao} · ${formatarMoeda(r.valor)}`}</Text>
+              <Text style={styles.suave}>{r.vencimento ? `Vence em ${formatarData(r.vencimento)}` : 'Sem data'}</Text>
+            </View>
+            {situacao === 'quitado' ? (
+              <Selo tipo="sucesso">{`Recebido em ${formatarData(r.recebido_em)}`}</Selo>
+            ) : situacao === 'atrasado' ? (
+              <Selo tipo="perigo">Atrasado</Selo>
+            ) : (
+              <Selo tipo="info">A receber</Selo>
+            )}
+          </View>
+        );
+      })}
+    </SecaoRecolhivel>
+  );
+}
+
+/** Situação do pagamento ligado ao lançamento (marcar como pago é em Financeiro > Pagar). */
+function SituacaoPagamento({ pagamento }: { pagamento: Pagamento | undefined }) {
+  if (!pagamento) return null;
+  if (pagamento.pago_em) return <Selo tipo="sucesso">{`Pago em ${formatarData(pagamento.pago_em)}`}</Selo>;
+  const atrasado = situacaoDaConta(pagamento.vencimento, null) === 'atrasado';
   return (
     <View style={[styles.linha, styles.situacao]}>
-      {item.pago_em ? (
-        <>
-          <Selo tipo="sucesso">{`Pago em ${formatarData(item.pago_em)}`}</Selo>
-          <Botao titulo="Desfazer" variante="link" compacto onPress={() => aoMarcar(false)} />
-        </>
-      ) : (
-        <>
-          <Selo tipo="aviso">A pagar</Selo>
-          {item.chave_pix ? <Text selectable style={styles.suave}>{`PIX: ${item.chave_pix}`}</Text> : null}
-          {item.vencimento ? <Text style={styles.suave}>{`Vence em ${formatarData(item.vencimento)}`}</Text> : null}
-          <Botao titulo="Marcar como pago" variante="contorno" compacto onPress={() => aoMarcar(true)} />
-        </>
-      )}
+      <Selo tipo={atrasado ? 'perigo' : 'aviso'}>
+        {pagamento.vencimento ? `A pagar · vence ${formatarData(pagamento.vencimento)}` : 'A pagar'}
+      </Selo>
+      {pagamento.chave_pix ? <Text selectable style={styles.suave}>{`PIX: ${pagamento.chave_pix}`}</Text> : null}
     </View>
   );
 }
 
-function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsRegistros) {
-  const { viagem, abastecimentos, despesas, paradas, documentos } = dados;
+function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
+  const { viagem, abastecimentos, despesas, paradas, documentos, pagamentos } = dados;
+  const pagamentoDo = (campo: 'abastecimento_id' | 'despesa_id', id: string) => pagamentos.find((p) => p[campo] === id);
   // qual formulário de lançamento está aberto (um por vez)
   const [aberto, setAberto] = useState<'abastecimento' | 'despesa' | 'documento' | null>(null);
   const fechar = () => setAberto(null);
@@ -726,7 +795,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
       <SecaoRecolhivel
         titulo="Abastecimentos"
         resumo={resumoLista(abastecimentos.length, 'abastecimento', 'abastecimentos', somar(abastecimentos.map((a) => a.total)))}
-        extra={seloAPagar(abastecimentos.map((a) => ({ ...a, valor: a.total ?? 0 })))}
+        extra={seloAPagar(pagamentos.filter((p) => p.origem === 'abastecimento'))}
         acao={botaoLancar('abastecimento', 'Lançar abastecimento')}>
         {abastecimentos.length === 0 ? <Text style={styles.suave}>Nenhum abastecimento nesta viagem.</Text> : null}
         {abastecimentos.map((a) => (
@@ -742,7 +811,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
             </View>
             {a.tanque_cheio ? <Selo tipo="info">Tanque cheio</Selo> : null}
             {comprovante(a.comprovante_path)}
-            <SituacaoPagamento item={a} aoMarcar={(pago) => aoMarcarPago('abastecimentos', a.id, pago)} />
+            <SituacaoPagamento pagamento={pagamentoDo('abastecimento_id', a.id)} />
           </View>
         ))}
       </SecaoRecolhivel>
@@ -752,7 +821,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
           <SecaoRecolhivel
             titulo="Despesas"
             resumo={resumoLista(despesas.length, 'despesa', 'despesas', somar(despesas.map((d) => d.valor)), 'Nenhuma despesa')}
-            extra={seloAPagar(despesas)}
+            extra={seloAPagar(pagamentos.filter((p) => p.origem === 'despesa'))}
             acao={botaoLancar('despesa', 'Lançar despesa')}>
             {despesas.length === 0 ? <Text style={styles.suave}>Nenhuma despesa nesta viagem.</Text> : null}
             {despesas.map((d) => (
@@ -768,7 +837,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar, aoMarcarPago }: PropsR
                   </Text>
                 </View>
                 {comprovante(d.comprovante_path)}
-                <SituacaoPagamento item={d} aoMarcar={(pago) => aoMarcarPago('despesas', d.id, pago)} />
+                <SituacaoPagamento pagamento={pagamentoDo('despesa_id', d.id)} />
               </View>
             ))}
           </SecaoRecolhivel>

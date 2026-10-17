@@ -43,9 +43,9 @@ type Modo = { tipo: 'lista' } | { tipo: 'nova' } | { tipo: 'editar'; viagem: Via
 
 // Tela 4 — Gestão de Viagens e DRE por rota
 export default function Viagens() {
-  const parametros = useLocalSearchParams<{ filtro?: string }>();
+  const parametros = useLocalSearchParams<{ filtro?: string; viagem?: string }>();
   const { dados, erro, recarregar } = useCarregar(carregarTelaViagens);
-  const [modo, setModo] = useState<Modo>({ tipo: 'lista' });
+  const [modo, setModo] = useState<Modo>(parametros.viagem ? { tipo: 'detalhe', id: parametros.viagem } : { tipo: 'lista' });
   const [filtro, setFiltro] = useState<Filtro>(parametros.filtro === 'adiantamento' ? 'adiantamento' : 'todas');
   const [busca, setBusca] = useState('');
 

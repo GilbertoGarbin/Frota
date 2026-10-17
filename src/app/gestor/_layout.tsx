@@ -25,7 +25,8 @@ const MENU: ItemMenu[] = [
   { rotulo: 'Manutenções', rota: '/gestor/manutencoes', icone: 'wrench-outline' },
   { rotulo: 'Custos Fixos', rota: '/gestor/custos-fixos', icone: 'archive-outline' },
   { rotulo: 'Financeiro', rota: '/gestor/financeiro', icone: 'currency-usd' },
-  { rotulo: 'Formas de recebimento', rota: '/gestor/formas-recebimento', icone: 'cash-multiple', sub: true },
+  { rotulo: 'Receber', rota: '/gestor/receber', icone: 'arrow-down-circle-outline', sub: true },
+  { rotulo: 'Pagar', rota: '/gestor/pagar', icone: 'arrow-up-circle-outline', sub: true },
 ];
 // Só o admin da transportadora cadastra usuários
 const MENU_ADMIN: ItemMenu[] = [{ rotulo: 'Usuários', rota: '/gestor/usuarios', icone: 'account-key-outline' }];
