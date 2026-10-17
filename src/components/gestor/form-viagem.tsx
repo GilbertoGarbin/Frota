@@ -201,18 +201,18 @@ export function FormViagem({ viagem, motoristas, veiculos, clientes, formas, aoF
       </Bloco>
 
       <Bloco titulo="Rota e carga">
-        <LinhaForm minimo={200}>
-          <Campo rotulo="Origem *" value={origem} onChangeText={setOrigem} placeholder="Ex.: Curitiba" />
-          <Campo rotulo="Destino *" value={destino} onChangeText={setDestino} placeholder="Ex.: Pato Branco" />
+        <LinhaForm minimo={220}>
+          <Seletor rotulo="Cliente" opcoes={opcoesCliente} valor={clienteId} onChange={aoEscolherCliente} />
           <CampoData rotulo="Data prevista *" valor={data} onChange={setData} />
         </LinhaForm>
-        <LinhaForm minimo={260}>
-          <Seletor rotulo="Cliente" opcoes={opcoesCliente} valor={clienteId} onChange={aoEscolherCliente} />
-          {clienteId === AVULSO ? (
-            <Campo rotulo="Nome do cliente (opcional)" value={cliente} onChangeText={setCliente} placeholder="Ex.: mudança do Gilberto" />
-          ) : null}
-          <Campo rotulo="Carga (opcional)" value={carga} onChangeText={setCarga} placeholder="Ex.: soja a granel" />
+        {clienteId === AVULSO ? (
+          <Campo rotulo="Nome do cliente (opcional)" value={cliente} onChangeText={setCliente} placeholder="Ex.: mudança do Gilberto" />
+        ) : null}
+        <LinhaForm minimo={220}>
+          <Campo rotulo="Origem *" value={origem} onChangeText={setOrigem} placeholder="Ex.: Curitiba" />
+          <Campo rotulo="Destino *" value={destino} onChangeText={setDestino} placeholder="Ex.: Pato Branco" />
         </LinhaForm>
+        <Campo rotulo="Carga (opcional)" value={carga} onChangeText={setCarga} placeholder="Ex.: soja a granel" />
       </Bloco>
 
       <Bloco titulo="Valores">
