@@ -123,6 +123,11 @@ num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer e
   motorista; `cartao_empresa`, `pix_empresa` (empresa paga o posto por PIX, com `chave_pix`) e `a_prazo`
   (nota assinada no posto, com `vencimento`) não. Os dois últimos aparecem em "A pagar aos postos"
   (Financeiro) até o gestor preencher `pago_em` — o motorista nunca marca como pago (trigger).
+- Clientes e recebimento do frete: `clientes` (cadastro simples) e `formas_recebimento` (nome +
+  `parcelas` jsonb: percentual, base saída/entrega, dias, corridos/úteis, dia da semana; o trigger
+  confere que somam 100). A viagem tem `cliente_id` opcional (sem cadastro = só `cliente` em texto,
+  frete avulso) e `forma_recebimento_id`; sem forma escolhida herda a do cliente, e o nome da forma vai
+  para `forma_pagamento_frete` (texto que o motorista vê). Vencimentos/"A receber": próxima etapa.
 - Combustível: `app.recalcular_combustivel(veiculo_id)` refaz janelas, rateio e estimativas do
   veículo inteiro a partir dos dados gravados (ver comentário na migration). `janelas_consumo`
   é tabela derivada — nunca gravar nela.

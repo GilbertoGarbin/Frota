@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { FormFormaRecebimento } from '@/components/gestor/forma-recebimento';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
+import { BotaoIcone } from '@/components/ui/botao-icone';
 import { Campo } from '@/components/ui/campo';
 import { Janela } from '@/components/ui/janela';
 import { CampoData } from '@/components/ui/campo-data';
@@ -11,6 +13,11 @@ import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
 import { Seletor } from '@/components/ui/seletor';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import type { Cliente } from '@/services/clientes.service';
+import {
+  descreverParcelas,
+  listarFormasRecebimento,
+  type FormaRecebimento,
+} from '@/services/formas-recebimento.service';
 import type { Motorista } from '@/services/motoristas.service';
 import type { Veiculo } from '@/services/veiculos.service';
 import { atualizarViagem, criarViagem, sugerirAdiantamento, type Viagem } from '@/services/viagens.service';
@@ -23,16 +30,19 @@ type Props = {
   motoristas: Motorista[];
   veiculos: Veiculo[];
   clientes: Cliente[];
+  formas: FormaRecebimento[];
   aoFechar: (salvou: boolean) => void;
 };
 
 const AVULSO = 'avulso';
+const SEM_FORMA = 'nenhuma';
+const TEXTO_ANTIGO = 'texto-antigo';
 
 type Sugestao = { rota: string; valor: number | null; quantidade: number };
 
 // Despacho (spec do gestor 6.3): o gestor cria a viagem e atribui a um motorista.
 // O km inicial não é pedido aqui — o motorista informa ao confirmar a saída.
-export function FormViagem({ viagem, motoristas, veiculos, clientes, aoFechar }: Props) {
+export function FormViagem({ viagem, motoristas, veiculos, clientes, formas, aoFechar }: Props) {
   const [motoristaId, setMotoristaId] = useState(viagem?.motorista_id ?? null);
   const [veiculoId, setVeiculoId] = useState(viagem?.veiculo_id ?? null);
   // cliente cadastrado (id) ou avulso: só o nome digitado (ex.: uma mudança)
@@ -41,7 +51,11 @@ export function FormViagem({ viagem, motoristas, veiculos, clientes, aoFechar }:
   const [origem, setOrigem] = useState(viagem?.origem ?? '');
   const [destino, setDestino] = useState(viagem?.destino ?? '');
   const [carga, setCarga] = useState(viagem?.carga ?? '');
-  const [pagamentoFrete, setPagamentoFrete] = useState(viagem?.forma_pagamento_frete ?? '');
+  // forma de recebimento: da lista; viagem antiga só com texto livre mantém o texto
+  const textoAntigo = viagem && !viagem.forma_recebimento_id ? (viagem.forma_pagamento_frete ?? '') : '';
+  const [formaId, setFormaId] = useState<string>(viagem?.forma_recebimento_id ?? (textoAntigo ? TEXTO_ANTIGO : SEM_FORMA));
+  const [formasCriadas, setFormasCriadas] = useState<FormaRecebimento[]>([]);
+  const [criandoForma, setCriandoForma] = useState(false);
   const [data, setData] = useState(formatarData(viagem?.data_prevista ?? hojeIso()));
   const [frete, setFrete] = useState(viagem ? formatarDecimal(viagem.valor_frete) : '');
   const [adiantamento, setAdiantamento] = useState(
@@ -55,6 +69,21 @@ export function FormViagem({ viagem, motoristas, veiculos, clientes, aoFechar }:
   const opcoesMotorista = motoristas
     .filter((m) => m.status === 'ativo' || m.id === viagem?.motorista_id)
     .map((m) => ({ valor: m.id, rotulo: m.nome }));
+  const todasFormas = [...formas, ...formasCriadas.filter((n) => !formas.some((f) => f.id === n.id))];
+  const opcoesForma = [
+    { valor: SEM_FORMA, rotulo: 'Não definida' },
+    ...(textoAntigo ? [{ valor: TEXTO_ANTIGO, rotulo: `${textoAntigo} (texto antigo)` }] : []),
+    ...todasFormas.filter((f) => f.ativo || f.id === viagem?.forma_recebimento_id).map((f) => ({ valor: f.id, rotulo: f.nome })),
+  ];
+  const formaEscolhida = todasFormas.find((f) => f.id === formaId);
+
+  // escolher o cliente traz a forma de recebimento dele (dá para trocar só nesta viagem)
+  function aoEscolherCliente(id: string) {
+    setClienteId(id);
+    const daCliente = clientes.find((c) => c.id === id)?.forma_recebimento_id;
+    if (daCliente) setFormaId(daCliente);
+  }
+
   const opcoesCliente = [
     { valor: AVULSO, rotulo: 'Sem cadastro (digitar o nome)' },
     ...clientes
@@ -121,7 +150,8 @@ export function FormViagem({ viagem, motoristas, veiculos, clientes, aoFechar }:
       origem: origem.trim(),
       destino: destino.trim(),
       carga: carga.trim() || null,
-      forma_pagamento_frete: pagamentoFrete.trim() || null,
+      forma_recebimento_id: formaId === SEM_FORMA || formaId === TEXTO_ANTIGO ? null : formaId,
+      forma_pagamento_frete: formaId === TEXTO_ANTIGO ? textoAntigo : null,
       data_prevista: dataPrevista,
       valor_frete: valorFrete,
       valor_adiantamento: valorAdiantamento,
@@ -177,7 +207,7 @@ export function FormViagem({ viagem, motoristas, veiculos, clientes, aoFechar }:
           <CampoData rotulo="Data prevista *" valor={data} onChange={setData} />
         </LinhaForm>
         <LinhaForm minimo={260}>
-          <Seletor rotulo="Cliente" opcoes={opcoesCliente} valor={clienteId} onChange={setClienteId} />
+          <Seletor rotulo="Cliente" opcoes={opcoesCliente} valor={clienteId} onChange={aoEscolherCliente} />
           {clienteId === AVULSO ? (
             <Campo rotulo="Nome do cliente (opcional)" value={cliente} onChangeText={setCliente} placeholder="Ex.: mudança do Gilberto" />
           ) : null}
@@ -195,13 +225,20 @@ export function FormViagem({ viagem, motoristas, veiculos, clientes, aoFechar }:
             inputMode="decimal"
             placeholder="Ex.: 2.500,00"
           />
-          <Campo
-            rotulo="Forma de pagamento do frete (opcional)"
-            ajuda="Como o cliente paga. Aparece para o motorista na viagem."
-            value={pagamentoFrete}
-            onChangeText={setPagamentoFrete}
-            placeholder="Ex.: à vista, faturado 30 dias"
-          />
+          <View style={styles.formaLinha}>
+            <View style={styles.formaCampo}>
+              <Seletor
+                rotulo="Forma de recebimento"
+                opcoes={opcoesForma}
+                valor={formaId}
+                onChange={setFormaId}
+                ajuda={formaEscolhida ? descreverParcelas(formaEscolhida.parcelas) : undefined}
+              />
+            </View>
+            <View style={styles.formaMais}>
+              <BotaoIcone icone="plus" rotulo="Cadastrar forma de recebimento" onPress={() => setCriandoForma(true)} />
+            </View>
+          </View>
         </LinhaForm>
         <LinhaForm minimo={260}>
           <View>
@@ -239,6 +276,17 @@ export function FormViagem({ viagem, motoristas, veiculos, clientes, aoFechar }:
           inicial não é pedido aqui — o motorista informa ao confirmar a saída.
         </Text>
       )}
+      {criandoForma ? (
+        <FormFormaRecebimento
+          forma={null}
+          aoFechar={async (id) => {
+            setCriandoForma(false);
+            if (!id) return;
+            setFormaId(id);
+            setFormasCriadas(await listarFormasRecebimento().catch(() => []));
+          }}
+        />
+      ) : null}
     </Janela>
   );
 }
@@ -271,6 +319,9 @@ const styles = StyleSheet.create({
     backgroundColor: Cores.branco,
   },
   blocoTitulo: { fontSize: 13, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', color: Cores.textoSuave },
+  formaLinha: { flexDirection: 'row', alignItems: 'flex-start', gap: Espaco.sm },
+  formaCampo: { flex: 1, minWidth: 0 },
+  formaMais: { paddingTop: 22 },
   botoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
   adiantamento: { alignItems: 'flex-start' },
   notaPequena: { fontSize: 11, lineHeight: 14, marginTop: -4, color: Cores.textoSuave },

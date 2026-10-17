@@ -3,18 +3,27 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
+import { FormFormaRecebimento } from '@/components/gestor/forma-recebimento';
 import { Botao } from '@/components/ui/botao';
+import { BotaoIcone } from '@/components/ui/botao-icone';
 import { Campo } from '@/components/ui/campo';
+import { Secao } from '@/components/ui/cartao';
 import { CampoBusca } from '@/components/ui/campo-busca';
 import { Janela } from '@/components/ui/janela';
 import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
 import { Segmentado } from '@/components/ui/segmentado';
+import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
 import { Cores, Espaco } from '@/constants/tema';
 import { useCarregar } from '@/hooks/use-carregar';
 import { listarClientes, salvarCliente, type Cliente } from '@/services/clientes.service';
+import {
+  descreverParcelas,
+  listarFormasRecebimento,
+  type FormaRecebimento,
+} from '@/services/formas-recebimento.service';
 import { formatarDocumento, soDigitos } from '@/utils/cpf';
 import { mensagemDeErro } from '@/utils/erros';
 import { formatarTelefone } from '@/utils/formato';
@@ -26,8 +35,16 @@ const SITUACAO = [
 
 // Clientes (embarcadores). Cadastro simples: a viagem também aceita só o nome digitado,
 // para o frete avulso (ex.: uma mudança) que não vale cadastrar.
+async function carregarTela() {
+  const [clientes, formas] = await Promise.all([listarClientes(), listarFormasRecebimento()]);
+  return { clientes, formas };
+}
+
 export default function Clientes() {
-  const { dados, erro, recarregar } = useCarregar(listarClientes);
+  const { dados: tela, erro, recarregar } = useCarregar(carregarTela);
+  const dados = tela?.clientes;
+  // forma de recebimento aberta na janela: undefined = nenhuma; null = nova
+  const [formaAberta, setFormaAberta] = useState<FormaRecebimento | null | undefined>(undefined);
   // undefined = só a lista; null = novo cliente; Cliente = editando
   const [editando, setEditando] = useState<Cliente | null | undefined>(undefined);
   const [busca, setBusca] = useState('');
@@ -46,6 +63,11 @@ export default function Clientes() {
     { titulo: 'CPF / CNPJ', flex: 1.4, celula: (c) => (c.documento ? formatarDocumento(c.documento) : '—') },
     { titulo: 'Telefone', celula: (c) => (c.telefone ? formatarTelefone(c.telefone) : '—') },
     { titulo: 'Cidade', celula: (c) => c.cidade ?? '—' },
+    {
+      titulo: 'Recebimento',
+      flex: 1.4,
+      celula: (c) => tela?.formas.find((f) => f.id === c.forma_recebimento_id)?.nome ?? '—',
+    },
     {
       titulo: 'Situação',
       celula: (c) => (c.ativo ? <Selo tipo="sucesso">Ativo</Selo> : <Selo tipo="neutro">Inativo</Selo>),
@@ -73,14 +95,42 @@ export default function Clientes() {
           itens={visiveis}
           chave={(c) => c.id}
           vazio={dados.length === 0 ? 'Nenhum cliente cadastrado ainda.' : 'Nenhum cliente encontrado.'}
-          larguraMinima={820}
+          larguraMinima={980}
         />
       ) : erro ? null : (
         <ActivityIndicator color={Cores.primaria} />
       )}
-      {editando !== undefined ? (
+      {tela ? (
+        <Secao
+          titulo="Formas de recebimento"
+          acao={<BotaoIcone icone="plus" rotulo="Nova forma de recebimento" onPress={() => setFormaAberta(null)} />}>
+          <Text style={styles.nota}>Como os clientes pagam o frete. Usadas no cadastro do cliente e na viagem.</Text>
+          {tela.formas.length === 0 ? <Text style={styles.suave}>Nenhuma forma cadastrada ainda.</Text> : null}
+          {tela.formas.map((f) => (
+            <View key={f.id} style={styles.forma}>
+              <View style={styles.formaTexto}>
+                <Text style={styles.formaNome}>{f.nome}</Text>
+                <Text style={styles.suave}>{descreverParcelas(f.parcelas)}</Text>
+              </View>
+              <Botao titulo="Editar" variante="link" compacto onPress={() => setFormaAberta(f)} />
+            </View>
+          ))}
+        </Secao>
+      ) : null}
+      {formaAberta !== undefined ? (
+        <FormFormaRecebimento
+          forma={formaAberta}
+          aoFechar={(id) => {
+            setFormaAberta(undefined);
+            if (id) recarregar();
+          }}
+        />
+      ) : null}
+      {editando !== undefined && tela ? (
         <FormCliente
           cliente={editando}
+          formas={tela.formas}
+          aoRecarregarFormas={recarregar}
           aoFechar={(salvou) => {
             setEditando(undefined);
             if (salvou) recarregar();
@@ -91,12 +141,31 @@ export default function Clientes() {
   );
 }
 
-function FormCliente({ cliente, aoFechar }: { cliente: Cliente | null; aoFechar: (salvou: boolean) => void }) {
+type PropsForm = {
+  cliente: Cliente | null;
+  formas: FormaRecebimento[];
+  aoRecarregarFormas: () => void;
+  aoFechar: (salvou: boolean) => void;
+};
+
+const SEM_FORMA = 'nenhuma';
+
+function FormCliente({ cliente, formas, aoRecarregarFormas, aoFechar }: PropsForm) {
   const [nome, setNome] = useState(cliente?.nome ?? '');
   const [documento, setDocumento] = useState(formatarDocumento(cliente?.documento ?? ''));
   const [telefone, setTelefone] = useState(formatarTelefone(cliente?.telefone ?? ''));
   const [cidade, setCidade] = useState(cliente?.cidade ?? '');
   const [situacao, setSituacao] = useState<'ativo' | 'inativo'>(cliente && !cliente.ativo ? 'inativo' : 'ativo');
+  const [formaId, setFormaId] = useState(cliente?.forma_recebimento_id ?? SEM_FORMA);
+  const [criandoForma, setCriandoForma] = useState(false);
+  // forma criada agora ainda não está na lista recebida: mostra pelo nome provisório
+  const [formasExtras, setFormasExtras] = useState<{ valor: string; rotulo: string }[]>([]);
+  const opcoesForma = [
+    { valor: SEM_FORMA, rotulo: 'Não definida' },
+    ...formas.filter((f) => f.ativo || f.id === cliente?.forma_recebimento_id).map((f) => ({ valor: f.id, rotulo: f.nome })),
+    ...formasExtras.filter((e) => !formas.some((f) => f.id === e.valor)),
+  ];
+  const formaEscolhida = formas.find((f) => f.id === formaId);
   const [mensagem, setMensagem] = useState<ConteudoMensagem | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -114,6 +183,7 @@ function FormCliente({ cliente, aoFechar }: { cliente: Cliente | null; aoFechar:
         telefone: soDigitos(telefone) || null,
         cidade: cidade.trim() || null,
         ativo: situacao === 'ativo',
+        forma_recebimento_id: formaId === SEM_FORMA ? null : formaId,
       });
       aoFechar(true);
     } catch (e) {
@@ -148,12 +218,39 @@ function FormCliente({ cliente, aoFechar }: { cliente: Cliente | null; aoFechar:
         />
         <Campo rotulo="Cidade" value={cidade} onChangeText={setCidade} placeholder="Ex.: Pato Branco/PR" />
       </LinhaForm>
+      <View style={styles.formaLinha}>
+        <View style={styles.formaCampo}>
+          <Seletor
+            rotulo="Forma de recebimento"
+            opcoes={opcoesForma}
+            valor={formaId}
+            onChange={setFormaId}
+            ajuda={formaEscolhida ? descreverParcelas(formaEscolhida.parcelas) : 'Vem marcada nas viagens deste cliente.'}
+          />
+        </View>
+        <View style={styles.formaMais}>
+          <BotaoIcone icone="plus" rotulo="Cadastrar forma de recebimento" onPress={() => setCriandoForma(true)} />
+        </View>
+      </View>
       {cliente ? <Segmentado rotulo="Situação" opcoes={SITUACAO} valor={situacao} onChange={setSituacao} /> : null}
       <Text style={styles.nota}>Cliente inativo não aparece na lista ao criar viagem.</Text>
       <View style={styles.botoes}>
         <Botao titulo="Salvar" onPress={salvar} carregando={salvando} />
         <Botao titulo="Cancelar" variante="link" onPress={() => aoFechar(false)} />
       </View>
+      {criandoForma ? (
+        <FormFormaRecebimento
+          forma={null}
+          aoFechar={(id) => {
+            setCriandoForma(false);
+            if (id) {
+              setFormasExtras((l) => [...l, { valor: id, rotulo: 'Forma nova' }]);
+              setFormaId(id);
+              aoRecarregarFormas();
+            }
+          }}
+        />
+      ) : null}
     </Janela>
   );
 }
@@ -170,4 +267,18 @@ const styles = StyleSheet.create({
   },
   botoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
   nota: { fontSize: 11, color: Cores.textoSuave },
+  suave: { fontSize: 13, color: Cores.textoSuave },
+  forma: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Espaco.md,
+    paddingVertical: Espaco.sm,
+    borderTopWidth: 1,
+    borderTopColor: Cores.borda,
+  },
+  formaTexto: { flex: 1, minWidth: 0, gap: 2 },
+  formaNome: { fontSize: 14, fontWeight: '600', color: Cores.texto },
+  formaLinha: { flexDirection: 'row', alignItems: 'flex-start', gap: Espaco.sm },
+  formaCampo: { flex: 1, minWidth: 0 },
+  formaMais: { paddingTop: 22 },
 });

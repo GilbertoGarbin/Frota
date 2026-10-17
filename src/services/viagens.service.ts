@@ -1,6 +1,7 @@
 import type { Tables, TablesInsert, TablesUpdate } from '@/db/database.types';
 import { supabase } from '@/lib/supabase';
 import { listarClientes, type Cliente } from '@/services/clientes.service';
+import { listarFormasRecebimento, type FormaRecebimento } from '@/services/formas-recebimento.service';
 import type { Motorista } from '@/services/motoristas.service';
 import { listarVeiculos, type Veiculo } from '@/services/veiculos.service';
 
@@ -53,18 +54,25 @@ export const TIPOS_DO_GESTOR: { valor: TipoComplemento; rotulo: string }[] = [
   { valor: 'outro', rotulo: 'Outro' },
 ];
 
-export type TelaViagens = { viagens: Viagem[]; motoristas: Motorista[]; veiculos: Veiculo[]; clientes: Cliente[] };
+export type TelaViagens = {
+  viagens: Viagem[];
+  motoristas: Motorista[];
+  veiculos: Veiculo[];
+  clientes: Cliente[];
+  formas: FormaRecebimento[];
+};
 
 export async function carregarTelaViagens(): Promise<TelaViagens> {
-  const [viagens, motoristas, veiculos, clientes] = await Promise.all([
+  const [viagens, motoristas, veiculos, clientes, formas] = await Promise.all([
     supabase.from('viagens').select('*').order('data_prevista', { ascending: false }).order('criado_em', { ascending: false }),
     supabase.from('motoristas').select('*').order('nome'),
     listarVeiculos(),
     listarClientes(),
+    listarFormasRecebimento(),
   ]);
   if (viagens.error) throw viagens.error;
   if (motoristas.error) throw motoristas.error;
-  return { viagens: viagens.data, motoristas: motoristas.data, veiculos, clientes };
+  return { viagens: viagens.data, motoristas: motoristas.data, veiculos, clientes, formas };
 }
 
 export type DadosViagem = Pick<
@@ -72,6 +80,8 @@ export type DadosViagem = Pick<
   | 'motorista_id'
   | 'veiculo_id'
   | 'cliente'
+  | 'cliente_id'
+  | 'forma_recebimento_id'
   | 'origem'
   | 'destino'
   | 'carga'

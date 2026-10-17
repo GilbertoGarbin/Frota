@@ -155,6 +155,7 @@ export type Database = {
           criado_em: string
           criado_por: string | null
           documento: string | null
+          forma_recebimento_id: string | null
           id: string
           nome: string
           telefone: string | null
@@ -167,6 +168,7 @@ export type Database = {
           criado_em?: string
           criado_por?: string | null
           documento?: string | null
+          forma_recebimento_id?: string | null
           id?: string
           nome: string
           telefone?: string | null
@@ -179,12 +181,20 @@ export type Database = {
           criado_em?: string
           criado_por?: string | null
           documento?: string | null
+          forma_recebimento_id?: string | null
           id?: string
           nome?: string
           telefone?: string | null
           tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "clientes_forma_recebimento_fk"
+            columns: ["tenant_id", "forma_recebimento_id"]
+            isOneToOne: false
+            referencedRelation: "formas_recebimento"
+            referencedColumns: ["tenant_id", "id"]
+          },
           {
             foreignKeyName: "clientes_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -446,6 +456,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "viagens"
             referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
+      formas_recebimento: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          criado_em: string
+          criado_por: string | null
+          id: string
+          nome: string
+          parcelas: Json
+          tenant_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome: string
+          parcelas: Json
+          tenant_id?: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          nome?: string
+          parcelas?: Json
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formas_recebimento_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -969,6 +1020,7 @@ export type Database = {
           data_prevista: string
           destino: string
           forma_pagamento_frete: string | null
+          forma_recebimento_id: string | null
           gasto_proprio_bolso: number
           id: string
           iniciada_em: string | null
@@ -1007,6 +1059,7 @@ export type Database = {
           data_prevista?: string
           destino: string
           forma_pagamento_frete?: string | null
+          forma_recebimento_id?: string | null
           gasto_proprio_bolso?: number
           id?: string
           iniciada_em?: string | null
@@ -1045,6 +1098,7 @@ export type Database = {
           data_prevista?: string
           destino?: string
           forma_pagamento_frete?: string | null
+          forma_recebimento_id?: string | null
           gasto_proprio_bolso?: number
           id?: string
           iniciada_em?: string | null
@@ -1070,6 +1124,13 @@ export type Database = {
             columns: ["tenant_id", "cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "viagens_forma_recebimento_fk"
+            columns: ["tenant_id", "forma_recebimento_id"]
+            isOneToOne: false
+            referencedRelation: "formas_recebimento"
             referencedColumns: ["tenant_id", "id"]
           },
           {

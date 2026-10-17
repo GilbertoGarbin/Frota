@@ -2,7 +2,7 @@ import type { Tables, TablesInsert } from '@/db/database.types';
 import { supabase } from '@/lib/supabase';
 
 export type Cliente = Tables<'clientes'>;
-export type DadosCliente = Pick<TablesInsert<'clientes'>, 'nome' | 'documento' | 'telefone' | 'cidade' | 'ativo'>;
+export type DadosCliente = Pick<TablesInsert<'clientes'>, 'nome' | 'documento' | 'telefone' | 'cidade' | 'ativo' | 'forma_recebimento_id'>;
 
 export async function listarClientes(): Promise<Cliente[]> {
   const { data, error } = await supabase.from('clientes').select('*').order('nome');

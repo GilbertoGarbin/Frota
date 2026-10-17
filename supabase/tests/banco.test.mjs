@@ -988,3 +988,47 @@ test('clientes: cadastro por transportadora e viagem com ou sem cliente cadastra
     ),
   );
 });
+
+test('formas de recebimento: parcelas somam 100% e a viagem herda a forma do cliente', async () => {
+  const p7030 = JSON.stringify([
+    { percentual: 70, base: 'saida', dias: 0, tipo_dias: 'corridos', dia_semana: null },
+    { percentual: 30, base: 'entrega', dias: 10, tipo_dias: 'corridos', dia_semana: null },
+  ]);
+  const forma = await como(gestorA, async () =>
+    (await um(`insert into formas_recebimento (nome, parcelas) values ('70/30 — 10 dias', $1) returning id`, [p7030])).id,
+  );
+  // não soma 100
+  await assert.rejects(
+    como(gestorA, () =>
+      q(`insert into formas_recebimento (nome, parcelas) values ('Errada', $1)`, [
+        JSON.stringify([{ percentual: 60, base: 'saida', dias: 0, tipo_dias: 'corridos' }]),
+      ]),
+    ),
+    /somar 100/,
+  );
+  // dia da semana fora de 0..6
+  await assert.rejects(
+    como(gestorA, () =>
+      q(`insert into formas_recebimento (nome, parcelas) values ('Quarta', $1)`, [
+        JSON.stringify([{ percentual: 100, base: 'entrega', dias: 21, tipo_dias: 'corridos', dia_semana: 9 }]),
+      ]),
+    ),
+    /Dia da semana/,
+  );
+  await como(gestorB, async () => assert.equal((await q('select id from formas_recebimento')).length, 0));
+
+  const cli = await como(gestorA, async () =>
+    (await um(`insert into clientes (nome, forma_recebimento_id) values ('Cliente 70/30', $1) returning id`, [forma])).id,
+  );
+  const vr = await novoVeiculo('REC1A11');
+  const mr = await novoMotorista('Renato', '94000000001', vr);
+  const v = await como(gestorA, async () =>
+    (await um(
+      `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, cliente_id)
+       values ($1, $2, 'A', 'B', 1000, $3) returning forma_recebimento_id, forma_pagamento_frete`,
+      [mr, vr, cli],
+    )),
+  );
+  assert.equal(v.forma_recebimento_id, forma);
+  assert.equal(v.forma_pagamento_frete, '70/30 — 10 dias');
+});
