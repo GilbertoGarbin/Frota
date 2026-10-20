@@ -138,18 +138,19 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
           {visiveis.map((c) => {
             const situacao = situacaoDaConta(c.vencimento, c.quitadoEm);
             return (
-              <View key={c.id} style={styles.conta}>
+              <Pressable
+                key={c.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Editar: ${c.descricao}`}
+                onPress={() => setEditando(c)}
+                style={({ pressed }) => [styles.conta, pressed && styles.pressionado]}>
                 <View style={styles.textos}>
                   <Text style={styles.descricao}>{c.descricao}</Text>
                   {c.viagem ? (
-                    <Pressable
-                      accessibilityRole="link"
-                      onPress={() => router.push({ pathname: '/gestor/viagens', params: { viagem: c.viagem!.id } })}>
-                      <Text style={styles.link}>
-                        {`${c.viagem.origem} → ${c.viagem.destino} · ${formatarData(c.viagem.data_prevista)}`}
-                        {receber && c.viagem.cliente ? ` · ${c.viagem.cliente}` : ''}
-                      </Text>
-                    </Pressable>
+                    <Text style={styles.suave}>
+                      {`${c.viagem.origem} → ${c.viagem.destino} · ${formatarData(c.viagem.data_prevista)}`}
+                      {receber && c.viagem.cliente ? ` · ${c.viagem.cliente}` : ''}
+                    </Text>
                   ) : null}
                   {c.detalhe ? <Text style={styles.suave}>{c.detalhe}</Text> : null}
                   {c.chavePix && !c.quitadoEm ? <Text selectable style={styles.suave}>{`Chave PIX: ${c.chavePix}`}</Text> : null}
@@ -169,7 +170,14 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
                       {c.vencimento ? `${situacao === 'atrasado' ? 'Venceu' : 'Vence'} em ${formatarData(c.vencimento)}` : 'Sem data'}
                     </Selo>
                   )}
-                  <Botao titulo="Editar" variante="link" compacto onPress={() => setEditando(c)} />
+                  {c.viagem ? (
+                    <Botao
+                      titulo="Ver viagem"
+                      variante="link"
+                      compacto
+                      onPress={() => router.push({ pathname: '/gestor/viagens', params: { viagem: c.viagem!.id } })}
+                    />
+                  ) : null}
                   {c.quitadoEm ? (
                     <Botao titulo="Desfazer" variante="link" compacto carregando={ocupado === c.id} onPress={() => marcar(c, false)} />
                   ) : (
@@ -182,7 +190,7 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
                     />
                   )}
                 </View>
-              </View>
+              </Pressable>
             );
           })}
         </View>
@@ -226,7 +234,7 @@ const styles = StyleSheet.create({
   },
   textos: { flexGrow: 1, flexBasis: 280, minWidth: 0, gap: 2 },
   descricao: { fontSize: 15, fontWeight: '600', color: Cores.texto },
-  link: { fontSize: 13, color: Cores.primaria },
+  pressionado: { backgroundColor: Cores.fundo },
   suave: { fontSize: 13, color: Cores.textoSuave },
   observacao: { fontSize: 12, fontStyle: 'italic', color: Cores.textoSuave },
   direita: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: Espaco.sm },
