@@ -33,8 +33,8 @@ async function carregarContas() {
     };
   };
   return {
-    receber: resumo(receber.map((r) => ({ valor: r.valor, vencimento: r.vencimento, quitado: r.recebido_em }))),
-    pagar: resumo(pagar.map((p) => ({ valor: p.valor, vencimento: p.vencimento, quitado: p.pago_em }))),
+    receber: resumo(receber.map((r) => ({ valor: r.valor_final ?? r.valor, vencimento: r.vencimento, quitado: r.recebido_em }))),
+    pagar: resumo(pagar.map((p) => ({ valor: p.valor_final ?? p.valor, vencimento: p.vencimento, quitado: p.pago_em }))),
   };
 }
 

@@ -63,3 +63,47 @@ export function situacaoDaConta(vencimento: string | null, quitadoEm: string | n
 }
 
 export const dataDeHoje = hoje;
+
+export type DadosConta = {
+  descricao: string;
+  valor: number;
+  vencimento: string | null;
+  juros: number;
+  desconto: number;
+  observacao: string | null;
+  /** data em que foi recebida/paga; null = em aberto */
+  quitadoEm: string | null;
+  /** só pagamentos */
+  favorecido?: string | null;
+  chavePix?: string | null;
+};
+
+/**
+ * Grava a edição de uma conta. Valor e vencimento mudados à mão ficam marcados como manuais:
+ * o recálculo automático (frete, datas da viagem, lançamento) não os sobrescreve mais.
+ */
+export async function salvarConta(
+  tipo: 'receber' | 'pagar',
+  id: string,
+  dados: DadosConta,
+  mudou: { valor: boolean; vencimento: boolean },
+): Promise<void> {
+  const comum = {
+    descricao: dados.descricao,
+    valor: dados.valor,
+    vencimento: dados.vencimento,
+    juros: dados.juros,
+    desconto: dados.desconto,
+    observacao: dados.observacao,
+    ...(mudou.valor ? { valor_manual: true } : {}),
+    ...(mudou.vencimento ? { vencimento_manual: true } : {}),
+  };
+  const { error } =
+    tipo === 'receber'
+      ? await supabase.from('recebimentos').update({ ...comum, recebido_em: dados.quitadoEm }).eq('id', id)
+      : await supabase
+          .from('pagamentos')
+          .update({ ...comum, pago_em: dados.quitadoEm, favorecido: dados.favorecido ?? null, chave_pix: dados.chavePix ?? null })
+          .eq('id', id);
+  if (error) throw error;
+}

@@ -712,16 +712,22 @@ export type Database = {
           atualizado_em: string
           chave_pix: string | null
           criado_em: string
+          desconto: number
           descricao: string
           despesa_id: string | null
           favorecido: string | null
           forma: string | null
           id: string
+          juros: number
+          observacao: string | null
           origem: string
           pago_em: string | null
           tenant_id: string
           valor: number
+          valor_final: number | null
+          valor_manual: boolean
           vencimento: string | null
+          vencimento_manual: boolean
           viagem_id: string | null
         }
         Insert: {
@@ -729,16 +735,22 @@ export type Database = {
           atualizado_em?: string
           chave_pix?: string | null
           criado_em?: string
+          desconto?: number
           descricao: string
           despesa_id?: string | null
           favorecido?: string | null
           forma?: string | null
           id?: string
+          juros?: number
+          observacao?: string | null
           origem: string
           pago_em?: string | null
           tenant_id: string
           valor: number
+          valor_final?: number | null
+          valor_manual?: boolean
           vencimento?: string | null
+          vencimento_manual?: boolean
           viagem_id?: string | null
         }
         Update: {
@@ -746,16 +758,22 @@ export type Database = {
           atualizado_em?: string
           chave_pix?: string | null
           criado_em?: string
+          desconto?: number
           descricao?: string
           despesa_id?: string | null
           favorecido?: string | null
           forma?: string | null
           id?: string
+          juros?: number
+          observacao?: string | null
           origem?: string
           pago_em?: string | null
           tenant_id?: string
           valor?: number
+          valor_final?: number | null
+          valor_manual?: boolean
           vencimento?: string | null
+          vencimento_manual?: boolean
           viagem_id?: string | null
         }
         Relationships: [
@@ -946,10 +964,13 @@ export type Database = {
           base: string
           complemento_id: string | null
           criado_em: string
+          desconto: number
           descricao: string
           dia_semana: number | null
           dias: number
           id: string
+          juros: number
+          observacao: string | null
           ordem: number
           origem: string
           percentual: number | null
@@ -957,7 +978,10 @@ export type Database = {
           tenant_id: string
           tipo_dias: string
           valor: number
+          valor_final: number | null
+          valor_manual: boolean
           vencimento: string | null
+          vencimento_manual: boolean
           viagem_id: string
         }
         Insert: {
@@ -965,10 +989,13 @@ export type Database = {
           base?: string
           complemento_id?: string | null
           criado_em?: string
+          desconto?: number
           descricao: string
           dia_semana?: number | null
           dias?: number
           id?: string
+          juros?: number
+          observacao?: string | null
           ordem?: number
           origem: string
           percentual?: number | null
@@ -976,7 +1003,10 @@ export type Database = {
           tenant_id: string
           tipo_dias?: string
           valor: number
+          valor_final?: number | null
+          valor_manual?: boolean
           vencimento?: string | null
+          vencimento_manual?: boolean
           viagem_id: string
         }
         Update: {
@@ -984,10 +1014,13 @@ export type Database = {
           base?: string
           complemento_id?: string | null
           criado_em?: string
+          desconto?: number
           descricao?: string
           dia_semana?: number | null
           dias?: number
           id?: string
+          juros?: number
+          observacao?: string | null
           ordem?: number
           origem?: string
           percentual?: number | null
@@ -995,7 +1028,10 @@ export type Database = {
           tenant_id?: string
           tipo_dias?: string
           valor?: number
+          valor_final?: number | null
+          valor_manual?: boolean
           vencimento?: string | null
+          vencimento_manual?: boolean
           viagem_id?: string
         }
         Relationships: [

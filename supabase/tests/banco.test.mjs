@@ -1132,3 +1132,48 @@ test('financeiro: recebimentos pela forma, complemento, adiantamento e pagamento
     await assert.rejects(q('select gerar_recebimentos($1)', [vg]), /não encontrada/);
   });
 });
+
+test('conta corrigida à mão não é sobrescrita pelo recálculo', async () => {
+  const ve = await novoVeiculo('EDT1A11');
+  const me = await novoMotorista('Edu', '96000000001', ve);
+  const forma = await como(gestorA, async () =>
+    (await um(`insert into formas_recebimento (nome, parcelas) values ('50/50 edit', $1) returning id`, [
+      JSON.stringify([
+        { percentual: 50, base: 'saida', dias: 0, tipo_dias: 'corridos', dia_semana: null },
+        { percentual: 50, base: 'entrega', dias: 5, tipo_dias: 'corridos', dia_semana: null },
+      ]),
+    ])).id,
+  );
+  const vg = await como(gestorA, async () =>
+    (await um(
+      `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, data_prevista, forma_recebimento_id)
+       values ($1, $2, 'A', 'B', 1000, '2026-11-02', $3) returning id`,
+      [me, ve, forma],
+    )).id,
+  );
+  await como(gestorA, () => q('select gerar_recebimentos($1)', [vg]));
+  // gestor corrige a 2ª parcela: R$ 450 vencendo em 30/11
+  await como(gestorA, () =>
+    q(`update recebimentos set valor = 450, valor_manual = true, vencimento = '2026-11-30', vencimento_manual = true where viagem_id = $1 and ordem = 2`, [vg]),
+  );
+  // frete muda: a 1ª acompanha, a 2ª (corrigida) fica
+  await como(gestorA, () => q(`update viagens set valor_frete = 1200 where id = $1`, [vg]));
+  let rs = await q(`select * from recebimentos where viagem_id = $1 order by ordem`, [vg]);
+  assert.equal(Number(rs[0].valor), 600);
+  assert.equal(Number(rs[1].valor), 450);
+  assert.equal(rs[1].vencimento.toISOString().slice(0, 10), '2026-11-30');
+  // gerar de novo refaz do zero
+  await como(gestorA, () => q('select gerar_recebimentos($1)', [vg]));
+  rs = await q(`select * from recebimentos where viagem_id = $1 order by ordem`, [vg]);
+  assert.equal(Number(rs[1].valor), 600);
+  assert.equal(rs[1].valor_manual, false);
+});
+
+test('conta com juros e desconto: valor final', async () => {
+  const vj = await novoVeiculo('JUR1A11');
+  const mj = await novoMotorista('Júlio', '97000000001', vj);
+  const vg = await programar(mj, vj, 500, 100);
+  await como(gestorA, () => q(`update pagamentos set juros = 12.5, desconto = 2.5 where viagem_id = $1 and origem = 'adiantamento'`, [vg]));
+  const p = await um(`select valor_final from pagamentos where viagem_id = $1 and origem = 'adiantamento'`, [vg]);
+  assert.equal(Number(p.valor_final), 110);
+});

@@ -10,8 +10,13 @@ async function carregar(): Promise<ContaDaLista[]> {
     id: r.id,
     descricao: r.descricao,
     detalhe: null,
+    favorecido: null,
     chavePix: null,
     valor: r.valor,
+    juros: r.juros,
+    desconto: r.desconto,
+    valorFinal: r.valor_final ?? r.valor,
+    observacao: r.observacao,
     vencimento: r.vencimento,
     quitadoEm: r.recebido_em,
     viagem: r.viagem,
@@ -31,6 +36,7 @@ export default function Receber() {
         await marcarRecebido(id, quitar);
         recarregar();
       }}
+      aoEditar={recarregar}
       acaoExtra={
         <Botao titulo="Formas de recebimento" variante="contorno" compacto onPress={() => router.push('/gestor/formas-recebimento')} />
       }

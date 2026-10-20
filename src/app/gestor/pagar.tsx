@@ -8,8 +8,13 @@ async function carregar(): Promise<ContaDaLista[]> {
     id: p.id,
     descricao: p.descricao,
     detalhe: [p.favorecido, p.forma ? ROTULO_PAGAMENTO[p.forma as FormaPagamento] : null].filter(Boolean).join(' · ') || null,
+    favorecido: p.favorecido,
     chavePix: p.chave_pix,
     valor: p.valor,
+    juros: p.juros,
+    desconto: p.desconto,
+    valorFinal: p.valor_final ?? p.valor,
+    observacao: p.observacao,
     vencimento: p.vencimento,
     quitadoEm: p.pago_em,
     viagem: p.viagem,
@@ -28,6 +33,7 @@ export default function Pagar() {
         await marcarPagamento(id, quitar);
         recarregar();
       }}
+      aoEditar={recarregar}
     />
   );
 }

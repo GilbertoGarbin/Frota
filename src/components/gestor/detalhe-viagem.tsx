@@ -573,7 +573,7 @@ const resumoLista = (n: number, um: string, varios: string, total: number, vazio
 function seloAPagar(pagamentos: Pagamento[]) {
   const pendentes = pagamentos.filter((p) => !p.pago_em);
   if (pendentes.length === 0) return null;
-  return <Selo tipo="aviso">{`${formatarMoeda(somar(pendentes.map((p) => p.valor)))} a pagar`}</Selo>;
+  return <Selo tipo="aviso">{`${formatarMoeda(somar(pendentes.map((p) => p.valor_final ?? p.valor)))} a pagar`}</Selo>;
 }
 
 type PropsRegistros = {
@@ -689,7 +689,7 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
   const [gerando, setGerando] = useState(false);
   const temParcelas = recebimentos.some((r) => r.origem === 'frete');
   const aReceber = recebimentos.filter((r) => !r.recebido_em);
-  const total = somar(recebimentos.map((r) => r.valor));
+  const total = somar(recebimentos.map((r) => r.valor_final ?? r.valor));
 
   async function gerar() {
     setGerando(true);
@@ -709,7 +709,7 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
       }
       extra={
         aReceber.length > 0 ? (
-          <Selo tipo="info">{`${formatarMoeda(somar(aReceber.map((r) => r.valor)))} a receber`}</Selo>
+          <Selo tipo="info">{`${formatarMoeda(somar(aReceber.map((r) => r.valor_final ?? r.valor)))} a receber`}</Selo>
         ) : null
       }
       acao={
@@ -734,7 +734,7 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
         return (
           <View key={r.id} style={styles.item}>
             <View style={styles.itemTexto}>
-              <Text style={styles.texto}>{`${r.descricao} · ${formatarMoeda(r.valor)}`}</Text>
+              <Text style={styles.texto}>{`${r.descricao} · ${formatarMoeda(r.valor_final ?? r.valor)}`}</Text>
               <Text style={styles.suave}>{r.vencimento ? `Vence em ${formatarData(r.vencimento)}` : 'Sem data'}</Text>
             </View>
             {situacao === 'quitado' ? (

@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { FormConta, type ContaEditavel } from '@/components/gestor/form-conta';
 import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
@@ -16,15 +17,11 @@ import { mensagemDeErro } from '@/utils/erros';
 import { formatarData, formatarMoeda } from '@/utils/formato';
 
 /** Conta já no formato da lista (recebimento ou pagamento) */
-export type ContaDaLista = {
-  id: string;
-  descricao: string;
-  /** cliente (receber) ou favorecido/forma (pagar) */
+export type ContaDaLista = ContaEditavel & {
+  /** favorecido e forma (pagar) */
   detalhe: string | null;
-  chavePix: string | null;
-  valor: number;
-  vencimento: string | null;
-  quitadoEm: string | null;
+  /** valor + juros - desconto: o que vale nos totais */
+  valorFinal: number;
   viagem: ViagemDaConta | null;
 };
 
@@ -35,20 +32,23 @@ type Props = {
   contas: ContaDaLista[] | null;
   erro: string | null;
   aoMarcar: (id: string, quitar: boolean) => Promise<void>;
+  /** depois de salvar a edição */
+  aoEditar: () => void;
   /** botão extra no cabeçalho (ex.: Formas de recebimento) */
   acaoExtra?: ReactNode;
 };
 
-const somaDe = (contas: ContaDaLista[]) => somar(contas.map((c) => c.valor));
+const somaDe = (contas: ContaDaLista[]) => somar(contas.map((c) => c.valorFinal));
 
 /** Financeiro > Receber / Pagar: contas em aberto (atrasadas primeiro), com marcar como quitada. */
-export function ListaContas({ tipo, contas, erro, aoMarcar, acaoExtra }: Props) {
+export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra }: Props) {
   const router = useRouter();
   const receber = tipo === 'receber';
   const [filtro, setFiltro] = useState<Filtro>('abertas');
   const [busca, setBusca] = useState('');
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [erroAcao, setErroAcao] = useState<string | null>(null);
+  const [editando, setEditando] = useState<ContaDaLista | null>(null);
 
   const hoje = dataDeHoje();
   const daquiSete = (() => {
@@ -153,9 +153,15 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, acaoExtra }: Props) 
                   ) : null}
                   {c.detalhe ? <Text style={styles.suave}>{c.detalhe}</Text> : null}
                   {c.chavePix && !c.quitadoEm ? <Text selectable style={styles.suave}>{`Chave PIX: ${c.chavePix}`}</Text> : null}
+                  {c.juros > 0 || c.desconto > 0 ? (
+                    <Text style={styles.suave}>
+                      {`Valor ${formatarMoeda(c.valor)}${c.juros > 0 ? ` + juros ${formatarMoeda(c.juros)}` : ''}${c.desconto > 0 ? ` − desconto ${formatarMoeda(c.desconto)}` : ''}`}
+                    </Text>
+                  ) : null}
+                  {c.observacao ? <Text style={styles.observacao}>{c.observacao}</Text> : null}
                 </View>
                 <View style={styles.direita}>
-                  <Text style={styles.valor}>{formatarMoeda(c.valor)}</Text>
+                  <Text style={styles.valor}>{formatarMoeda(c.valorFinal)}</Text>
                   {situacao === 'quitado' ? (
                     <Selo tipo="sucesso">{`${receber ? 'Recebido' : 'Pago'} em ${formatarData(c.quitadoEm)}`}</Selo>
                   ) : (
@@ -163,6 +169,7 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, acaoExtra }: Props) 
                       {c.vencimento ? `${situacao === 'atrasado' ? 'Venceu' : 'Vence'} em ${formatarData(c.vencimento)}` : 'Sem data'}
                     </Selo>
                   )}
+                  <Botao titulo="Editar" variante="link" compacto onPress={() => setEditando(c)} />
                   {c.quitadoEm ? (
                     <Botao titulo="Desfazer" variante="link" compacto carregando={ocupado === c.id} onPress={() => marcar(c, false)} />
                   ) : (
@@ -180,6 +187,16 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, acaoExtra }: Props) 
           })}
         </View>
       )}
+      {editando ? (
+        <FormConta
+          tipo={tipo}
+          conta={editando}
+          aoFechar={(salvou) => {
+            setEditando(null);
+            if (salvou) aoEditar();
+          }}
+        />
+      ) : null}
     </Pagina>
   );
 }
@@ -211,6 +228,7 @@ const styles = StyleSheet.create({
   descricao: { fontSize: 15, fontWeight: '600', color: Cores.texto },
   link: { fontSize: 13, color: Cores.primaria },
   suave: { fontSize: 13, color: Cores.textoSuave },
+  observacao: { fontSize: 12, fontStyle: 'italic', color: Cores.textoSuave },
   direita: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: Espaco.sm },
   valor: { fontSize: 16, fontWeight: '600', color: Cores.texto, minWidth: 110, textAlign: 'right' },
   vazio: {
