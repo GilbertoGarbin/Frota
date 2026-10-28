@@ -69,6 +69,27 @@ export function ItemFaixa({ rotulo, valor, detalhe, tom = 'neutro', extra }: Omi
   );
 }
 
+type PropsResumo = {
+  rotulo: string;
+  valor: string;
+  detalhe?: string;
+  /** cor da faixa à esquerda e do valor */
+  cor: string;
+  /** valor em cinza (ex.: atrasado zerado), mantendo a faixa colorida */
+  apagado?: boolean;
+};
+
+/** Cartão de total com faixa colorida à esquerda. Usar dentro de uma Grade. */
+export function CartaoResumo({ rotulo, valor, detalhe, cor, apagado }: PropsResumo) {
+  return (
+    <View style={[styles.resumo, { borderLeftColor: cor }]}>
+      <Text style={styles.rotulo}>{rotulo}</Text>
+      <Text style={[styles.valorResumo, { color: apagado ? Cores.texto : cor }]}>{valor}</Text>
+      {detalhe ? <Text style={styles.detalhe}>{detalhe}</Text> : null}
+    </View>
+  );
+}
+
 /** Linha de cartões que quebra em telas estreitas */
 export function Grade({ children }: PropsWithChildren) {
   return <View style={styles.grade}>{children}</View>;
@@ -139,6 +160,19 @@ const styles = StyleSheet.create({
   grade: { flexDirection: 'row', flexWrap: 'wrap', gap: Espaco.md },
   indicador: { flexGrow: 1, flexBasis: 200, gap: 4, padding: Espaco.lg, borderRadius: Raio.md },
   borda: { borderWidth: 1, borderColor: Cores.borda },
+  resumo: {
+    flexGrow: 1,
+    flexBasis: 200,
+    gap: 2,
+    paddingHorizontal: Espaco.lg,
+    paddingVertical: Espaco.md,
+    borderRadius: Raio.md,
+    borderWidth: 1,
+    borderColor: Cores.borda,
+    borderLeftWidth: 4,
+    backgroundColor: Cores.branco,
+  },
+  valorResumo: { fontSize: 20, fontWeight: '700' },
   linhaRotulo: { flexDirection: 'row', alignItems: 'center', gap: Espaco.sm, flexWrap: 'wrap' },
   rotulo: { fontSize: 13, color: Cores.textoSuave },
   valor: { fontSize: 22, fontWeight: '700' },

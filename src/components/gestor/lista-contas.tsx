@@ -7,7 +7,7 @@ import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { CampoBusca } from '@/components/ui/campo-busca';
-import { Faixa, ItemFaixa } from '@/components/ui/cartao';
+import { CartaoResumo, Grade } from '@/components/ui/cartao';
 import { Selo } from '@/components/ui/selo';
 import { Seletor } from '@/components/ui/seletor';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
@@ -176,20 +176,27 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
       {erroAcao ? <Aviso tipo="erro">{erroAcao}</Aviso> : null}
 
       {contas ? (
-        <Faixa>
-          <ItemFaixa rotulo={receber ? 'Total a receber' : 'Total a pagar'} valor={formatarMoeda(somaDe(abertas))} detalhe={`${abertas.length} em aberto`} />
-          <ItemFaixa
+        <Grade>
+          <CartaoResumo
+            rotulo={receber ? 'Total a receber' : 'Total a pagar'}
+            valor={formatarMoeda(somaDe(abertas))}
+            detalhe={`${abertas.length} em aberto`}
+            cor={receber ? Cores.sucessoTexto : Cores.avisoForte}
+          />
+          <CartaoResumo
             rotulo="Atrasado"
             valor={formatarMoeda(somaDe(atrasadas))}
-            tom={atrasadas.length > 0 ? 'perigo' : 'neutro'}
             detalhe={`${atrasadas.length} ${atrasadas.length === 1 ? 'conta' : 'contas'}`}
+            cor={Cores.perigo}
+            apagado={atrasadas.length === 0}
           />
-          <ItemFaixa
+          <CartaoResumo
             rotulo="Próximos 7 dias"
             valor={formatarMoeda(somaDe(semana))}
             detalhe={`${semana.length} ${semana.length === 1 ? 'conta' : 'contas'}`}
+            cor={Cores.primaria}
           />
-        </Faixa>
+        </Grade>
       ) : null}
 
       {contas ? (
