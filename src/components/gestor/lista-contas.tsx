@@ -10,7 +10,8 @@ import { CampoBusca } from '@/components/ui/campo-busca';
 import { Faixa, ItemFaixa } from '@/components/ui/cartao';
 import { Selo } from '@/components/ui/selo';
 import { Seletor } from '@/components/ui/seletor';
-import { Cores, Espaco, Raio } from '@/constants/tema';
+import { Tabela, type Coluna } from '@/components/ui/tabela';
+import { Cores, Espaco } from '@/constants/tema';
 import { dataDeHoje, situacaoDaConta, type ViagemDaConta } from '@/services/financeiro.service';
 import { somar } from '@/utils/dinheiro';
 import { mensagemDeErro } from '@/utils/erros';
@@ -90,14 +91,78 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
     { valor: 'todas', rotulo: 'Todos' },
   ] as const;
 
+  const colunas: Coluna<ContaDaLista>[] = [
+    {
+      titulo: 'Vencimento',
+      flex: 0.9,
+      celula: (c) => (c.vencimento ? formatarData(c.vencimento) : 'Sem data'),
+    },
+    {
+      titulo: 'Descrição',
+      flex: 1.6,
+      celula: (c) => (
+        <View>
+          <Text style={styles.texto}>{c.descricao}</Text>
+          {c.chavePix && !c.quitadoEm ? <Text selectable style={styles.suave}>{`Chave PIX: ${c.chavePix}`}</Text> : null}
+          {c.observacao ? <Text style={styles.observacao}>{c.observacao}</Text> : null}
+        </View>
+      ),
+    },
+    receber
+      ? { titulo: 'Cliente', flex: 1.4, celula: (c) => c.viagem?.cliente ?? '—' }
+      : { titulo: 'Favorecido', flex: 1.4, celula: (c) => c.detalhe ?? '—' },
+    {
+      titulo: 'Viagem',
+      flex: 1.6,
+      celula: (c) =>
+        c.viagem ? (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityHint="Abre a viagem"
+            onPress={() => router.push({ pathname: '/gestor/viagens', params: { viagem: c.viagem!.id } })}>
+            <Text style={styles.link}>{`${c.viagem.origem} → ${c.viagem.destino} · ${formatarData(c.viagem.data_prevista)}`}</Text>
+          </Pressable>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      titulo: 'Valor',
+      flex: 1,
+      celula: (c) => <Text style={styles.valor}>{formatarMoeda(c.valorFinal)}</Text>,
+    },
+    {
+      titulo: 'Situação',
+      flex: 1.1,
+      celula: (c) => {
+        const situacao = situacaoDaConta(c.vencimento, c.quitadoEm);
+        if (situacao === 'quitado') {
+          return <Selo tipo="sucesso">{`${receber ? 'Recebido' : 'Pago'} ${formatarData(c.quitadoEm)}`}</Selo>;
+        }
+        return situacao === 'atrasado' ? <Selo tipo="perigo">Atrasado</Selo> : <Selo tipo="neutro">Em aberto</Selo>;
+      },
+    },
+    {
+      titulo: '',
+      flex: 1.3,
+      celula: (c) =>
+        c.quitadoEm ? (
+          <Botao titulo="Desfazer" variante="link" compacto carregando={ocupado === c.id} onPress={() => marcar(c, false)} />
+        ) : (
+          <Botao
+            titulo={receber ? 'Marcar recebido' : 'Marcar pago'}
+            variante="contorno"
+            compacto
+            carregando={ocupado === c.id}
+            onPress={() => marcar(c, true)}
+          />
+        ),
+    },
+  ];
+
   return (
     <Pagina
       titulo={receber ? 'Receber' : 'Pagar'}
-      subtitulo={
-        receber
-          ? 'Fretes e complementos que os clientes devem. Gerados na viagem pela forma de recebimento.'
-          : 'Postos, fornecedores, reembolsos e adiantamentos aos motoristas. Criados sozinhos pelos lançamentos.'
-      }
       acao={
         <View style={styles.acoes}>
           <CampoBusca valor={busca} onChange={setBusca} placeholder={receber ? 'Cliente, rota ou descrição' : 'Favorecido, rota ou descrição'} />
@@ -125,75 +190,17 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
         </Faixa>
       ) : null}
 
-      {!contas ? (
-        erro ? null : <ActivityIndicator color={Cores.primaria} />
-      ) : visiveis.length === 0 ? (
-        <View style={styles.vazio}>
-          <Text style={styles.suave}>
-            {filtro === 'abertas' ? (receber ? 'Nada a receber.' : 'Nada a pagar.') : 'Nenhuma conta encontrada.'}
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.lista}>
-          {visiveis.map((c) => {
-            const situacao = situacaoDaConta(c.vencimento, c.quitadoEm);
-            return (
-              <Pressable
-                key={c.id}
-                accessibilityRole="button"
-                accessibilityLabel={`Editar: ${c.descricao}`}
-                onPress={() => setEditando(c)}
-                style={({ pressed }) => [styles.conta, pressed && styles.pressionado]}>
-                <View style={styles.textos}>
-                  <Text style={styles.descricao}>{c.descricao}</Text>
-                  {c.viagem ? (
-                    <Text style={styles.suave}>
-                      {`${c.viagem.origem} → ${c.viagem.destino} · ${formatarData(c.viagem.data_prevista)}`}
-                      {receber && c.viagem.cliente ? ` · ${c.viagem.cliente}` : ''}
-                    </Text>
-                  ) : null}
-                  {c.detalhe ? <Text style={styles.suave}>{c.detalhe}</Text> : null}
-                  {c.chavePix && !c.quitadoEm ? <Text selectable style={styles.suave}>{`Chave PIX: ${c.chavePix}`}</Text> : null}
-                  {c.juros > 0 || c.desconto > 0 ? (
-                    <Text style={styles.suave}>
-                      {`Valor ${formatarMoeda(c.valor)}${c.juros > 0 ? ` + juros ${formatarMoeda(c.juros)}` : ''}${c.desconto > 0 ? ` − desconto ${formatarMoeda(c.desconto)}` : ''}`}
-                    </Text>
-                  ) : null}
-                  {c.observacao ? <Text style={styles.observacao}>{c.observacao}</Text> : null}
-                </View>
-                <View style={styles.direita}>
-                  <Text style={styles.valor}>{formatarMoeda(c.valorFinal)}</Text>
-                  {situacao === 'quitado' ? (
-                    <Selo tipo="sucesso">{`${receber ? 'Recebido' : 'Pago'} em ${formatarData(c.quitadoEm)}`}</Selo>
-                  ) : (
-                    <Selo tipo={situacao === 'atrasado' ? 'perigo' : 'neutro'}>
-                      {c.vencimento ? `${situacao === 'atrasado' ? 'Venceu' : 'Vence'} em ${formatarData(c.vencimento)}` : 'Sem data'}
-                    </Selo>
-                  )}
-                  {c.viagem ? (
-                    <Botao
-                      titulo="Ver viagem"
-                      variante="link"
-                      compacto
-                      onPress={() => router.push({ pathname: '/gestor/viagens', params: { viagem: c.viagem!.id } })}
-                    />
-                  ) : null}
-                  {c.quitadoEm ? (
-                    <Botao titulo="Desfazer" variante="link" compacto carregando={ocupado === c.id} onPress={() => marcar(c, false)} />
-                  ) : (
-                    <Botao
-                      titulo={receber ? 'Marcar como recebido' : 'Marcar como pago'}
-                      variante="contorno"
-                      compacto
-                      carregando={ocupado === c.id}
-                      onPress={() => marcar(c, true)}
-                    />
-                  )}
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
+      {contas ? (
+        <Tabela
+          aoTocar={setEditando}
+          colunas={colunas}
+          itens={visiveis}
+          chave={(c) => c.id}
+          vazio={filtro === 'abertas' ? (receber ? 'Nada a receber.' : 'Nada a pagar.') : 'Nenhuma conta encontrada.'}
+          larguraMinima={1000}
+        />
+      ) : erro ? null : (
+        <ActivityIndicator color={Cores.primaria} />
       )}
       {editando ? (
         <FormConta
@@ -219,32 +226,9 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
   },
-  lista: { gap: Espaco.sm },
-  conta: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: Espaco.md,
-    paddingHorizontal: Espaco.lg,
-    paddingVertical: Espaco.sm,
-    borderWidth: 1,
-    borderColor: Cores.borda,
-    borderRadius: Raio.md,
-    backgroundColor: Cores.branco,
-  },
-  textos: { flexGrow: 1, flexBasis: 280, minWidth: 0, gap: 2 },
-  descricao: { fontSize: 15, fontWeight: '600', color: Cores.texto },
-  pressionado: { backgroundColor: Cores.fundo },
-  suave: { fontSize: 13, color: Cores.textoSuave },
+  texto: { fontSize: 14, color: Cores.texto },
+  suave: { fontSize: 12, color: Cores.textoSuave },
   observacao: { fontSize: 12, fontStyle: 'italic', color: Cores.textoSuave },
-  direita: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: Espaco.sm },
-  valor: { fontSize: 16, fontWeight: '600', color: Cores.texto, minWidth: 110, textAlign: 'right' },
-  vazio: {
-    padding: Espaco.xxl,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Cores.borda,
-    borderRadius: Raio.md,
-    backgroundColor: Cores.branco,
-  },
+  link: { fontSize: 14, color: Cores.primaria },
+  valor: { fontSize: 14, fontWeight: '600', color: Cores.texto },
 });
