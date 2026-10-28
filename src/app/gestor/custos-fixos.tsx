@@ -67,10 +67,6 @@ export default function CustosFixos() {
       celula: (c) =>
         vigenteNoMes(c, inicio, fim) ? <Selo tipo="sucesso">Vigente</Selo> : <Selo tipo="neutro">Fora do mês</Selo>,
     },
-    {
-      titulo: 'Ações',
-      celula: (c) => <Botao titulo="Editar" variante="contorno" compacto onPress={() => setEditando(c)} />,
-    },
   ];
 
   return (
@@ -89,7 +85,7 @@ export default function CustosFixos() {
               detalhe={`${vigentes.length} custo(s) vigente(s) — entra no resultado líquido do mês`}
             />
           </Grade>
-          <Tabela colunas={colunas} itens={custos} chave={(c) => c.id} vazio="Nenhum custo fixo cadastrado ainda." />
+          <Tabela aoTocar={setEditando} colunas={colunas} itens={custos} chave={(c) => c.id} vazio="Nenhum custo fixo cadastrado ainda." />
         </>
       ) : erro ? null : (
         <ActivityIndicator color={Cores.primaria} />

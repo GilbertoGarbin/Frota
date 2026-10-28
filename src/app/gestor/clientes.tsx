@@ -69,10 +69,6 @@ export default function Clientes() {
       titulo: 'Situação',
       celula: (c) => (c.ativo ? <Selo tipo="sucesso">Ativo</Selo> : <Selo tipo="neutro">Inativo</Selo>),
     },
-    {
-      titulo: 'Ações',
-      celula: (c) => <Botao titulo="Editar" variante="contorno" compacto onPress={() => setEditando(c)} />,
-    },
   ];
 
   return (
@@ -88,6 +84,7 @@ export default function Clientes() {
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {dados ? (
         <Tabela
+          aoTocar={setEditando}
           colunas={colunas}
           itens={visiveis}
           chave={(c) => c.id}

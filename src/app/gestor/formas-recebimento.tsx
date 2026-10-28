@@ -28,10 +28,6 @@ export default function FormasRecebimento() {
       titulo: 'Situação',
       celula: (f) => (f.ativo ? <Selo tipo="sucesso">Ativa</Selo> : <Selo tipo="neutro">Inativa</Selo>),
     },
-    {
-      titulo: 'Ações',
-      celula: (f) => <Botao titulo="Editar" variante="contorno" compacto onPress={() => setEditando(f)} />,
-    },
   ];
 
   return (
@@ -42,6 +38,7 @@ export default function FormasRecebimento() {
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {dados ? (
         <Tabela
+          aoTocar={setEditando}
           colunas={colunas}
           itens={dados}
           chave={(f) => f.id}

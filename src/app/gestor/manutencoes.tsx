@@ -101,10 +101,6 @@ export default function Manutencoes() {
       titulo: 'Pagamento',
       celula: (m) => (m.pago ? <Selo tipo="sucesso">Pago</Selo> : <Selo tipo="aviso">Pendente</Selo>),
     },
-    {
-      titulo: 'Ações',
-      celula: (m) => <Botao titulo="Editar" variante="contorno" compacto onPress={() => setEditando(m)} />,
-    },
   ];
 
   return (
@@ -134,7 +130,7 @@ export default function Manutencoes() {
                   : `${p.veiculo.placa}: próxima manutenção em ${formatarKm(p.falta)}.`}
               </Aviso>
             ))}
-          <Tabela colunas={colunas} itens={dados.manutencoes} chave={(m) => m.id} vazio="Nenhuma manutenção registrada ainda." larguraMinima={900} />
+          <Tabela aoTocar={setEditando} colunas={colunas} itens={dados.manutencoes} chave={(m) => m.id} vazio="Nenhuma manutenção registrada ainda." larguraMinima={900} />
         </>
       ) : erro ? null : (
         <ActivityIndicator color={Cores.primaria} />

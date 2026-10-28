@@ -106,10 +106,6 @@ export default function Motoristas() {
       celula: (m) =>
         m.status === 'ativo' ? <Selo tipo="sucesso">Ativo</Selo> : <Selo tipo="neutro">Inativo</Selo>,
     },
-    {
-      titulo: 'Ações',
-      celula: (m) => <Botao titulo="Editar" variante="contorno" compacto onPress={() => setEditando(m)} />,
-    },
   ];
 
   return (
@@ -120,6 +116,7 @@ export default function Motoristas() {
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {dados ? (
         <Tabela
+          aoTocar={setEditando}
           colunas={colunas}
           itens={dados.motoristas}
           chave={(m) => m.id}

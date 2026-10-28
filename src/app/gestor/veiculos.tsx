@@ -62,10 +62,6 @@ export default function Veiculos() {
         return <Selo tipo={s.tipo}>{s.rotulo}</Selo>;
       },
     },
-    {
-      titulo: 'Ações',
-      celula: (v) => <Botao titulo="Editar" variante="contorno" compacto onPress={() => setEditando(v)} />,
-    },
   ];
 
   return (
@@ -76,6 +72,7 @@ export default function Veiculos() {
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {veiculos ? (
         <Tabela
+          aoTocar={setEditando}
           colunas={colunas}
           itens={veiculos}
           chave={(v) => v.id}

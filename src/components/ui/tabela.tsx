@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Cores, Espaco, Raio } from '@/constants/tema';
 
@@ -17,9 +17,11 @@ type Props<T> = {
   vazio: string;
   /** abaixo desta largura a tabela rola na horizontal em vez de espremer as colunas */
   larguraMinima?: number;
+  /** clicar na linha (ex.: abrir a edição); a linha ganha destaque ao passar o mouse */
+  aoTocar?: (item: T) => void;
 };
 
-export function Tabela<T>({ colunas, itens, chave, vazio, larguraMinima = 760 }: Props<T>) {
+export function Tabela<T>({ colunas, itens, chave, vazio, larguraMinima = 760, aoTocar }: Props<T>) {
   if (itens.length === 0) {
     return (
       <View style={[styles.moldura, styles.vazio]}>
@@ -37,18 +39,37 @@ export function Tabela<T>({ colunas, itens, chave, vazio, larguraMinima = 760 }:
             </Text>
           ))}
         </View>
-        {itens.map((item, i) => (
-          <View key={chave(item)} style={[styles.linha, i % 2 === 1 && styles.zebra]}>
-            {colunas.map((c) => {
-              const conteudo = c.celula(item);
-              return (
-                <View key={c.titulo} style={[styles.celula, { flex: c.flex ?? 1 }]}>
-                  {typeof conteudo === 'string' ? <Text style={styles.texto}>{conteudo}</Text> : conteudo}
-                </View>
-              );
-            })}
-          </View>
-        ))}
+        {itens.map((item, i) => {
+          const celulas = colunas.map((c) => {
+            const conteudo = c.celula(item);
+            return (
+              <View key={c.titulo} style={[styles.celula, { flex: c.flex ?? 1 }]}>
+                {typeof conteudo === 'string' ? <Text style={styles.texto}>{conteudo}</Text> : conteudo}
+              </View>
+            );
+          });
+          if (!aoTocar) {
+            return (
+              <View key={chave(item)} style={[styles.linha, i % 2 === 1 && styles.zebra]}>
+                {celulas}
+              </View>
+            );
+          }
+          return (
+            <Pressable
+              key={chave(item)}
+              accessibilityRole="button"
+              accessibilityHint="Abre para editar"
+              onPress={() => aoTocar(item)}
+              style={({ pressed, hovered }) => [
+                styles.linha,
+                i % 2 === 1 && styles.zebra,
+                (pressed || hovered) && styles.destaque,
+              ]}>
+              {celulas}
+            </Pressable>
+          );
+        })}
       </View>
     </ScrollView>
   );
@@ -67,6 +88,7 @@ const styles = StyleSheet.create({
   linha: { flexDirection: 'row', alignItems: 'center', minHeight: 52 },
   cabecalho: { minHeight: 40, backgroundColor: Cores.fundo, borderBottomWidth: 1, borderBottomColor: Cores.borda },
   zebra: { backgroundColor: '#FAFBFD' },
+  destaque: { backgroundColor: '#EEF4FF' },
   celula: { paddingHorizontal: Espaco.md, paddingVertical: Espaco.sm, justifyContent: 'center' },
   titulo: { fontSize: 12, fontWeight: '600', color: Cores.textoSuave, textTransform: 'uppercase' },
   texto: { fontSize: 14, color: Cores.texto },
