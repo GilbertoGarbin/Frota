@@ -134,7 +134,7 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
     },
     {
       titulo: 'Situação',
-      largura: 120,
+      largura: 108,
       celula: (c) => {
         const situacao = situacaoDaConta(c.vencimento, c.quitadoEm);
         if (situacao === 'quitado') {
@@ -145,16 +145,16 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
     },
     {
       titulo: '',
-      largura: 110,
+      largura: 95,
       direita: true,
       celula: (c) =>
         c.quitadoEm ? (
-          <Botao titulo="Desfazer" variante="link" compacto carregando={ocupado === c.id} onPress={() => marcar(c, false)} />
+          <Botao titulo="Desfazer" variante="link" mini carregando={ocupado === c.id} onPress={() => marcar(c, false)} />
         ) : (
           <Botao
             titulo={receber ? 'Receber' : 'Pagar'}
             variante="contorno"
-            compacto
+            mini
             carregando={ocupado === c.id}
             onPress={() => marcar(c, true)}
           />

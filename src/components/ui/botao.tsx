@@ -8,11 +8,13 @@ type Props = {
   variante?: 'primario' | 'contorno' | 'link' | 'perigo';
   /** menor, para ações dentro de tabelas e cabeçalhos */
   compacto?: boolean;
+  /** ainda menor, para caber na altura de uma linha de tabela */
+  mini?: boolean;
   carregando?: boolean;
   desativado?: boolean;
 };
 
-export function Botao({ titulo, onPress, variante = 'primario', compacto, carregando, desativado }: Props) {
+export function Botao({ titulo, onPress, variante = 'primario', compacto, mini, carregando, desativado }: Props) {
   const inativo = desativado || carregando;
   const corTexto = variante === 'primario' || variante === 'perigo' ? Cores.branco : Cores.primaria;
   return (
@@ -25,13 +27,14 @@ export function Botao({ titulo, onPress, variante = 'primario', compacto, carreg
         styles.base,
         compacto && styles.compacto,
         styles[variante],
+        mini && styles.mini,
         inativo && styles.inativo,
         pressed && styles.pressionado,
       ]}>
       {carregando ? (
-        <ActivityIndicator color={corTexto} />
+        <ActivityIndicator size="small" color={corTexto} />
       ) : (
-        <Text style={[styles.texto, compacto && styles.textoCompacto, { color: corTexto }]}>{titulo}</Text>
+        <Text style={[styles.texto, compacto && styles.textoCompacto, mini && styles.textoMini, { color: corTexto }]}>{titulo}</Text>
       )}
     </Pressable>
   );
@@ -50,8 +53,10 @@ const styles = StyleSheet.create({
   perigo: { backgroundColor: Cores.perigo },
   contorno: { borderWidth: 1, borderColor: Cores.primaria, backgroundColor: Cores.branco },
   link: { minHeight: 40 },
+  mini: { minHeight: 28, paddingHorizontal: Espaco.sm },
   inativo: { opacity: 0.5 },
   pressionado: { opacity: 0.8 },
   texto: { fontSize: 16, fontWeight: '600' },
   textoCompacto: { fontSize: 14 },
+  textoMini: { fontSize: 13 },
 });
