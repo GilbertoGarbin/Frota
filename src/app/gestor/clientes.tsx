@@ -57,16 +57,17 @@ export default function Clientes() {
 
   const colunas: Coluna<Cliente>[] = [
     { titulo: 'Nome', flex: 2, celula: (c) => c.nome },
-    { titulo: 'CPF / CNPJ', flex: 1.4, celula: (c) => (c.documento ? formatarDocumento(c.documento) : '—') },
+    { titulo: 'CPF / CNPJ', flex: 1.15, celula: (c) => (c.documento ? formatarDocumento(c.documento) : '—') },
     { titulo: 'Telefone', celula: (c) => (c.telefone ? formatarTelefone(c.telefone) : '—') },
     { titulo: 'Cidade', celula: (c) => c.cidade ?? '—' },
     {
       titulo: 'Recebimento',
-      flex: 1.4,
+      flex: 2,
       celula: (c) => tela?.formas.find((f) => f.id === c.forma_recebimento_id)?.nome ?? '—',
     },
     {
       titulo: 'Situação',
+      flex: 0.7,
       celula: (c) => (c.ativo ? <Selo tipo="sucesso">Ativo</Selo> : <Selo tipo="neutro">Inativo</Selo>),
     },
   ];
