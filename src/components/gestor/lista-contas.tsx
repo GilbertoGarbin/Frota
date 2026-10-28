@@ -19,7 +19,7 @@ import { formatarData, formatarMoeda } from '@/utils/formato';
 
 /** Conta já no formato da lista (recebimento ou pagamento) */
 export type ContaDaLista = ContaEditavel & {
-  /** favorecido e forma (pagar) */
+  /** favorecido e forma (pagar) — entra na busca */
   detalhe: string | null;
   /** valor + juros - desconto: o que vale nos totais */
   valorFinal: number;
@@ -110,7 +110,7 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
     },
     receber
       ? { titulo: 'Cliente', flex: 1.7, celula: (c) => c.viagem?.cliente ?? '—' }
-      : { titulo: 'Favorecido', flex: 1.7, celula: (c) => c.detalhe ?? '—' },
+      : { titulo: 'Favorecido', flex: 1.7, celula: (c) => c.favorecido ?? '—' },
     {
       titulo: 'Viagem',
       flex: 2.7,
