@@ -99,7 +99,7 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
     },
     {
       titulo: 'Descrição',
-      flex: 1.9,
+      flex: 2.4,
       celula: (c) => (
         <View>
           <Text style={styles.texto}>{c.descricao}</Text>
@@ -111,7 +111,7 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
     receber
       ? {
           titulo: 'Cliente',
-          flex: 1.7,
+          flex: 1.6,
           celula: (c) =>
             c.viagem?.cliente_id ? (
               <Pressable
@@ -124,10 +124,10 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
               (c.viagem?.cliente ?? '—')
             ),
         }
-      : { titulo: 'Favorecido', flex: 1.7, celula: (c) => c.favorecido ?? '—' },
+      : { titulo: 'Favorecido', flex: 1.6, celula: (c) => c.favorecido ?? '—' },
     {
       titulo: 'Viagem',
-      flex: 2.7,
+      flex: 2.3,
       celula: (c) =>
         c.viagem ? (
           <Pressable
@@ -149,6 +149,7 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
     {
       titulo: 'Situação',
       largura: 108,
+      direita: true,
       celula: (c) => {
         const situacao = situacaoDaConta(c.vencimento, c.quitadoEm);
         if (situacao === 'quitado') {
@@ -160,7 +161,6 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
     {
       titulo: '',
       largura: 95,
-      direita: true,
       celula: (c) =>
         c.quitadoEm ? (
           <Botao titulo="Desfazer" variante="contorno" mini carregando={ocupado === c.id} onPress={() => marcar(c, false)} />
