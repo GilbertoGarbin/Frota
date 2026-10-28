@@ -94,12 +94,12 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
   const colunas: Coluna<ContaDaLista>[] = [
     {
       titulo: 'Vencimento',
-      flex: 0.9,
+      flex: 1,
       celula: (c) => (c.vencimento ? formatarData(c.vencimento) : 'Sem data'),
     },
     {
       titulo: 'Descrição',
-      flex: 1.6,
+      flex: 1.9,
       celula: (c) => (
         <View>
           <Text style={styles.texto}>{c.descricao}</Text>
@@ -109,11 +109,11 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
       ),
     },
     receber
-      ? { titulo: 'Cliente', flex: 1.4, celula: (c) => c.viagem?.cliente ?? '—' }
-      : { titulo: 'Favorecido', flex: 1.4, celula: (c) => c.detalhe ?? '—' },
+      ? { titulo: 'Cliente', flex: 1.7, celula: (c) => c.viagem?.cliente ?? '—' }
+      : { titulo: 'Favorecido', flex: 1.7, celula: (c) => c.detalhe ?? '—' },
     {
       titulo: 'Viagem',
-      flex: 1.6,
+      flex: 2.7,
       celula: (c) =>
         c.viagem ? (
           <Pressable
@@ -128,29 +128,29 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
     },
     {
       titulo: 'Valor',
-      flex: 1,
+      flex: 1.15,
       celula: (c) => <Text style={styles.valor}>{formatarMoeda(c.valorFinal)}</Text>,
     },
     {
       titulo: 'Situação',
-      flex: 1.1,
+      flex: 1.15,
       celula: (c) => {
         const situacao = situacaoDaConta(c.vencimento, c.quitadoEm);
         if (situacao === 'quitado') {
-          return <Selo tipo="sucesso">{`${receber ? 'Recebido' : 'Pago'} ${formatarData(c.quitadoEm)}`}</Selo>;
+          return <Selo tipo="sucesso">{receber ? 'Recebido' : 'Pago'}</Selo>;
         }
         return situacao === 'atrasado' ? <Selo tipo="perigo">Atrasado</Selo> : <Selo tipo="neutro">Em aberto</Selo>;
       },
     },
     {
       titulo: '',
-      flex: 1.3,
+      flex: 1.1,
       celula: (c) =>
         c.quitadoEm ? (
           <Botao titulo="Desfazer" variante="link" compacto carregando={ocupado === c.id} onPress={() => marcar(c, false)} />
         ) : (
           <Botao
-            titulo={receber ? 'Marcar recebido' : 'Marcar pago'}
+            titulo={receber ? 'Receber' : 'Pagar'}
             variante="contorno"
             compacto
             carregando={ocupado === c.id}
