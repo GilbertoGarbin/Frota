@@ -52,15 +52,15 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
   const [editando, setEditando] = useState<ContaDaLista | null>(null);
 
   const hoje = dataDeHoje();
-  const daquiSete = (() => {
+  const daquiTrinta = (() => {
     const d = new Date();
-    d.setDate(d.getDate() + 7);
+    d.setDate(d.getDate() + 30);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   })();
 
   const abertas = (contas ?? []).filter((c) => !c.quitadoEm);
   const atrasadas = abertas.filter((c) => c.vencimento && c.vencimento < hoje);
-  const semana = abertas.filter((c) => c.vencimento && c.vencimento >= hoje && c.vencimento <= daquiSete);
+  const proximas = abertas.filter((c) => c.vencimento && c.vencimento >= hoje && c.vencimento <= daquiTrinta);
 
   const termo = busca.trim().toLowerCase();
   const visiveis = (contas ?? [])
@@ -205,9 +205,9 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
             apagado={atrasadas.length === 0}
           />
           <CartaoResumo
-            rotulo="Próximos 7 dias"
-            valor={formatarMoeda(somaDe(semana))}
-            detalhe={`${semana.length} ${semana.length === 1 ? 'conta' : 'contas'}`}
+            rotulo="Próximos 30 dias"
+            valor={formatarMoeda(somaDe(proximas))}
+            detalhe={`${proximas.length} ${proximas.length === 1 ? 'conta' : 'contas'}`}
             cor={Cores.primaria}
           />
         </Grade>
