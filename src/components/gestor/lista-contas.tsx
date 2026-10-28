@@ -149,7 +149,7 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
       direita: true,
       celula: (c) =>
         c.quitadoEm ? (
-          <Botao titulo="Desfazer" variante="link" mini carregando={ocupado === c.id} onPress={() => marcar(c, false)} />
+          <Botao titulo="Desfazer" variante="contorno" mini carregando={ocupado === c.id} onPress={() => marcar(c, false)} />
         ) : (
           <Botao
             titulo={receber ? 'Receber' : 'Pagar'}
