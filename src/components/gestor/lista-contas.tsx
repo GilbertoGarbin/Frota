@@ -94,7 +94,7 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
   const colunas: Coluna<ContaDaLista>[] = [
     {
       titulo: 'Vencimento',
-      flex: 1,
+      largura: 110,
       celula: (c) => (c.vencimento ? formatarData(c.vencimento) : 'Sem data'),
     },
     {
@@ -128,12 +128,13 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
     },
     {
       titulo: 'Valor',
-      flex: 1.15,
+      largura: 120,
+      direita: true,
       celula: (c) => <Text style={styles.valor}>{formatarMoeda(c.valorFinal)}</Text>,
     },
     {
       titulo: 'Situação',
-      flex: 1.15,
+      largura: 120,
       celula: (c) => {
         const situacao = situacaoDaConta(c.vencimento, c.quitadoEm);
         if (situacao === 'quitado') {
@@ -144,7 +145,8 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
     },
     {
       titulo: '',
-      flex: 1.1,
+      largura: 110,
+      direita: true,
       celula: (c) =>
         c.quitadoEm ? (
           <Botao titulo="Desfazer" variante="link" compacto carregando={ocupado === c.id} onPress={() => marcar(c, false)} />
