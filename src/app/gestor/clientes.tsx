@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
@@ -45,6 +46,15 @@ export default function Clientes() {
   // undefined = só a lista; null = novo cliente; Cliente = editando
   const [editando, setEditando] = useState<Cliente | null | undefined>(undefined);
   const [busca, setBusca] = useState('');
+
+  // vindo de outra tela (ex.: Receber) com ?cliente=id: abre a ficha dele uma vez
+  const { cliente: clienteDoLink } = useLocalSearchParams<{ cliente?: string }>();
+  const [linkAberto, setLinkAberto] = useState<string | null>(null);
+  if (dados && clienteDoLink && linkAberto !== clienteDoLink) {
+    setLinkAberto(clienteDoLink);
+    const c = dados.find((x) => x.id === clienteDoLink);
+    if (c) setEditando(c);
+  }
 
   const termo = busca.trim().toLowerCase();
   const digitosBusca = soDigitos(busca);

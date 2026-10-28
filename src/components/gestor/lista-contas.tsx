@@ -109,7 +109,21 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
       ),
     },
     receber
-      ? { titulo: 'Cliente', flex: 1.7, celula: (c) => c.viagem?.cliente ?? '—' }
+      ? {
+          titulo: 'Cliente',
+          flex: 1.7,
+          celula: (c) =>
+            c.viagem?.cliente_id ? (
+              <Pressable
+                accessibilityRole="link"
+                accessibilityHint="Abre o cadastro do cliente"
+                onPress={() => router.push({ pathname: '/gestor/clientes', params: { cliente: c.viagem!.cliente_id! } })}>
+                <Text style={styles.link}>{c.viagem.cliente ?? 'Ver cliente'}</Text>
+              </Pressable>
+            ) : (
+              (c.viagem?.cliente ?? '—')
+            ),
+        }
       : { titulo: 'Favorecido', flex: 1.7, celula: (c) => c.favorecido ?? '—' },
     {
       titulo: 'Viagem',

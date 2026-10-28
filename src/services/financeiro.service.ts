@@ -8,12 +8,19 @@ export type Recebimento = Tables<'recebimentos'>;
 export type Pagamento = Tables<'pagamentos'>;
 
 /** Viagem resumida para mostrar junto da conta */
-export type ViagemDaConta = { id: string; origem: string; destino: string; cliente: string | null; data_prevista: string };
+export type ViagemDaConta = {
+  id: string;
+  origem: string;
+  destino: string;
+  cliente: string | null;
+  cliente_id: string | null;
+  data_prevista: string;
+};
 
 export type ContaReceber = Recebimento & { viagem: ViagemDaConta | null };
 export type ContaPagar = Pagamento & { viagem: ViagemDaConta | null };
 
-const CAMPOS_VIAGEM = 'viagem:viagens(id, origem, destino, cliente, data_prevista)';
+const CAMPOS_VIAGEM = 'viagem:viagens(id, origem, destino, cliente, cliente_id, data_prevista)';
 
 const hoje = () => {
   const d = new Date();
