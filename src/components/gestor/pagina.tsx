@@ -45,5 +45,5 @@ const styles = StyleSheet.create({
   titulos: { flex: 1, minWidth: 200, gap: 2 },
   titulosLado: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: Espaco.md },
   titulo: { fontSize: 24, fontWeight: '700', color: Cores.texto },
-  subtitulo: { fontSize: 14, color: Cores.textoSuave },
+  subtitulo: { fontSize: 12, color: Cores.textoSuave },
 });
