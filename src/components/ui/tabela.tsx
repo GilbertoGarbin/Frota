@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Cores, Espaco, Raio } from '@/constants/tema';
@@ -26,6 +26,8 @@ type Props<T> = {
 };
 
 export function Tabela<T>({ colunas, itens, chave, vazio, larguraMinima = 760, aoTocar }: Props<T>) {
+  // largura visível: a tabela ocupa exatamente ela (textos longos quebram em vez de alargar a tabela)
+  const [largura, setLargura] = useState(0);
   if (itens.length === 0) {
     return (
       <View style={[styles.moldura, styles.vazio]}>
@@ -34,8 +36,8 @@ export function Tabela<T>({ colunas, itens, chave, vazio, larguraMinima = 760, a
     );
   }
   return (
-    <ScrollView horizontal contentContainerStyle={styles.rolagem}>
-      <View role="table" style={[styles.moldura, { minWidth: larguraMinima }]}>
+    <ScrollView horizontal contentContainerStyle={styles.rolagem} onLayout={(e) => setLargura(e.nativeEvent.layout.width)}>
+      <View role="table" style={[styles.moldura, { minWidth: larguraMinima }, largura > 0 && { width: Math.max(largura, larguraMinima) }]}>
         <View style={[styles.linha, styles.cabecalho]}>
           {colunas.map((c) => (
             <Text key={c.titulo} style={[styles.celula, styles.titulo, tamanho(c), c.direita && styles.textoDireita]}>
