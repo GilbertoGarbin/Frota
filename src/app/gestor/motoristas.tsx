@@ -111,7 +111,6 @@ export default function Motoristas() {
   return (
     <Pagina
       titulo="Motoristas"
-      subtitulo="Cadastro, remuneração e acesso ao app."
       acao={<Botao titulo="+ Novo motorista" compacto onPress={() => setEditando(null)} desativado={!dados} />}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {dados ? (

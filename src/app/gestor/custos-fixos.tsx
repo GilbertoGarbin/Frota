@@ -72,7 +72,6 @@ export default function CustosFixos() {
   return (
     <Pagina
       titulo="Custos Fixos"
-      subtitulo="Despesas mensais recorrentes da operação."
       acao={<Botao titulo="+ Novo custo fixo" compacto onPress={() => setEditando(null)} />}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {custos ? (

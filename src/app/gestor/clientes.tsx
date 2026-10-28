@@ -74,7 +74,6 @@ export default function Clientes() {
   return (
     <Pagina
       titulo="Clientes"
-      subtitulo="Quem contrata os fretes. Na viagem dá para escolher daqui ou só digitar o nome."
       acao={
         <View style={styles.acoes}>
           <CampoBusca valor={busca} onChange={setBusca} placeholder="Nome, cidade ou CPF/CNPJ" />

@@ -156,7 +156,6 @@ export default function Usuarios() {
   return (
     <Pagina
       titulo="Usuários"
-      subtitulo="Quem entra no sistema da transportadora. Gestores entram com e-mail; motoristas, com o CPF."
       acao={
         <View style={styles.acoes}>
           <Botao titulo="+ Gestor" compacto onPress={() => setTela({ tipo: 'gestor' })} desativado={!dados} />

@@ -33,7 +33,6 @@ export default function FormasRecebimento() {
   return (
     <Pagina
       titulo="Formas de recebimento"
-      subtitulo="Como os clientes pagam o frete. Inativas não aparecem para escolher no cliente nem na viagem."
       acao={<Botao titulo="+ Nova forma" compacto onPress={() => setEditando(null)} desativado={!dados} />}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {dados ? (

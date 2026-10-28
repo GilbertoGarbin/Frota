@@ -106,7 +106,6 @@ export default function Manutencoes() {
   return (
     <Pagina
       titulo="Manutenções"
-      subtitulo="Registros de oficina e alertas por quilometragem."
       acao={<Botao titulo="+ Nova manutenção" compacto onPress={() => setEditando(null)} desativado={!dados} />}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
       {dados ? (
