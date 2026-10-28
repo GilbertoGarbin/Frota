@@ -39,6 +39,10 @@ type Props = {
   acaoExtra?: ReactNode;
 };
 
+// cores só dos cartões de total (texto grande e em negrito, contraste suficiente)
+const LARANJA = '#D97706';
+const VERMELHO_VIVO = '#DC2626';
+
 const somaDe = (contas: ContaDaLista[]) => somar(contas.map((c) => c.valorFinal));
 
 /** Financeiro > Receber / Pagar: contas em aberto (atrasadas primeiro), com marcar como quitada. */
@@ -195,14 +199,15 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
             rotulo={receber ? 'Total a receber' : 'Total a pagar'}
             valor={formatarMoeda(somaDe(abertas))}
             detalhe={`${abertas.length} em aberto`}
-            cor={receber ? Cores.sucessoTexto : Cores.avisoForte}
+            cor={receber ? Cores.sucessoTexto : LARANJA}
           />
           <CartaoResumo
             rotulo="Atrasado"
             valor={formatarMoeda(somaDe(atrasadas))}
             detalhe={`${atrasadas.length} ${atrasadas.length === 1 ? 'conta' : 'contas'}`}
-            cor={Cores.perigo}
+            cor={VERMELHO_VIVO}
             apagado={atrasadas.length === 0}
+            fundo={atrasadas.length > 0 ? Cores.perigoFundo : undefined}
           />
           <CartaoResumo
             rotulo="Próximos 30 dias"

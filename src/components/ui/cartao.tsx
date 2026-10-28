@@ -77,12 +77,14 @@ type PropsResumo = {
   cor: string;
   /** valor em cinza (ex.: atrasado zerado), mantendo a faixa colorida */
   apagado?: boolean;
+  /** fundo colorido para chamar atenção (ex.: há contas atrasadas) */
+  fundo?: string;
 };
 
 /** Cartão de total com faixa colorida à esquerda. Usar dentro de uma Grade. */
-export function CartaoResumo({ rotulo, valor, detalhe, cor, apagado }: PropsResumo) {
+export function CartaoResumo({ rotulo, valor, detalhe, cor, apagado, fundo }: PropsResumo) {
   return (
-    <View style={[styles.resumo, { borderLeftColor: cor }]}>
+    <View style={[styles.resumo, { borderLeftColor: cor }, fundo ? { backgroundColor: fundo } : null]}>
       <Text style={styles.rotulo}>{rotulo}</Text>
       <Text style={[styles.valorResumo, { color: apagado ? Cores.texto : cor }]}>{valor}</Text>
       {detalhe ? <Text style={styles.detalhe}>{detalhe}</Text> : null}

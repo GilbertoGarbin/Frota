@@ -112,12 +112,14 @@ export default function Usuarios() {
     { titulo: 'Nome', flex: 1.6, celula: (u) => u.nome ?? '—' },
     {
       titulo: 'Papel',
+      largura: 110,
       celula: (u) => <Selo tipo={u.papel === 'admin' ? 'info' : 'neutro'}>{PAPEL[u.papel]}</Selo>,
     },
     { titulo: 'Login', flex: 1.6, celula: loginVisivel },
-    { titulo: 'Último acesso', flex: 1.2, celula: (u) => (u.ultimoLogin ? formatarDataHora(u.ultimoLogin) : 'Nunca entrou') },
+    { titulo: 'Último acesso', largura: 150, celula: (u) => (u.ultimoLogin ? formatarDataHora(u.ultimoLogin) : 'Nunca entrou') },
     {
       titulo: 'Situação',
+      largura: 150,
       celula: (u) =>
         !u.ativo ? (
           <Selo tipo="perigo">Desligado</Selo>
@@ -128,8 +130,9 @@ export default function Usuarios() {
         ),
     },
     {
-      titulo: 'Ações',
-      flex: 1.8,
+      titulo: '',
+      largura: 210,
+      direita: true,
       celula: (u) =>
         u.papel === 'admin' ? (
           <Text style={styles.suave}>Você</Text>
@@ -138,13 +141,13 @@ export default function Usuarios() {
             <Botao
               titulo="Redefinir senha"
               variante="contorno"
-              compacto
+              mini
               onPress={() => setTela({ tipo: 'senha', usuario: u })}
             />
             <Botao
               titulo={u.ativo ? 'Desligar' : 'Religar'}
-              variante="link"
-              compacto
+              variante="contorno"
+              mini
               carregando={ocupado === u.id}
               onPress={() => alternar(u)}
             />
