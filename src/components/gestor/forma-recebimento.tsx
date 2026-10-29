@@ -105,16 +105,18 @@ export function FormFormaRecebimento({ forma, aoFechar }: Props) {
     <Janela
       visivel
       titulo={forma ? 'Editar forma de recebimento' : 'Nova forma de recebimento'}
-      subtitulo="Como o cliente paga o frete."
       aoFechar={() => aoFechar(null)}>
       <Mensagem mensagem={mensagem} aoFechar={() => setMensagem(null)} />
-      <Campo
-        rotulo="Nome"
-        ajuda="Como você chama essa forma. Se deixar vazio, o nome é a descrição das parcelas."
-        value={nome}
-        onChangeText={setNome}
-        placeholder="Ex.: 70/30 — saldo em 10 dias"
-      />
+      <LinhaForm minimo={160}>
+        <Campo
+          rotulo="Nome"
+          ajuda="Como você chama essa forma. Se deixar vazio, o nome é a descrição das parcelas."
+          value={nome}
+          onChangeText={setNome}
+          placeholder="Ex.: 70/30 — saldo em 10 dias"
+        />
+        {forma ? <Segmentado rotulo="Situação" opcoes={SITUACOES} valor={situacao} onChange={setSituacao} /> : null}
+      </LinhaForm>
 
       {parcelas.map((p, i) => (
         <View key={i} style={styles.parcela}>
@@ -161,22 +163,9 @@ export function FormFormaRecebimento({ forma, aoFechar }: Props) {
           compacto
           onPress={() => setParcelas((lista) => [...lista, novaParcela(Math.max(0, 100 - soma), 'entrega')])}
         />
+        <Text style={styles.resumoTexto}>{descreverParcelas(lidas)}</Text>
         <Text style={[styles.soma, soma !== 100 && styles.somaErrada]}>{`Soma: ${formatarDecimal(soma)}%`}</Text>
       </View>
-
-      <View style={styles.resumo}>
-        <Text style={styles.resumoTexto}>{descreverParcelas(lidas)}</Text>
-      </View>
-
-      {forma ? (
-        <Segmentado
-          rotulo="Situação"
-          opcoes={SITUACOES}
-          valor={situacao}
-          onChange={setSituacao}
-          ajuda="Inativa não aparece para escolher no cliente nem na viagem."
-        />
-      ) : null}
 
       <View style={styles.botoes}>
         <Botao titulo="Salvar" onPress={salvar} carregando={salvando} />
@@ -188,8 +177,9 @@ export function FormFormaRecebimento({ forma, aoFechar }: Props) {
 
 const styles = StyleSheet.create({
   parcela: {
-    gap: Espaco.sm,
-    padding: Espaco.md,
+    gap: Espaco.xs,
+    paddingHorizontal: Espaco.md,
+    paddingVertical: Espaco.sm,
     borderWidth: 1,
     borderColor: Cores.borda,
     borderRadius: Raio.md,
@@ -201,7 +191,6 @@ const styles = StyleSheet.create({
   rodapeParcelas: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Espaco.md },
   soma: { fontSize: 13, fontWeight: '600', color: Cores.sucessoTexto },
   somaErrada: { color: Cores.perigo },
-  resumo: { padding: Espaco.md, borderRadius: Raio.sm, backgroundColor: Cores.chipClaro },
-  resumoTexto: { fontSize: 13, color: Cores.primariaEscura },
+  resumoTexto: { flex: 1, fontSize: 13, color: Cores.primariaEscura },
   botoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
 });
