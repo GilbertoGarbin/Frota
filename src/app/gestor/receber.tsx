@@ -1,5 +1,6 @@
-import { useRouter } from 'expo-router';
+import { useState } from 'react';
 
+import { JanelaFormas } from '@/components/gestor/janela-formas';
 import { ListaContas, type ContaDaLista } from '@/components/gestor/lista-contas';
 import { Botao } from '@/components/ui/botao';
 import { useCarregar } from '@/hooks/use-carregar';
@@ -25,21 +26,22 @@ async function carregar(): Promise<ContaDaLista[]> {
 
 // Financeiro > Receber
 export default function Receber() {
-  const router = useRouter();
   const { dados, erro, recarregar } = useCarregar(carregar);
+  const [formas, setFormas] = useState(false);
   return (
-    <ListaContas
-      tipo="receber"
-      contas={dados}
-      erro={erro}
-      aoMarcar={async (id, quitar) => {
-        await marcarRecebido(id, quitar);
-        recarregar();
-      }}
-      aoEditar={recarregar}
-      acaoExtra={
-        <Botao titulo="Formas de recebimento" variante="contorno" compacto onPress={() => router.push('/gestor/formas-recebimento')} />
-      }
-    />
+    <>
+      <ListaContas
+        tipo="receber"
+        contas={dados}
+        erro={erro}
+        aoMarcar={async (id, quitar) => {
+          await marcarRecebido(id, quitar);
+          recarregar();
+        }}
+        aoEditar={recarregar}
+        acaoExtra={<Botao titulo="Formas de recebimento" variante="contorno" compacto onPress={() => setFormas(true)} />}
+      />
+      {formas ? <JanelaFormas aoFechar={() => setFormas(false)} /> : null}
+    </>
   );
 }
