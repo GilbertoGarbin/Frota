@@ -3,6 +3,7 @@ import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native
 
 import { FormAbastecimentoGestor, FormDespesaGestor, FormDocumentoGestor } from '@/components/gestor/lancamentos-viagem';
 import { Pagina } from '@/components/gestor/pagina';
+import { CampoAnexo } from '@/components/motorista/base';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { BotaoIcone } from '@/components/ui/botao-icone';
@@ -13,13 +14,16 @@ import { Janela } from '@/components/ui/janela';
 import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
+import { useSessao } from '@/context/SessaoContext';
 import { useCarregar } from '@/hooks/use-carregar';
+import type { Anexo } from '@/services/anexo.service';
 import {
   gerarRecebimentos,
   situacaoDaConta,
   type Pagamento,
   type Recebimento,
 } from '@/services/financeiro.service';
+import { enviarDocumentoGestor } from '@/services/lancamentos-gestor.service';
 import {
   atualizarComplementoGestor,
   atualizarViagem,
@@ -602,6 +606,12 @@ function FormOperacao({ operacao, viagem, faltaCanhoto, aoConcluir, aoCancelar }
   const [observacoes, setObservacoes] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const { acesso } = useSessao();
+  // canhoto anexado aqui mesmo, sem precisar ir ao bloco Documentos
+  const [canhoto, setCanhoto] = useState<Anexo | null>(null);
+  // já subiu numa tentativa anterior (finalizar falhou depois): não envia de novo
+  const [canhotoEnviado, setCanhotoEnviado] = useState(false);
+  const pedeCanhoto = !iniciar && faltaCanhoto;
 
   async function confirmar() {
     const kmLido = lerDecimal(km);
@@ -611,11 +621,16 @@ function FormOperacao({ operacao, viagem, faltaCanhoto, aoConcluir, aoCancelar }
     if (!iniciar && viagem.km_inicial !== null && kmLido < viagem.km_inicial) {
       return setErro(`O km final não pode ser menor que o km inicial (${formatarKm(viagem.km_inicial)}).`);
     }
+    if (pedeCanhoto && !canhotoEnviado && !canhoto) return setErro('Anexe o canhoto: tire a foto ou escolha o arquivo.');
     setErro(null);
     setSalvando(true);
     try {
       if (iniciar) await iniciarViagemGestor(viagem.id, kmLido, dataIso);
       else {
+        if (pedeCanhoto && !canhotoEnviado && canhoto && acesso) {
+          await enviarDocumentoGestor(acesso.tenantId, viagem.id, 'canhoto', canhoto);
+          setCanhotoEnviado(true);
+        }
         await finalizarViagemGestor(viagem.id, {
           kmFinal: kmLido,
           dataIso,
@@ -633,10 +648,12 @@ function FormOperacao({ operacao, viagem, faltaCanhoto, aoConcluir, aoCancelar }
   return (
     <View style={styles.formularioJanela}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-      {!iniciar && faltaCanhoto ? (
-        <Aviso tipo="info">
-          Para finalizar, anexe antes o canhoto: no bloco Documentos, toque no + e escolha o tipo Canhoto.
-        </Aviso>
+      {pedeCanhoto ? (
+        canhotoEnviado ? (
+          <Aviso tipo="sucesso">Canhoto enviado.</Aviso>
+        ) : (
+          <CampoAnexo rotulo="Canhoto * (foto ou PDF)" anexo={canhoto} onChange={setCanhoto} />
+        )
       ) : null}
       <View style={styles.linhaAdicional}>
         <View style={styles.campoCurto}>
