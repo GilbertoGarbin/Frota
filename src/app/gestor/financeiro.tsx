@@ -201,7 +201,8 @@ export default function Financeiro() {
             <CartaoResumo
               rotulo="Caixa do mês"
               valor={formatarMoeda(saldo)}
-              cor={saldo >= 0 ? Cores.primaria : Cores.perigo}
+              cor={saldo > 0 ? Cores.sucessoTexto : saldo < 0 ? '#DC2626' : Cores.primaria}
+              fundo={saldo > 0 ? Cores.sucessoFundo : saldo < 0 ? Cores.perigoFundo : undefined}
               detalhe={`Entrou ${formatarMoeda(entrou)} · saiu ${formatarMoeda(saiu)}`}
               onPress={() => router.push('/gestor/extrato')}
             />

@@ -140,8 +140,9 @@ export default function Extrato() {
             <CartaoResumo
               rotulo="Saldo do mês"
               valor={formatarMoeda(saldo)}
-              cor={saldo >= 0 ? Cores.primaria : VERMELHO}
-              detalhe={saldo >= 0 ? 'Entrou mais do que saiu' : 'Saiu mais do que entrou'}
+              cor={saldo > 0 ? Cores.sucessoTexto : saldo < 0 ? VERMELHO : Cores.primaria}
+              fundo={saldo > 0 ? Cores.sucessoFundo : saldo < 0 ? Cores.perigoFundo : undefined}
+              detalhe={saldo > 0 ? 'Entrou mais do que saiu' : saldo < 0 ? 'Saiu mais do que entrou' : 'Nada entrou nem saiu'}
             />
           </Grade>
 
