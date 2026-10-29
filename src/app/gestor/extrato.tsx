@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -9,7 +10,8 @@ import { CampoBusca } from '@/components/ui/campo-busca';
 import { CartaoResumo, Grade } from '@/components/ui/cartao';
 import { SeletorMes } from '@/components/ui/seletor-mes';
 import { Seletor } from '@/components/ui/seletor';
-import { Cores, Espaco, Raio } from '@/constants/tema';
+import { Tabela, type Coluna } from '@/components/ui/tabela';
+import { Cores, Espaco } from '@/constants/tema';
 import { useCarregar } from '@/hooks/use-carregar';
 import { listarPagamentos, listarRecebimentos } from '@/services/financeiro.service';
 import { emCentavos, emReais, somar } from '@/utils/dinheiro';
@@ -25,7 +27,7 @@ const FILTROS = [
   { valor: 'saidas', rotulo: 'Saídas' },
 ] as const;
 
-const DIAS_SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 const VERMELHO = '#DC2626';
 
 // Tudo o que foi recebido ou pago (data em que o dinheiro entrou ou saiu)
@@ -40,13 +42,11 @@ async function carregar(): Promise<Movimento[]> {
   return [...entradas, ...saidas];
 }
 
-function rotuloDia(iso: string) {
-  const dia = new Date(`${iso}T12:00:00`).getDay();
-  return `${formatarData(iso)} · ${DIAS_SEMANA[dia]}`;
-}
+const diaDaSemana = (iso: string) => DIAS_SEMANA[new Date(`${iso}T12:00:00`).getDay()];
 
-// Financeiro > Extrato: entradas e saídas do mês, agrupadas por dia (como um extrato de banco)
+// Financeiro > Extrato: entradas e saídas do mês, da mais recente para a mais antiga
 export default function Extrato() {
+  const router = useRouter();
   const { dados, erro, recarregar } = useCarregar(carregar);
   const [mes, setMes] = useState(mesAtual);
   const [filtro, setFiltro] = useState<Filtro>('tudo');
@@ -72,13 +72,52 @@ export default function Extrato() {
     )
     .sort((a, b) => (a.data === b.data ? a.conta.descricao.localeCompare(b.conta.descricao) : a.data < b.data ? 1 : -1));
 
-  // agrupa por dia, do mais recente para o mais antigo
-  const dias: { data: string; itens: Movimento[] }[] = [];
-  for (const m of visiveis) {
-    const ultimo = dias[dias.length - 1];
-    if (ultimo && ultimo.data === m.data) ultimo.itens.push(m);
-    else dias.push({ data: m.data, itens: [m] });
-  }
+  const colunas: Coluna<Movimento>[] = [
+    {
+      titulo: 'Data',
+      largura: 120,
+      celula: (m) => (
+        <Text style={styles.texto}>
+          {formatarData(m.data)}
+          <Text style={styles.suave}>{`  ${diaDaSemana(m.data)}`}</Text>
+        </Text>
+      ),
+    },
+    { titulo: 'Descrição', flex: 2.2, celula: (m) => m.conta.descricao },
+    {
+      titulo: 'Cliente / favorecido',
+      flex: 1.6,
+      celula: (m) => (m.tipo === 'receber' ? m.conta.viagem?.cliente : m.conta.favorecido) ?? '—',
+    },
+    {
+      titulo: 'Viagem',
+      flex: 2,
+      celula: (m) =>
+        m.conta.viagem ? (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityHint="Abre a viagem"
+            onPress={() => router.push({ pathname: '/gestor/viagens', params: { viagem: m.conta.viagem!.id } })}>
+            <Text style={styles.link}>{`${m.conta.viagem.origem} → ${m.conta.viagem.destino}`}</Text>
+          </Pressable>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      titulo: 'Valor',
+      largura: 140,
+      direita: true,
+      celula: (m) => {
+        const entrada = m.tipo === 'receber';
+        return (
+          <Text style={[styles.valor, { color: entrada ? Cores.sucessoTexto : VERMELHO }]}>
+            {`${entrada ? '+' : '−'} ${formatarMoeda(m.conta.valorFinal)}`}
+          </Text>
+        );
+      },
+    },
+  ];
 
   return (
     <Pagina
@@ -106,50 +145,14 @@ export default function Extrato() {
             />
           </Grade>
 
-          {dias.length === 0 ? (
-            <View style={styles.vazio}>
-              <Text style={styles.suave}>Nada recebido ou pago neste mês.</Text>
-            </View>
-          ) : (
-            dias.map((d) => (
-              <View key={d.data} style={styles.dia}>
-                <Text style={styles.diaTitulo}>{rotuloDia(d.data)}</Text>
-                <View style={styles.bloco}>
-                  {d.itens.map((m, i) => {
-                    const entrada = m.tipo === 'receber';
-                    const c = m.conta;
-                    const linha2 = [
-                      entrada ? c.viagem?.cliente : c.detalhe,
-                      c.viagem ? `${c.viagem.origem} → ${c.viagem.destino}` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ');
-                    return (
-                      <Pressable
-                        key={`${m.tipo}-${c.id}`}
-                        accessibilityRole="button"
-                        accessibilityHint="Abre para editar"
-                        onPress={() => setEditando(m)}
-                        style={({ pressed, hovered }) => [
-                          styles.movimento,
-                          i > 0 && styles.separador,
-                          (pressed || hovered) && styles.sobre,
-                        ]}>
-                        <View style={[styles.ponto, { backgroundColor: entrada ? Cores.sucesso : VERMELHO }]} />
-                        <View style={styles.textos}>
-                          <Text style={styles.descricao}>{c.descricao}</Text>
-                          {linha2 ? <Text style={styles.suave}>{linha2}</Text> : null}
-                        </View>
-                        <Text style={[styles.valor, { color: entrada ? Cores.sucessoTexto : VERMELHO }]}>
-                          {`${entrada ? '+' : '−'} ${formatarMoeda(c.valorFinal)}`}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            ))
-          )}
+          <Tabela
+            aoTocar={setEditando}
+            colunas={colunas}
+            itens={visiveis}
+            chave={(m) => `${m.tipo}-${m.conta.id}`}
+            vazio="Nada recebido ou pago neste mês."
+            larguraMinima={900}
+          />
         </>
       )}
       {editando ? (
@@ -177,36 +180,8 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
   },
-  dia: { gap: Espaco.xs },
-  diaTitulo: { fontSize: 12, fontWeight: '600', color: Cores.textoSuave, paddingHorizontal: Espaco.xs },
-  bloco: {
-    borderWidth: 1,
-    borderColor: Cores.borda,
-    borderRadius: Raio.md,
-    backgroundColor: Cores.branco,
-    overflow: 'hidden',
-  },
-  movimento: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Espaco.md,
-    paddingHorizontal: Espaco.lg,
-    paddingVertical: Espaco.sm,
-    minHeight: 48,
-  },
-  separador: { borderTopWidth: 1, borderTopColor: Cores.borda },
-  sobre: { backgroundColor: Cores.chipClaro },
-  ponto: { width: 8, height: 8, borderRadius: 4 },
-  textos: { flex: 1, minWidth: 0, gap: 2 },
-  descricao: { fontSize: 14, fontWeight: '600', color: Cores.texto },
+  texto: { fontSize: 14, color: Cores.texto },
   suave: { fontSize: 12, color: Cores.textoSuave },
-  valor: { fontSize: 15, fontWeight: '700' },
-  vazio: {
-    padding: Espaco.xxl,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Cores.borda,
-    borderRadius: Raio.md,
-    backgroundColor: Cores.branco,
-  },
+  link: { fontSize: 14, color: Cores.primaria },
+  valor: { fontSize: 14, fontWeight: '700' },
 });
