@@ -83,7 +83,7 @@ export default function Extrato() {
         </Text>
       ),
     },
-    { titulo: 'Descrição', flex: 2.2, celula: (m) => m.conta.descricao },
+    { titulo: 'Descrição', flex: 3, celula: (m) => m.conta.descricao },
     {
       titulo: 'Cliente / favorecido',
       flex: 1.6,
@@ -91,7 +91,7 @@ export default function Extrato() {
     },
     {
       titulo: 'Viagem',
-      flex: 2,
+      flex: 1.4,
       celula: (m) =>
         m.conta.viagem ? (
           <Pressable
