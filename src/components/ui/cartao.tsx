@@ -79,16 +79,43 @@ type PropsResumo = {
   apagado?: boolean;
   /** fundo colorido para chamar atenção (ex.: há contas atrasadas) */
   fundo?: string;
+  /** comparação com o período anterior; bom = verde, ruim = vermelho, null = cinza */
+  variacao?: { texto: string; bom: boolean | null };
+  onPress?: () => void;
 };
 
 /** Cartão de total com faixa colorida à esquerda. Usar dentro de uma Grade. */
-export function CartaoResumo({ rotulo, valor, detalhe, cor, apagado, fundo }: PropsResumo) {
-  return (
-    <View style={[styles.resumo, { borderLeftColor: cor }, fundo ? { backgroundColor: fundo } : null]}>
+export function CartaoResumo({ rotulo, valor, detalhe, cor, apagado, fundo, variacao, onPress }: PropsResumo) {
+  const conteudo = (
+    <>
       <Text style={styles.rotulo}>{rotulo}</Text>
       <Text style={[styles.valorResumo, { color: apagado ? Cores.texto : cor }]}>{valor}</Text>
-      {detalhe ? <Text style={styles.detalhe}>{detalhe}</Text> : null}
-    </View>
+      {variacao ? (
+        <Text style={styles.detalhe}>
+          <Text
+            style={[
+              styles.variacao,
+              { color: variacao.bom === null ? Cores.textoSuave : variacao.bom ? Cores.sucessoTexto : Cores.perigo },
+            ]}>
+            {variacao.texto}
+          </Text>
+          {detalhe ? ` ${detalhe}` : ''}
+        </Text>
+      ) : detalhe ? (
+        <Text style={styles.detalhe}>{detalhe}</Text>
+      ) : null}
+    </>
+  );
+  const estilo = [styles.resumo, { borderLeftColor: cor }, fundo ? { backgroundColor: fundo } : null];
+  return onPress ? (
+    <Pressable
+      accessibilityRole="link"
+      onPress={onPress}
+      style={({ pressed, hovered }) => [...estilo, (pressed || hovered) && styles.resumoSobre]}>
+      {conteudo}
+    </Pressable>
+  ) : (
+    <View style={estilo}>{conteudo}</View>
   );
 }
 
@@ -175,6 +202,8 @@ const styles = StyleSheet.create({
     backgroundColor: Cores.branco,
   },
   valorResumo: { fontSize: 20, fontWeight: '700' },
+  variacao: { fontWeight: '700' },
+  resumoSobre: { boxShadow: '0 4px 14px rgba(15, 23, 42, 0.10)' },
   linhaRotulo: { flexDirection: 'row', alignItems: 'center', gap: Espaco.sm, flexWrap: 'wrap' },
   rotulo: { fontSize: 13, color: Cores.textoSuave },
   valor: { fontSize: 22, fontWeight: '700' },

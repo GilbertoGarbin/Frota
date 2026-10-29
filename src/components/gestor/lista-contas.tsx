@@ -12,7 +12,14 @@ import { Selo } from '@/components/ui/selo';
 import { Seletor } from '@/components/ui/seletor';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
 import { Cores, Espaco } from '@/constants/tema';
-import { dataDeHoje, situacaoDaConta, type ViagemDaConta } from '@/services/financeiro.service';
+import {
+  dataDeHoje,
+  situacaoDaConta,
+  type ContaPagar,
+  type ContaReceber,
+  type ViagemDaConta,
+} from '@/services/financeiro.service';
+import { ROTULO_PAGAMENTO, type FormaPagamento } from '@/services/viagens.service';
 import { somar } from '@/utils/dinheiro';
 import { mensagemDeErro } from '@/utils/erros';
 import { formatarData, formatarMoeda } from '@/utils/formato';
@@ -25,6 +32,42 @@ export type ContaDaLista = ContaEditavel & {
   valorFinal: number;
   viagem: ViagemDaConta | null;
 };
+
+export function contaDeRecebimento(r: ContaReceber): ContaDaLista {
+  return {
+    id: r.id,
+    descricao: r.descricao,
+    detalhe: null,
+    favorecido: null,
+    chavePix: null,
+    valor: r.valor,
+    juros: r.juros,
+    desconto: r.desconto,
+    valorFinal: r.valor_final ?? r.valor,
+    observacao: r.observacao,
+    vencimento: r.vencimento,
+    quitadoEm: r.recebido_em,
+    viagem: r.viagem,
+  };
+}
+
+export function contaDePagamento(p: ContaPagar): ContaDaLista {
+  return {
+    id: p.id,
+    descricao: p.descricao,
+    detalhe: [p.favorecido, p.forma ? ROTULO_PAGAMENTO[p.forma as FormaPagamento] : null].filter(Boolean).join(' · ') || null,
+    favorecido: p.favorecido,
+    chavePix: p.chave_pix,
+    valor: p.valor,
+    juros: p.juros,
+    desconto: p.desconto,
+    valorFinal: p.valor_final ?? p.valor,
+    observacao: p.observacao,
+    vencimento: p.vencimento,
+    quitadoEm: p.pago_em,
+    viagem: p.viagem,
+  };
+}
 
 type Filtro = 'abertas' | 'quitadas' | 'todas';
 

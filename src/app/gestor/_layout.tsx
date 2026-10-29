@@ -27,6 +27,7 @@ const MENU: ItemMenu[] = [
   { rotulo: 'Financeiro', rota: '/gestor/financeiro', icone: 'currency-usd' },
   { rotulo: 'Receber', rota: '/gestor/receber', icone: 'arrow-down-circle-outline', sub: true },
   { rotulo: 'Pagar', rota: '/gestor/pagar', icone: 'arrow-up-circle-outline', sub: true },
+  { rotulo: 'Extrato', rota: '/gestor/extrato', icone: 'swap-vertical', sub: true },
 ];
 // Só o admin da transportadora cadastra usuários
 const MENU_ADMIN: ItemMenu[] = [{ rotulo: 'Usuários', rota: '/gestor/usuarios', icone: 'account-key-outline' }];
