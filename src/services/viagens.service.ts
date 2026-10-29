@@ -88,6 +88,7 @@ export type DadosViagem = Pick<
   | 'valor_adiantamento'
   | 'forma_pagamento_frete'
   | 'observacoes'
+  | 'exige_canhoto'
 >;
 
 export async function criarViagem(dados: DadosViagem): Promise<void> {

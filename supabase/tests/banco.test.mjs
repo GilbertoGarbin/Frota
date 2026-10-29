@@ -1177,3 +1177,30 @@ test('conta com juros e desconto: valor final', async () => {
   const p = await um(`select valor_final from pagamentos where viagem_id = $1 and origem = 'adiantamento'`, [vg]);
   assert.equal(Number(p.valor_final), 110);
 });
+
+test('canhoto obrigatório é configurável pela transportadora e por viagem', async () => {
+  const vc = await novoVeiculo('CAN1A11');
+  const mc = await novoMotorista('Caio', '98000000001', vc);
+  // padrão de quem já existe: exige
+  const v1 = await programar(mc, vc, 500);
+  assert.equal((await viagemGestor(v1)).exige_canhoto, true);
+
+  // só o admin muda o padrão (gestorA é o admin do tenant A)
+  await como(gestorA, () => q('select salvar_configuracoes(false)'));
+  assert.equal((await como(gestorA, () => um('select * from minhas_configuracoes()'))).exige_canhoto, false);
+
+  // viagem nova herda o padrão e finaliza sem canhoto
+  const v2 = await programar(mc, vc, 500);
+  assert.equal((await viagemGestor(v2)).exige_canhoto, false);
+  await como(gestorA, () => q(`select iniciar_viagem($1, 70000)`, [v2]));
+  await como(gestorA, () => q('select finalizar_viagem($1, 70500)', [v2]));
+  assert.equal((await viagemGestor(v2)).status, 'finalizada');
+
+  // o gestor pode exigir numa viagem específica; o motorista vê a marcação
+  const v3 = await programar(mc, vc, 500);
+  await como(gestorA, () => q('update viagens set exige_canhoto = true where id = $1', [v3]));
+  await como(gestorA, () => q(`select iniciar_viagem($1, 70500)`, [v3]));
+  await assert.rejects(como(gestorA, () => q('select finalizar_viagem($1, 71000)', [v3])), /canhoto/);
+
+  await como(gestorA, () => q('select salvar_configuracoes(true)'));
+});

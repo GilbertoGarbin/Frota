@@ -136,6 +136,10 @@ num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer e
 - Combustível: `app.recalcular_combustivel(veiculo_id)` refaz janelas, rateio e estimativas do
   veículo inteiro a partir dos dados gravados (ver comentário na migration). `janelas_consumo`
   é tabela derivada — nunca gravar nela.
+- Canhoto: `tenants.exige_canhoto` é o padrão da transportadora (tela `gestor/configuracoes.tsx`, só o admin,
+  via `minhas_configuracoes`/`salvar_configuracoes`); `viagens.exige_canhoto` nasce com esse padrão (trigger
+  quando não vem valor) e o gestor troca na viagem. `finalizar_viagem` só cobra o canhoto se a viagem exige.
+  Configurações novas da transportadora entram nessa mesma tela e nas mesmas duas funções.
 - Arquivos: bucket privado `comprovantes`, caminho `{tenant_id}/{viagem_id}/{uuid}.{ext}`.
 - Nova tabela = `tenant_id` + FK composta `(tenant_id, x_id)` + RLS + teste de isolamento.
 - Edge Functions em `supabase/functions/` (Deno; fora do `tsc` e do ESLint do app). Deploy:

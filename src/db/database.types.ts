@@ -1064,6 +1064,7 @@ export type Database = {
           atualizado_em: string
           carencia_dias: number
           criado_em: string
+          exige_canhoto: boolean
           id: string
           nome: string
           pago_ate: string | null
@@ -1074,6 +1075,7 @@ export type Database = {
           atualizado_em?: string
           carencia_dias?: number
           criado_em?: string
+          exige_canhoto?: boolean
           id?: string
           nome: string
           pago_ate?: string | null
@@ -1084,6 +1086,7 @@ export type Database = {
           atualizado_em?: string
           carencia_dias?: number
           criado_em?: string
+          exige_canhoto?: boolean
           id?: string
           nome?: string
           pago_ate?: string | null
@@ -1214,6 +1217,7 @@ export type Database = {
           data_hora_chegada: string | null
           data_prevista: string
           destino: string
+          exige_canhoto: boolean
           forma_pagamento_frete: string | null
           forma_recebimento_id: string | null
           gasto_proprio_bolso: number
@@ -1253,6 +1257,7 @@ export type Database = {
           data_hora_chegada?: string | null
           data_prevista?: string
           destino: string
+          exige_canhoto: boolean
           forma_pagamento_frete?: string | null
           forma_recebimento_id?: string | null
           gasto_proprio_bolso?: number
@@ -1292,6 +1297,7 @@ export type Database = {
           data_hora_chegada?: string | null
           data_prevista?: string
           destino?: string
+          exige_canhoto?: boolean
           forma_pagamento_frete?: string | null
           forma_recebimento_id?: string | null
           gasto_proprio_bolso?: number
@@ -1469,6 +1475,12 @@ export type Database = {
           primeiro_acesso: boolean
         }[]
       }
+      minhas_configuracoes: {
+        Args: never
+        Returns: {
+          exige_canhoto: boolean
+        }[]
+      }
       parada_sugerida: {
         Args: { p_viagem_id: string }
         Returns: {
@@ -1541,6 +1553,10 @@ export type Database = {
         }[]
       }
       revogar_aparelho: { Args: { p_motorista_id: string }; Returns: undefined }
+      salvar_configuracoes: {
+        Args: { p_exige_canhoto: boolean }
+        Returns: undefined
+      }
       sou_superadmin: { Args: never; Returns: boolean }
       sugerir_adiantamento: {
         Args: { p_destino: string; p_origem: string }
@@ -1577,6 +1593,7 @@ export type Database = {
           data_prevista: string
           destino: string
           editavel: boolean
+          exige_canhoto: boolean
           forma_pagamento_frete: string
           gasto_proprio_bolso: number
           id: string

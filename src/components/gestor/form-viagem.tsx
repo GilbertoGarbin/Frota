@@ -10,9 +10,11 @@ import { Janela } from '@/components/ui/janela';
 import { CampoData } from '@/components/ui/campo-data';
 import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
+import { Segmentado } from '@/components/ui/segmentado';
 import { Seletor } from '@/components/ui/seletor';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import type { Cliente } from '@/services/clientes.service';
+import { carregarConfiguracoes } from '@/services/configuracoes.service';
 import {
   descreverParcelas,
   listarFormasRecebimento,
@@ -38,6 +40,11 @@ const AVULSO = 'avulso';
 const SEM_FORMA = 'nenhuma';
 const TEXTO_ANTIGO = 'texto-antigo';
 
+const SIM_NAO = [
+  { valor: 'sim', rotulo: 'Sim' },
+  { valor: 'nao', rotulo: 'Não' },
+] as const;
+
 type Sugestao = { rota: string; valor: number | null; quantidade: number };
 
 // Despacho (spec do gestor 6.3): o gestor cria a viagem e atribui a um motorista.
@@ -51,6 +58,8 @@ export function FormViagem({ viagem, motoristas, veiculos, clientes, formas, aoF
   const [origem, setOrigem] = useState(viagem?.origem ?? '');
   const [destino, setDestino] = useState(viagem?.destino ?? '');
   const [carga, setCarga] = useState(viagem?.carga ?? '');
+  // viagem nova vem com o padrão da transportadora (Configurações); dá para trocar só nesta viagem
+  const [exigeCanhoto, setExigeCanhoto] = useState<boolean | null>(viagem?.exige_canhoto ?? null);
   // forma de recebimento: da lista; viagem antiga só com texto livre mantém o texto
   const textoAntigo = viagem && !viagem.forma_recebimento_id ? (viagem.forma_pagamento_frete ?? '') : '';
   const [formaId, setFormaId] = useState<string>(viagem?.forma_recebimento_id ?? (textoAntigo ? TEXTO_ANTIGO : SEM_FORMA));
@@ -113,6 +122,20 @@ export function FormViagem({ viagem, motoristas, veiculos, clientes, formas, aoF
       clearTimeout(espera);
     };
   }, [rota]);
+  useEffect(() => {
+    if (viagem) return;
+    let vigente = true;
+    carregarConfiguracoes().then(
+      (c) => {
+        if (vigente) setExigeCanhoto((atual) => atual ?? c.exigeCanhoto);
+      },
+      () => {},
+    );
+    return () => {
+      vigente = false;
+    };
+  }, [viagem]);
+
   const sugestaoDaRota = sugestao && sugestao.rota === rota ? sugestao : null;
 
   function aoEscolherMotorista(id: string) {
@@ -155,6 +178,7 @@ export function FormViagem({ viagem, motoristas, veiculos, clientes, formas, aoF
       data_prevista: dataPrevista,
       valor_frete: valorFrete,
       valor_adiantamento: valorAdiantamento,
+      exige_canhoto: exigeCanhoto ?? true,
     };
     try {
       if (viagem) await atualizarViagem(viagem.id, dados);
@@ -212,7 +236,16 @@ export function FormViagem({ viagem, motoristas, veiculos, clientes, formas, aoF
           <Campo rotulo="Origem *" value={origem} onChangeText={setOrigem} placeholder="Ex.: Curitiba" />
           <Campo rotulo="Destino *" value={destino} onChangeText={setDestino} placeholder="Ex.: Pato Branco" />
         </LinhaForm>
-        <Campo rotulo="Carga (opcional)" value={carga} onChangeText={setCarga} placeholder="Ex.: soja a granel" />
+        <LinhaForm minimo={220}>
+          <Campo rotulo="Carga (opcional)" value={carga} onChangeText={setCarga} placeholder="Ex.: soja a granel" />
+          <Segmentado
+            rotulo="Exige canhoto para finalizar"
+            opcoes={SIM_NAO}
+            valor={exigeCanhoto === null ? null : exigeCanhoto ? 'sim' : 'nao'}
+            onChange={(v) => setExigeCanhoto(v === 'sim')}
+            ajuda="Vem do padrão em Configurações; troque só se esta viagem for diferente."
+          />
+        </LinhaForm>
       </Bloco>
 
       <Bloco titulo="Valores">

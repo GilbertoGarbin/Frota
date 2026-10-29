@@ -435,7 +435,7 @@ export function PainelCarga({ viagem, aoFechar }: PropsPainel) {
 // --- 5.10 Documentos ------------------------------------------------------------------
 
 const TIPOS_DOCUMENTO = [
-  { valor: 'canhoto', rotulo: 'Canhoto — obrigatório' },
+  { valor: 'canhoto', rotulo: 'Canhoto' },
   { valor: 'cte', rotulo: 'CT-e' },
   { valor: 'nota_fiscal', rotulo: 'Nota fiscal' },
   { valor: 'outro', rotulo: 'Outro' },
@@ -452,11 +452,15 @@ const NOME_DOCUMENTO: Record<string, string> = {
 export const temCanhoto = (viagemId: string, registros: Registro[]) =>
   registros.some((r) => r.tabela === 'documentos' && r.linha.viagem_id === viagemId && r.linha.tipo === 'canhoto');
 
+/** A transportadora pode dispensar o canhoto (Configurações ou na viagem). Cópia antiga sem o campo = exige. */
+export const exigeCanhoto = (viagem: ViagemMotorista) => viagem.exige_canhoto !== false;
+
 export function PainelDocumentos({ viagem, aoFechar, aviso }: PropsPainel & { aviso?: string }) {
   const { enviarDocumento, registros } = useMotorista();
   const { erro, setErro, salvando, enviar } = useEnvio(() => {});
+  const exige = exigeCanhoto(viagem);
   const [tipo, setTipo] = useState<(typeof TIPOS_DOCUMENTO)[number]['valor']>(
-    temCanhoto(viagem.id, registros) ? 'outro' : 'canhoto',
+    exige && !temCanhoto(viagem.id, registros) ? 'canhoto' : 'outro',
   );
   const [anexo, setAnexo] = useState<Anexo | null>(null);
   const documentos = registros.filter((r) => r.tabela === 'documentos' && r.linha.viagem_id === viagem.id);
@@ -472,7 +476,7 @@ export function PainelDocumentos({ viagem, aoFechar, aviso }: PropsPainel & { av
   return (
     <Moldura titulo="Documentos" erro={erro} aoFechar={aoFechar}>
       {aviso ? <Aviso tipo="erro">{aviso}</Aviso> : null}
-      {temCanhoto(viagem.id, registros) ? (
+      {!exige ? null : temCanhoto(viagem.id, registros) ? (
         <Aviso tipo="sucesso">Canhoto anexado. A documentação obrigatória está completa.</Aviso>
       ) : (
         <Aviso tipo="info">Falta anexar: canhoto. Sem ele a viagem não pode ser finalizada.</Aviso>
@@ -537,7 +541,9 @@ export function PainelConferencia({ viagem, aoFechar, aoFinalizar }: PropsPainel
 
   return (
     <Moldura titulo="Conferência final" erro={erro} aoFechar={aoFechar}>
-      <Aviso tipo="sucesso">Canhoto anexado. A documentação obrigatória está completa.</Aviso>
+      {exigeCanhoto(viagem) ? (
+        <Aviso tipo="sucesso">Canhoto anexado. A documentação obrigatória está completa.</Aviso>
+      ) : null}
 
       {/* Motorista vê frete e a própria comissão; nunca a margem da empresa (spec do gestor 6.6) */}
       {comissionado ? (

@@ -17,6 +17,7 @@ import {
   PainelDespesa,
   PainelDocumentos,
   PainelParada,
+  exigeCanhoto,
   temCanhoto,
   type TipoPainel,
 } from '@/components/motorista/paineis';
@@ -243,14 +244,14 @@ export function ViagemEmAndamento({ viagem: salva }: Props) {
 
   const viagem = aoVivo(salva);
   const daViagem = registros.filter((r) => r.linha.viagem_id === viagem.id);
-  const canhotoOk = temCanhoto(viagem.id, registros);
+  const canhotoOk = !exigeCanhoto(viagem) || temCanhoto(viagem.id, registros);
 
   function abrir(novo: TipoPainel | null) {
     setAvisoDocumento(undefined);
     setPainel(novo);
   }
 
-  // "Finalizar viagem" nunca encerra direto: sem canhoto abre Documentos; com canhoto, a conferência (5.11)
+  // "Finalizar viagem" nunca encerra direto: faltando o canhoto (quando exigido) abre Documentos; senão, a conferência (5.11)
   function aoFinalizar() {
     if (canhotoOk) return abrir('conferencia');
     setPainel('documentos');

@@ -280,6 +280,8 @@ export function MotoristaProvider({ children }: PropsWithChildren) {
         observacoes_finais: null as never,
         editavel: kmInicial === undefined,
         atualizado_em: new Date().toISOString(),
+        // o servidor preenche com o padrão da transportadora; aqui usa a cópia baixada
+        exige_canhoto: dados.perfil.exige_canhoto ?? true,
       } as ViagemMotorista;
       const itens: ItemNovo[] = [{
           op: 'rpc',

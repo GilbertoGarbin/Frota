@@ -30,7 +30,10 @@ const MENU: ItemMenu[] = [
   { rotulo: 'Extrato', rota: '/gestor/extrato', icone: 'swap-vertical', sub: true },
 ];
 // Só o admin da transportadora cadastra usuários
-const MENU_ADMIN: ItemMenu[] = [{ rotulo: 'Usuários', rota: '/gestor/usuarios', icone: 'account-key-outline' }];
+const MENU_ADMIN: ItemMenu[] = [
+  { rotulo: 'Usuários', rota: '/gestor/usuarios', icone: 'account-key-outline' },
+  { rotulo: 'Configurações', rota: '/gestor/configuracoes', icone: 'cog-outline' },
+];
 
 const LARGURA_DESKTOP = 900;
 
@@ -104,9 +107,10 @@ function Menu({ largo, aoReabrir }: { largo: boolean; aoReabrir: () => void }) {
         </Text>
         <Text style={styles.marcaSub}>Gestão de frota</Text>
       </View>
-      <View role="navigation" style={styles.lista}>
+      {/* rola quando a janela é baixa, sem passar por cima do rodapé */}
+      <ScrollView role="navigation" style={styles.lista} contentContainerStyle={styles.listaItens}>
         {itens}
-      </View>
+      </ScrollView>
       <View style={styles.rodape}>
         <Text style={styles.usuario} numberOfLines={1}>
           {acesso?.nome ?? ''}
@@ -138,7 +142,8 @@ const styles = StyleSheet.create({
   },
   marcaNome: { fontSize: 15, fontWeight: '600', color: Cores.branco },
   marcaSub: { fontSize: 12, color: TEXTO_MENU_SUAVE, marginTop: 2 },
-  lista: { flex: 1, gap: 2, paddingHorizontal: Espaco.md },
+  lista: { flex: 1 },
+  listaItens: { gap: 2, paddingHorizontal: Espaco.md, paddingBottom: Espaco.md },
   rodape: {
     gap: Espaco.xs,
     paddingHorizontal: Espaco.md,

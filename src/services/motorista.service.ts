@@ -80,7 +80,13 @@ export type Registro =
   | RegistroComplemento
   | RegistroDocumento;
 
-export type Perfil = { motorista: MotoristaPerfil | null; veiculos: VeiculoResumo[]; sincronizado_em: string | null };
+export type Perfil = {
+  motorista: MotoristaPerfil | null;
+  veiculos: VeiculoResumo[];
+  sincronizado_em: string | null;
+  /** padrão da transportadora para viagem criada no aparelho (ausente na cópia antiga = exige) */
+  exige_canhoto?: boolean;
+};
 
 export type DadosLocais = { viagens: ViagemMotorista[]; registros: Registro[]; perfil: Perfil; fila: ItemFila[] };
 
@@ -221,14 +227,16 @@ const TABELAS: TabelaLancamento[] = ['abastecimentos', 'despesas', 'paradas', 'c
  * enquanto há envio pendente, a cópia local está à frente do servidor.
  */
 export async function baixarDados(motoristaId: string): Promise<void> {
-  const [viagens, motorista, veiculos] = await Promise.all([
+  const [viagens, motorista, veiculos, tenant] = await Promise.all([
     supabase.rpc('viagens_do_motorista'),
     supabase.from('motoristas').select('*').eq('id', motoristaId).maybeSingle(),
     supabase.from('veiculos').select('id, placa, modelo, km_atual, status').order('placa'),
+    supabase.from('tenants').select('exige_canhoto').maybeSingle(),
   ]);
   if (viagens.error) throw viagens.error;
   if (motorista.error) throw motorista.error;
   if (veiculos.error) throw veiculos.error;
+  if (tenant.error) throw tenant.error;
 
   const emAndamento = viagens.data.filter((v) => v.status === 'em_andamento').map((v) => v.id);
   const registros: Registro[] = [];
@@ -246,6 +254,7 @@ export async function baixarDados(motoristaId: string): Promise<void> {
     motorista: motorista.data,
     veiculos: veiculos.data,
     sincronizado_em: new Date().toISOString(),
+    exige_canhoto: tenant.data?.exige_canhoto ?? true,
   };
   await armazem.gravar('perfil', 'eu', perfil);
 }

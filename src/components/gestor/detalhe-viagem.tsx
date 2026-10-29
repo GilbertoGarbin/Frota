@@ -131,6 +131,7 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         {v.cliente ? <Text style={styles.suave}>Cliente: {v.cliente}</Text> : null}
         {v.carga ? <Text style={styles.suave}>Carga: {v.carga}</Text> : null}
         {v.forma_pagamento_frete ? <Text style={styles.suave}>Pagamento do frete: {v.forma_pagamento_frete}</Text> : null}
+        {v.exige_canhoto ? null : <Text style={styles.suave}>Não exige canhoto</Text>}
       </View>
 
       <Faixa>
@@ -213,7 +214,7 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
             <FormOperacao
               operacao={operacao}
               viagem={v}
-              temCanhoto={dados.documentos.some((d) => d.tipo === 'canhoto')}
+              faltaCanhoto={v.exige_canhoto && !dados.documentos.some((d) => d.tipo === 'canhoto')}
               aoConcluir={() => {
                 setOperacao(null);
                 recarregar();
@@ -586,13 +587,14 @@ type PropsRegistros = {
 type PropsOperacao = {
   operacao: 'iniciar' | 'finalizar';
   viagem: Viagem;
-  temCanhoto: boolean;
+  /** a viagem exige canhoto e ele ainda não foi anexado */
+  faltaCanhoto: boolean;
   aoConcluir: () => void;
   aoCancelar: () => void;
 };
 
 /** Iniciar (km inicial) ou finalizar (km final, chegada) a viagem pelo painel. */
-function FormOperacao({ operacao, viagem, temCanhoto, aoConcluir, aoCancelar }: PropsOperacao) {
+function FormOperacao({ operacao, viagem, faltaCanhoto, aoConcluir, aoCancelar }: PropsOperacao) {
   const iniciar = operacao === 'iniciar';
   const [km, setKm] = useState('');
   const [data, setData] = useState(formatarData(hojeIso()));
@@ -631,7 +633,7 @@ function FormOperacao({ operacao, viagem, temCanhoto, aoConcluir, aoCancelar }: 
   return (
     <View style={styles.formularioJanela}>
       {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
-      {!iniciar && !temCanhoto ? (
+      {!iniciar && faltaCanhoto ? (
         <Aviso tipo="info">
           Para finalizar, anexe antes o canhoto: no bloco Documentos, toque no + e escolha o tipo Canhoto.
         </Aviso>
