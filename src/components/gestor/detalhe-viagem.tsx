@@ -195,6 +195,13 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
           {v.km_inicial !== null && v.km_final !== null ? (
             <Dado rotulo="Rodado" valor={formatarKm(v.km_final - v.km_inicial)} />
           ) : null}
+          {v.iniciada_em ? <Dado rotulo="Iniciada" valor={formatarDataHora(v.iniciada_em)} /> : null}
+          {v.data_hora_chegada ? (
+            <Dado
+              rotulo="Chegada"
+              valor={`${formatarDataHora(v.data_hora_chegada)}${v.local_chegada ? ` · ${v.local_chegada}` : ''}`}
+            />
+          ) : null}
           {status === 'em_andamento' && operacao === null ? (
             <View style={[styles.linha, styles.percursoAcoes]}>
               <Botao titulo="Finalizar viagem" compacto onPress={() => setOperacao('finalizar')} />
@@ -247,18 +254,6 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
               aoCancelar={() => setOperacao(null)}
             />
           </Janela>
-        ) : null}
-        {v.iniciada_em || v.data_hora_chegada ? (
-          <Text style={styles.suave}>
-            {[
-              v.iniciada_em ? `Iniciada em ${formatarDataHora(v.iniciada_em)}` : null,
-              v.data_hora_chegada
-                ? `Chegada em ${formatarDataHora(v.data_hora_chegada)}${v.local_chegada ? ` · ${v.local_chegada}` : ''}`
-                : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
         ) : null}
         {v.observacoes ? <Text style={styles.suave}>Observações: {v.observacoes}</Text> : null}
         {v.observacoes_finais ? <Text style={styles.suave}>Observações finais: {v.observacoes_finais}</Text> : null}
