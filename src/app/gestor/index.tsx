@@ -1,10 +1,12 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
-import { Grade, Indicador, Secao } from '@/components/ui/cartao';
+import { CartaoResumo, Grade, Secao } from '@/components/ui/cartao';
+import { Selo } from '@/components/ui/selo';
 import { SeletorMes } from '@/components/ui/seletor-mes';
 import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useSessao } from '@/context/SessaoContext';
@@ -16,6 +18,13 @@ import {
   type Alerta,
 } from '@/services/gestao.service';
 import { formatarMoeda, mesAtual, periodoDoMes, rotuloMes } from '@/utils/formato';
+
+// cor só do cartão de total (texto grande e em negrito, contraste suficiente)
+const LARANJA = '#D97706';
+// mesmas cores da viagem: azul entra, laranja sai, cinza zerado, verde/vermelho no resultado
+const corDeSaida = (valor: number) => (valor > 0 ? LARANJA : Cores.textoSuave);
+
+const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
 
 const ROTA_DO_ALERTA: Record<Alerta['destino'], Href> = {
   motoristas: '/gestor/motoristas',
@@ -50,60 +59,73 @@ export default function VisaoGeral() {
       ) : (
         <>
           <Grade>
-            <Indicador rotulo="Faturamento bruto" valor={formatarMoeda(dados.resumo.faturamento)} />
-            <Indicador rotulo="Custos operacionais" valor={formatarMoeda(dados.resumo.custos_operacionais)} />
-            <Indicador rotulo="Custos fixos" valor={formatarMoeda(dados.resumo.custos_fixos)} />
-            <Indicador
+            <CartaoResumo rotulo="Faturamento bruto" cor={Cores.primaria} valor={formatarMoeda(dados.resumo.faturamento)} />
+            <CartaoResumo
+              rotulo="Custos operacionais"
+              cor={corDeSaida(dados.resumo.custos_operacionais)}
+              valor={formatarMoeda(dados.resumo.custos_operacionais)}
+            />
+            <CartaoResumo rotulo="Custos fixos" cor={corDeSaida(dados.resumo.custos_fixos)} valor={formatarMoeda(dados.resumo.custos_fixos)} />
+            <CartaoResumo
               rotulo={dados.resumo.resultado >= 0 ? 'Resultado líquido (lucro)' : 'Resultado líquido (prejuízo)'}
-              tom={dados.resumo.resultado >= 0 ? 'sucesso' : 'perigo'}
+              cor={dados.resumo.resultado >= 0 ? Cores.sucessoTexto : Cores.perigo}
+              fundo={dados.resumo.resultado >= 0 ? Cores.sucessoFundo : Cores.perigoFundo}
               valor={formatarMoeda(dados.resumo.resultado)}
             />
           </Grade>
 
-          <Secao titulo="Atenção necessária">
-            {dados.alertas.length === 0 ? (
-              <Text style={styles.suave}>Nenhum alerta no momento.</Text>
-            ) : (
-              dados.alertas.map((a) => (
-                <Pressable
-                  key={`${a.destino}-${a.referencia_id}-${a.mensagem}`}
-                  accessibilityRole="link"
-                  onPress={() => router.navigate(ROTA_DO_ALERTA[a.destino])}
-                  style={[styles.alerta, a.gravidade === 'perigo' && styles.alertaPerigo]}>
-                  <Text style={[styles.alertaTexto, a.gravidade === 'perigo' && styles.alertaTextoPerigo]}>
-                    {a.gravidade === 'perigo' ? '✕' : '⚠'} {a.mensagem}
-                  </Text>
-                  <Text style={[styles.alertaTexto, a.gravidade === 'perigo' && styles.alertaTextoPerigo]}>Ver ›</Text>
-                </Pressable>
-              ))
-            )}
+          <Secao
+            titulo="Atenção necessária"
+            acao={dados.alertas.length === 0 ? <Selo tipo="sucesso">Nenhum alerta no momento</Selo> : undefined}>
+            {dados.alertas.map((a) => (
+              <Pressable
+                key={`${a.destino}-${a.referencia_id}-${a.mensagem}`}
+                accessibilityRole="link"
+                onPress={() => router.navigate(ROTA_DO_ALERTA[a.destino])}
+                style={[styles.alerta, a.gravidade === 'perigo' && styles.alertaPerigo]}>
+                <Text style={[styles.alertaTexto, a.gravidade === 'perigo' && styles.alertaTextoPerigo]}>
+                  {a.gravidade === 'perigo' ? '✕' : '⚠'} {a.mensagem}
+                </Text>
+                <Text style={[styles.alertaTexto, a.gravidade === 'perigo' && styles.alertaTextoPerigo]}>Ver ›</Text>
+              </Pressable>
+            ))}
           </Secao>
 
           <Secao titulo="Acesso rápido">
             <Grade>
-              <Indicador
+              <Atalho
+                icone="map-outline"
                 rotulo="Viagens"
                 valor={`${dados.contagens.viagensEmAndamento} em andamento`}
-                detalhe={`${dados.contagens.viagensProgramadas} programada(s)`}
+                detalhe={plural(dados.contagens.viagensProgramadas, 'programada', 'programadas')}
                 onPress={() => router.navigate('/gestor/viagens')}
               />
-              <Indicador
+              <Atalho
+                icone="account-group-outline"
                 rotulo="Motoristas"
-                valor={`${dados.contagens.motoristas} ativo(s)`}
+                valor={plural(dados.contagens.motoristas, 'ativo', 'ativos')}
                 onPress={() => router.navigate('/gestor/motoristas')}
               />
-              <Indicador
+              <Atalho
+                icone="truck-outline"
                 rotulo="Veículos & Pneus"
-                valor={`${dados.contagens.veiculos} cadastrado(s)`}
+                valor={plural(dados.contagens.veiculos, 'cadastrado', 'cadastrados')}
                 onPress={() => router.navigate('/gestor/veiculos')}
               />
-              <Indicador
+              <Atalho
+                icone="hand-coin-outline"
                 rotulo="Adiantamentos em aberto"
-                valor={`${dados.resumo.adiantamentos_abertos} viagem(ns)`}
+                valor={plural(dados.resumo.adiantamentos_abertos, 'viagem', 'viagens')}
                 onPress={() => router.navigate({ pathname: '/gestor/viagens', params: { filtro: 'adiantamento' } })}
               />
-              <Indicador rotulo="Financeiro" valor="Fechamento do mês" onPress={() => router.navigate('/gestor/financeiro')} />
-              <Indicador
+              <Atalho
+                icone="currency-usd"
+                rotulo="Financeiro"
+                valor="Fechamento do mês"
+                onPress={() => router.navigate('/gestor/financeiro')}
+              />
+              <Atalho
+                icone="archive-outline"
                 rotulo="Custos fixos"
                 valor={`${formatarMoeda(dados.resumo.custos_fixos)} / mês`}
                 onPress={() => router.navigate('/gestor/custos-fixos')}
@@ -116,8 +138,59 @@ export default function VisaoGeral() {
   );
 }
 
+type PropsAtalho = {
+  icone: keyof typeof MaterialCommunityIcons.glyphMap;
+  rotulo: string;
+  valor: string;
+  detalhe?: string;
+  onPress: () => void;
+};
+
+/** Cartão de acesso rápido: ícone, número e seta, sempre no mesmo azul para não poluir. */
+function Atalho({ icone, rotulo, valor, detalhe, onPress }: PropsAtalho) {
+  return (
+    <Pressable
+      accessibilityRole="link"
+      onPress={onPress}
+      style={({ pressed, hovered }) => [styles.atalho, (pressed || hovered) && styles.atalhoSobre]}>
+      <View style={styles.atalhoIcone}>
+        <MaterialCommunityIcons name={icone} size={20} color={Cores.primaria} />
+      </View>
+      <View style={styles.atalhoTextos}>
+        <Text style={styles.atalhoRotulo}>{rotulo}</Text>
+        <Text style={styles.atalhoValor}>{valor}</Text>
+        {detalhe ? <Text style={styles.atalhoRotulo}>{detalhe}</Text> : null}
+      </View>
+      <MaterialCommunityIcons name="chevron-right" size={20} color={Cores.textoSuave} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  suave: { fontSize: 14, color: Cores.textoSuave },
+  atalho: {
+    flexGrow: 1,
+    flexBasis: 300,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Espaco.md,
+    padding: Espaco.md,
+    borderWidth: 1,
+    borderColor: Cores.borda,
+    borderRadius: Raio.md,
+    backgroundColor: Cores.branco,
+  },
+  atalhoSobre: { borderColor: Cores.primaria, backgroundColor: Cores.chipClaro },
+  atalhoIcone: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Cores.chipClaro,
+  },
+  atalhoTextos: { flex: 1, minWidth: 0, gap: 1 },
+  atalhoRotulo: { fontSize: 13, color: Cores.textoSuave },
+  atalhoValor: { fontSize: 16, fontWeight: '700', color: Cores.texto },
   alerta: {
     flexDirection: 'row',
     alignItems: 'center',
