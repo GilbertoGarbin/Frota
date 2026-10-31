@@ -469,38 +469,36 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
       ) : (
         // o que está sendo editado sai da lista enquanto o formulário está aberto
         complementos.filter((c) => c.id !== editandoId).map((c) => (
-          <View key={c.id} style={styles.itemAdicional}>
-            <View style={styles.itemTextoAdicional}>
+          <View key={c.id} style={[styles.item, styles.itemBaixo]}>
+            <View style={styles.itemTexto}>
               <Text style={styles.texto}>
-                {ROTULO_COMPLEMENTO[c.tipo as TipoComplemento]} · {formatarMoeda(c.valor)}
-              </Text>
-              <Text style={styles.suave}>
-                {formatarData(c.data)}
-                {c.cliente_carga_adicional ? ` · ${c.cliente_carga_adicional}` : ''}
-                {c.descricao ? ` · ${c.descricao}` : ''}
+                {formatarMoeda(c.valor)} · {ROTULO_COMPLEMENTO[c.tipo as TipoComplemento]}
+                <Text style={styles.suave}>
+                  {` · ${formatarData(c.data)}`}
+                  {c.cliente_carga_adicional ? ` · ${c.cliente_carga_adicional}` : ''}
+                  {c.descricao ? ` · ${c.descricao}` : ''}
+                </Text>
               </Text>
             </View>
-            <View style={styles.itemAcoes}>
-              {/* quem lançou o quê fica sempre visível (spec, seção 2) */}
-              <Selo tipo={c.origem_lancamento === 'gestor' ? 'info' : 'neutro'}>
-                {c.origem_lancamento === 'gestor' ? 'Lançado pela gestão' : 'Lançado pelo motorista'}
-              </Selo>
-              {!editavel ? null : removendoId === c.id ? (
-                <View style={styles.acoesLinha}>
-                  <Text style={styles.suave}>Remover?</Text>
-                  <Botao titulo="Sim" variante="perigo" compacto onPress={() => aoExcluir(c.id).then(() => setRemovendoId(null))} />
-                  <Botao titulo="Não" variante="link" compacto onPress={() => setRemovendoId(null)} />
-                </View>
-              ) : (
-                <View style={styles.acoesLinha}>
-                  {/* a carga complementar é do motorista: o gestor remove, mas não reescreve */}
-                  {c.origem_lancamento === 'gestor' ? (
-                    <Botao titulo="Editar" variante="link" compacto onPress={() => editar(c)} />
-                  ) : null}
-                  <Botao titulo="Remover" variante="link" compacto onPress={() => setRemovendoId(c.id)} />
-                </View>
-              )}
-            </View>
+            {/* quem lançou o quê fica sempre visível (spec, seção 2) */}
+            <Selo tipo={c.origem_lancamento === 'gestor' ? 'info' : 'neutro'}>
+              {c.origem_lancamento === 'gestor' ? 'Lançado pela gestão' : 'Lançado pelo motorista'}
+            </Selo>
+            {!editavel ? null : removendoId === c.id ? (
+              <View style={styles.acoesLinha}>
+                <Text style={styles.suave}>Remover?</Text>
+                <Botao titulo="Sim" variante="perigo" mini onPress={() => aoExcluir(c.id).then(() => setRemovendoId(null))} />
+                <Botao titulo="Não" variante="link" mini onPress={() => setRemovendoId(null)} />
+              </View>
+            ) : (
+              <View style={styles.acoesLinha}>
+                {/* a carga complementar é do motorista: o gestor remove, mas não reescreve */}
+                {c.origem_lancamento === 'gestor' ? (
+                  <Botao titulo="Editar" variante="link" mini onPress={() => editar(c)} />
+                ) : null}
+                <Botao titulo="Remover" variante="link" mini onPress={() => setRemovendoId(c.id)} />
+              </View>
+            )}
           </View>
         ))
       )}
@@ -967,16 +965,6 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
 const styles = StyleSheet.create({
   linha: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
   formularioJanela: { gap: Espaco.md },
-  itemAdicional: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Espaco.md,
-    paddingVertical: Espaco.sm,
-    borderTopWidth: 1,
-    borderTopColor: Cores.borda,
-  },
-  itemTextoAdicional: { flex: 1, minWidth: 0, gap: 2 },
-  itemAcoes: { alignItems: 'flex-end', gap: 2 },
   acoesLinha: { flexDirection: 'row', alignItems: 'center', gap: Espaco.xs },
   cabecalhoCartao: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Espaco.md },
   ladoALado: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: Espaco.lg },
