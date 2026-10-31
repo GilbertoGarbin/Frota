@@ -99,7 +99,7 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
   const [editando, setEditando] = useState<ContaDaLista | null>(null);
 
   // link "Ver conta" da viagem: abre a conta direto
-  const { conta: contaDoLink } = useLocalSearchParams<{ conta?: string }>();
+  const { conta: contaDoLink, secao: secaoDoLink } = useLocalSearchParams<{ conta?: string; secao?: string }>();
   const [linkAberto, setLinkAberto] = useState<string | null>(null);
   if (contas && contaDoLink && linkAberto !== contaDoLink) {
     setLinkAberto(contaDoLink);
@@ -290,6 +290,11 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
           tipo={tipo}
           conta={editando}
           aoFechar={(salvou) => {
+            // veio do "Ver conta": volta para a viagem, com a lista de onde saiu aberta
+            if (editando.id === contaDoLink && editando.viagem) {
+              router.replace({ pathname: '/gestor/viagens', params: { viagem: editando.viagem.id, secao: secaoDoLink ?? '' } });
+              return;
+            }
             setEditando(null);
             if (salvou) aoEditar();
           }}

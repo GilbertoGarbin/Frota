@@ -135,12 +135,14 @@ type PropsRecolhivel = {
   topo?: ReactNode;
   /** ícone num círculo e faixa à esquerda, na cor indicada */
   icone?: { nome: keyof typeof MaterialCommunityIcons.glyphMap; cor: string };
+  /** já começa com a lista aberta (ex.: voltando da conta de um lançamento) */
+  abertaInicial?: boolean;
   children: ReactNode;
 };
 
 /** Seção que mostra só o resumo, tudo numa linha; tocar no cabeçalho abre e fecha a lista. */
-export function SecaoRecolhivel({ titulo, resumo, extra, acao, topo, icone, children }: PropsRecolhivel) {
-  const [aberta, setAberta] = useState(false);
+export function SecaoRecolhivel({ titulo, resumo, extra, acao, topo, icone, abertaInicial = false, children }: PropsRecolhivel) {
+  const [aberta, setAberta] = useState(abertaInicial);
   return (
     <View style={[styles.secao, styles.secaoRecolhivel, icone && { borderLeftWidth: 4, borderLeftColor: icone.cor }]}>
       <View style={styles.secaoCabecalho}>

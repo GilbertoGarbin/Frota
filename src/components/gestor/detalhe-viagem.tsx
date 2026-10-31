@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
 
@@ -741,10 +741,12 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
     setGerando(false);
   }
   const verConta = useVerConta('receber', viagem.id);
+  const secaoDaVolta = useSecaoDaVolta();
 
   return (
     <SecaoRecolhivel
       titulo="Recebimentos"
+      abertaInicial={secaoDaVolta === 'recebimento'}
       icone={{ nome: 'arrow-down-circle-outline', cor: Cores.primaria }}
       resumo={
         recebimentos.length === 0
@@ -792,7 +794,7 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
             ) : (
               <Selo tipo="info">A receber</Selo>
             )}
-            <Botao titulo="Ver conta" variante="link" mini onPress={() => verConta(r.id)} />
+            <Botao titulo="Ver conta" variante="link" mini onPress={() => verConta(r.id, 'recebimento')} />
           </View>
         );
       })}
@@ -803,10 +805,15 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
 /** Abre a conta em Financeiro. Guarda a viagem no endereço para o "voltar" do navegador cair nela de novo. */
 function useVerConta(tipo: 'receber' | 'pagar', viagemId: string) {
   const router = useRouter();
-  return (conta: string) => {
-    router.setParams({ viagem: viagemId });
-    router.push({ pathname: tipo === 'receber' ? '/gestor/receber' : '/gestor/pagar', params: { conta } });
+  return (conta: string, secao: string) => {
+    router.setParams({ viagem: viagemId, secao });
+    router.push({ pathname: tipo === 'receber' ? '/gestor/receber' : '/gestor/pagar', params: { conta, secao } });
   };
+}
+
+/** Qual lista da viagem começa aberta: a de onde se foi ver a conta. */
+function useSecaoDaVolta() {
+  return useLocalSearchParams<{ secao?: string }>().secao;
 }
 
 /** Situação do pagamento ligado ao lançamento (marcar como pago é em Financeiro > Pagar). */
@@ -826,13 +833,14 @@ function SituacaoPagamento({ pagamento, viagemId }: { pagamento: Pagamento | und
           {pagamento.chave_pix ? <Text selectable style={styles.suave}>{`PIX: ${pagamento.chave_pix}`}</Text> : null}
         </>
       )}
-      <Botao titulo="Ver conta" variante="link" mini onPress={() => verConta(pagamento.id)} />
+      <Botao titulo="Ver conta" variante="link" mini onPress={() => verConta(pagamento.id, pagamento.origem)} />
     </View>
   );
 }
 
 function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
   const { viagem, abastecimentos, despesas, paradas, documentos, pagamentos } = dados;
+  const secaoDaVolta = useSecaoDaVolta();
   const pagamentoDo = (campo: 'abastecimento_id' | 'despesa_id', id: string) => pagamentos.find((p) => p[campo] === id);
   // qual formulário de lançamento está aberto (um por vez)
   const [aberto, setAberto] = useState<'abastecimento' | 'despesa' | 'documento' | null>(null);
@@ -859,6 +867,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
     <>
       <SecaoRecolhivel
         titulo="Abastecimentos"
+        abertaInicial={secaoDaVolta === 'abastecimento'}
         icone={{ nome: 'gas-station', cor: LARANJA }}
         resumo={resumoLista(abastecimentos.length, 'abastecimento', 'abastecimentos', somar(abastecimentos.map((a) => a.total)))}
         extra={seloAPagar(pagamentos.filter((p) => p.origem === 'abastecimento'))}
@@ -886,6 +895,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
         <View style={styles.metade}>
           <SecaoRecolhivel
             titulo="Despesas"
+            abertaInicial={secaoDaVolta === 'despesa'}
             icone={{ nome: 'receipt-text-outline', cor: LARANJA }}
             resumo={resumoLista(despesas.length, 'despesa', 'despesas', somar(despesas.map((d) => d.valor)), 'Nenhuma despesa')}
             extra={seloAPagar(pagamentos.filter((p) => p.origem === 'despesa'))}
