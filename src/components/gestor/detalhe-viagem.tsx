@@ -799,7 +799,7 @@ function SituacaoPagamento({ pagamento, viagemId }: { pagamento: Pagamento | und
           {pagamento.chave_pix ? <Text selectable style={styles.suave}>{`PIX: ${pagamento.chave_pix}`}</Text> : null}
         </>
       )}
-      <Botao titulo="Ver conta" variante="link" compacto onPress={() => verConta(pagamento.id)} />
+      <Botao titulo="Ver conta" variante="link" mini onPress={() => verConta(pagamento.id)} />
     </View>
   );
 }
@@ -826,7 +826,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
     }
   }
   const comprovante = (caminho: string | null) =>
-    caminho ? <Botao titulo="Comprovante" variante="link" compacto onPress={() => abrir(caminho)} /> : null;
+    caminho ? <Botao titulo="Comprovante" variante="link" mini onPress={() => abrir(caminho)} /> : null;
 
   return (
     <>
@@ -837,7 +837,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
         acao={botaoLancar('abastecimento', 'Lançar abastecimento')}>
         {abastecimentos.length === 0 ? <Text style={styles.suave}>Nenhum abastecimento nesta viagem.</Text> : null}
         {abastecimentos.map((a) => (
-          <View key={a.id} style={styles.item}>
+          <View key={a.id} style={[styles.item, styles.itemBaixo]}>
             <View style={styles.itemTexto}>
               <Text style={styles.texto}>
                 {formatarMoeda(a.total)} · {formatarDecimal(a.litros, a.litros % 1 === 0 ? 0 : 3)} L a {formatarDecimal(a.preco_litro, Math.round(a.preco_litro * 10_000) % 10 === 0 ? 3 : 4)}
@@ -990,5 +990,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Cores.borda,
   },
+  itemBaixo: { paddingVertical: 2 },
   itemTexto: { flex: 1, minWidth: 200, gap: 2 },
 });
