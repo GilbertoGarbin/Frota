@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
 
@@ -715,6 +716,7 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
     await aoGerar();
     setGerando(false);
   }
+  const verConta = useVerConta('receber', viagem.id);
 
   return (
     <SecaoRecolhivel
@@ -763,6 +765,7 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
             ) : (
               <Selo tipo="info">A receber</Selo>
             )}
+            <Botao titulo="Ver conta" variante="link" compacto onPress={() => verConta(r.id)} />
           </View>
         );
       })}
@@ -770,17 +773,33 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
   );
 }
 
+/** Abre a conta em Financeiro. Guarda a viagem no endereço para o "voltar" do navegador cair nela de novo. */
+function useVerConta(tipo: 'receber' | 'pagar', viagemId: string) {
+  const router = useRouter();
+  return (conta: string) => {
+    router.setParams({ viagem: viagemId });
+    router.push({ pathname: tipo === 'receber' ? '/gestor/receber' : '/gestor/pagar', params: { conta } });
+  };
+}
+
 /** Situação do pagamento ligado ao lançamento (marcar como pago é em Financeiro > Pagar). */
-function SituacaoPagamento({ pagamento }: { pagamento: Pagamento | undefined }) {
+function SituacaoPagamento({ pagamento, viagemId }: { pagamento: Pagamento | undefined; viagemId: string }) {
+  const verConta = useVerConta('pagar', viagemId);
   if (!pagamento) return null;
-  if (pagamento.pago_em) return <Selo tipo="sucesso">{`Pago em ${formatarData(pagamento.pago_em)}`}</Selo>;
-  const atrasado = situacaoDaConta(pagamento.vencimento, null) === 'atrasado';
+  const atrasado = situacaoDaConta(pagamento.vencimento, pagamento.pago_em) === 'atrasado';
   return (
     <View style={[styles.linha, styles.situacao]}>
-      <Selo tipo={atrasado ? 'perigo' : 'aviso'}>
-        {pagamento.vencimento ? `A pagar · vence ${formatarData(pagamento.vencimento)}` : 'A pagar'}
-      </Selo>
-      {pagamento.chave_pix ? <Text selectable style={styles.suave}>{`PIX: ${pagamento.chave_pix}`}</Text> : null}
+      {pagamento.pago_em ? (
+        <Selo tipo="sucesso">{`Pago em ${formatarData(pagamento.pago_em)}`}</Selo>
+      ) : (
+        <>
+          <Selo tipo={atrasado ? 'perigo' : 'aviso'}>
+            {pagamento.vencimento ? `A pagar · vence ${formatarData(pagamento.vencimento)}` : 'A pagar'}
+          </Selo>
+          {pagamento.chave_pix ? <Text selectable style={styles.suave}>{`PIX: ${pagamento.chave_pix}`}</Text> : null}
+        </>
+      )}
+      <Botao titulo="Ver conta" variante="link" compacto onPress={() => verConta(pagamento.id)} />
     </View>
   );
 }
@@ -830,7 +849,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
             </View>
             {a.tanque_cheio ? <Selo tipo="info">Tanque cheio</Selo> : null}
             {comprovante(a.comprovante_path)}
-            <SituacaoPagamento pagamento={pagamentoDo('abastecimento_id', a.id)} />
+            <SituacaoPagamento pagamento={pagamentoDo('abastecimento_id', a.id)} viagemId={viagem.id} />
           </View>
         ))}
       </SecaoRecolhivel>
@@ -856,7 +875,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
                   </Text>
                 </View>
                 {comprovante(d.comprovante_path)}
-                <SituacaoPagamento pagamento={pagamentoDo('despesa_id', d.id)} />
+                <SituacaoPagamento pagamento={pagamentoDo('despesa_id', d.id)} viagemId={viagem.id} />
               </View>
             ))}
           </SecaoRecolhivel>

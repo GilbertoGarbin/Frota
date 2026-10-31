@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -97,6 +97,18 @@ export function ListaContas({ tipo, contas, erro, aoMarcar, aoEditar, acaoExtra 
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [erroAcao, setErroAcao] = useState<string | null>(null);
   const [editando, setEditando] = useState<ContaDaLista | null>(null);
+
+  // link "Ver conta" da viagem: abre a conta direto
+  const { conta: contaDoLink } = useLocalSearchParams<{ conta?: string }>();
+  const [linkAberto, setLinkAberto] = useState<string | null>(null);
+  if (contas && contaDoLink && linkAberto !== contaDoLink) {
+    setLinkAberto(contaDoLink);
+    const c = contas.find((x) => x.id === contaDoLink);
+    if (c) {
+      setEditando(c);
+      if (c.quitadoEm) setFiltro('todas');
+    }
+  }
 
   const hoje = dataDeHoje();
   const daquiTrinta = (() => {

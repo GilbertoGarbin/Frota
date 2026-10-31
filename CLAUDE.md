@@ -132,7 +132,8 @@ num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer e
   complementos do tipo 'complemento') e `pagamentos` (criados por trigger ao lançar abastecimento/despesa
   e pelo adiantamento da viagem; `cartao_empresa` nasce pago, `adiantamento` não gera). Valor e
   vencimento do que não foi quitado se refazem quando a viagem muda (`app.recalcular_recebimentos`).
-  Marcar recebido/pago é só no Financeiro > Receber / Pagar; o lançamento só mostra a situação.
+  Marcar recebido/pago é só no Financeiro > Receber / Pagar; o lançamento só mostra a situação e o link
+  "Ver conta", que abre a conta lá (`?conta=<id>`).
 - Combustível: `app.recalcular_combustivel(veiculo_id)` refaz janelas, rateio e estimativas do
   veículo inteiro a partir dos dados gravados (ver comentário na migration). `janelas_consumo`
   é tabela derivada — nunca gravar nela.
