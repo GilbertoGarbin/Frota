@@ -10,7 +10,7 @@ import { Botao } from '@/components/ui/botao';
 import { BotaoIcone } from '@/components/ui/botao-icone';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
-import { Faixa, Grade, Indicador, ItemFaixa, Secao, SecaoRecolhivel } from '@/components/ui/cartao';
+import { CartaoResumo, Grade, Indicador, Secao, SecaoRecolhivel } from '@/components/ui/cartao';
 import { Janela } from '@/components/ui/janela';
 import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
@@ -79,6 +79,15 @@ export function tomDaMargem(percentual: number | null): 'sucesso' | 'perigo' | '
   return 'neutro';
 }
 
+// cor só do cartão de total (texto grande e em negrito, contraste suficiente)
+const LARANJA = '#D97706';
+
+const COR_DA_MARGEM = {
+  sucesso: { cor: Cores.sucessoTexto, fundo: Cores.sucessoFundo },
+  perigo: { cor: Cores.perigo, fundo: Cores.perigoFundo },
+  neutro: { cor: Cores.texto },
+} as const;
+
 export function margemPercentual(v: Viagem): number | null {
   if (v.status !== 'finalizada' || !v.valor_frete_total || v.resultado_operacional === null) return null;
   return Math.round((v.resultado_operacional * 1000) / v.valor_frete_total) / 10;
@@ -139,10 +148,18 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         {v.exige_canhoto ? null : <Text style={styles.suave}>Não exige canhoto</Text>}
       </View>
 
-      <Faixa>
-        <ItemFaixa rotulo="Frete bruto" valor={formatarMoeda(v.valor_frete_total)} detalhe={notaDoFrete(dados)} />
-        <ItemFaixa
+      <Grade>
+        <CartaoResumo
+          estreito
+          rotulo="Frete bruto"
+          cor={Cores.primaria}
+          valor={formatarMoeda(v.valor_frete_total)}
+          detalhe={notaDoFrete(dados)}
+        />
+        <CartaoResumo
+          estreito
           rotulo="Combustível"
+          cor={LARANJA}
           valor={formatarMoeda(v.combustivel_valor)}
           extra={<SeloCombustivel status={v.combustivel_status} />}
           detalhe={
@@ -153,19 +170,22 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
                 : 'Calculado ao finalizar.'
           }
         />
-        <ItemFaixa
+        <CartaoResumo
+          estreito
           rotulo="Comissão"
+          cor={Cores.primariaEscura}
           valor={formatarMoeda(v.comissao_valor)}
           detalhe={v.comissao_percentual > 0 ? `${formatarDecimal(v.comissao_percentual)}% do frete` : 'Motorista assalariado'}
         />
-        <ItemFaixa rotulo="Outras despesas" valor={formatarMoeda(v.total_despesas)} />
-        <ItemFaixa
+        <CartaoResumo estreito rotulo="Outras despesas" cor={Cores.textoSuave} valor={formatarMoeda(v.total_despesas)} />
+        <CartaoResumo
+          estreito
           rotulo="Margem"
-          tom={status === 'finalizada' ? tomDaMargem(margem) : 'neutro'}
+          {...COR_DA_MARGEM[status === 'finalizada' ? tomDaMargem(margem) : 'neutro']}
           valor={status === 'finalizada' ? formatarMoeda(v.resultado_operacional) : '—'}
           detalhe={status === 'finalizada' ? formatarPercentual(margem) : 'Disponível ao finalizar'}
         />
-      </Faixa>
+      </Grade>
 
       <View style={styles.percurso}>
         <View style={styles.percursoLinha}>
@@ -753,10 +773,12 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
       {recebimentos.map((r) => {
         const situacao = situacaoDaConta(r.vencimento, r.recebido_em);
         return (
-          <View key={r.id} style={styles.item}>
+          <View key={r.id} style={[styles.item, styles.itemBaixo]}>
             <View style={styles.itemTexto}>
-              <Text style={styles.texto}>{`${r.descricao} · ${formatarMoeda(r.valor_final ?? r.valor)}`}</Text>
-              <Text style={styles.suave}>{r.vencimento ? `Vence em ${formatarData(r.vencimento)}` : 'Sem data'}</Text>
+              <Text style={styles.texto}>
+                {`${formatarMoeda(r.valor_final ?? r.valor)} · ${r.descricao}`}
+                <Text style={styles.suave}>{r.vencimento ? ` · Vence em ${formatarData(r.vencimento)}` : ' · Sem data'}</Text>
+              </Text>
             </View>
             {situacao === 'quitado' ? (
               <Selo tipo="sucesso">{`Recebido em ${formatarData(r.recebido_em)}`}</Selo>
@@ -765,7 +787,7 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
             ) : (
               <Selo tipo="info">A receber</Selo>
             )}
-            <Botao titulo="Ver conta" variante="link" compacto onPress={() => verConta(r.id)} />
+            <Botao titulo="Ver conta" variante="link" mini onPress={() => verConta(r.id)} />
           </View>
         );
       })}

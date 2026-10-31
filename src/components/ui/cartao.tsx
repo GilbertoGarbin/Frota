@@ -47,28 +47,6 @@ export function Indicador({ rotulo, valor, detalhe, tom = 'neutro', extra, onPre
   );
 }
 
-/**
- * Resumo compacto: vários números num cartão só, separados por linhas finas. Quebra em
- * duas ou três colunas no celular. Para o topo de telas de detalhe.
- */
-export function Faixa({ children }: PropsWithChildren) {
-  return <View style={styles.faixa}>{children}</View>;
-}
-
-/** Um número da Faixa. O tom muda só a cor do valor (sem fundo colorido). */
-export function ItemFaixa({ rotulo, valor, detalhe, tom = 'neutro', extra }: Omit<PropsIndicador, 'onPress'>) {
-  return (
-    <View style={styles.itemFaixa}>
-      <View style={styles.linhaRotulo}>
-        <Text style={styles.rotuloFaixa}>{rotulo}</Text>
-        {extra}
-      </View>
-      <Text style={[styles.valorFaixa, { color: TOM[tom].texto }]}>{valor}</Text>
-      {detalhe ? <Text style={styles.detalheFaixa}>{detalhe}</Text> : null}
-    </View>
-  );
-}
-
 type PropsResumo = {
   rotulo: string;
   valor: string;
@@ -81,14 +59,21 @@ type PropsResumo = {
   fundo?: string;
   /** comparação com o período anterior; bom = verde, ruim = vermelho, null = cinza */
   variacao?: { texto: string; bom: boolean | null };
+  /** conteúdo extra ao lado do rótulo (ex.: selo Estimado/Apurado) */
+  extra?: ReactNode;
+  /** cabem mais cartões na linha (ex.: cinco no topo do detalhe da viagem) */
+  estreito?: boolean;
   onPress?: () => void;
 };
 
 /** Cartão de total com faixa colorida à esquerda. Usar dentro de uma Grade. */
-export function CartaoResumo({ rotulo, valor, detalhe, cor, apagado, fundo, variacao, onPress }: PropsResumo) {
+export function CartaoResumo({ rotulo, valor, detalhe, cor, apagado, fundo, variacao, extra, estreito, onPress }: PropsResumo) {
   const conteudo = (
     <>
-      <Text style={styles.rotulo}>{rotulo}</Text>
+      <View style={styles.linhaRotulo}>
+        <Text style={styles.rotulo}>{rotulo}</Text>
+        {extra}
+      </View>
       <Text style={[styles.valorResumo, { color: apagado ? Cores.texto : cor }]}>{valor}</Text>
       {variacao ? (
         <Text style={styles.detalhe}>
@@ -106,7 +91,7 @@ export function CartaoResumo({ rotulo, valor, detalhe, cor, apagado, fundo, vari
       ) : null}
     </>
   );
-  const estilo = [styles.resumo, { borderLeftColor: cor }, fundo ? { backgroundColor: fundo } : null];
+  const estilo = [styles.resumo, estreito && styles.resumoEstreito, { borderLeftColor: cor }, fundo ? { backgroundColor: fundo } : null];
   return onPress ? (
     <Pressable
       accessibilityRole="link"
@@ -201,6 +186,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     backgroundColor: Cores.branco,
   },
+  resumoEstreito: { flexBasis: 170 },
   valorResumo: { fontSize: 20, fontWeight: '700' },
   variacao: { fontWeight: '700' },
   resumoSobre: { boxShadow: '0 4px 14px rgba(15, 23, 42, 0.10)' },
@@ -208,31 +194,6 @@ const styles = StyleSheet.create({
   rotulo: { fontSize: 13, color: Cores.textoSuave },
   valor: { fontSize: 22, fontWeight: '700' },
   detalhe: { fontSize: 12, color: Cores.textoSuave },
-  faixa: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    borderWidth: 1,
-    borderColor: Cores.borda,
-    borderRadius: Raio.md,
-    backgroundColor: Cores.branco,
-    overflow: 'hidden',
-  },
-  // borda à esquerda e embaixo de cada item: vira grade de linhas finas quando quebra
-  itemFaixa: {
-    flexGrow: 1,
-    flexBasis: 150,
-    gap: 2,
-    paddingHorizontal: Espaco.lg,
-    paddingVertical: Espaco.md,
-    marginLeft: -1,
-    marginBottom: -1,
-    borderLeftWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: Cores.borda,
-  },
-  rotuloFaixa: { fontSize: 11, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase', color: Cores.textoSuave },
-  valorFaixa: { fontSize: 18, fontWeight: '700' },
-  detalheFaixa: { fontSize: 11, lineHeight: 15, color: Cores.textoSuave },
   secao: {
     gap: Espaco.md,
     padding: Espaco.lg,
