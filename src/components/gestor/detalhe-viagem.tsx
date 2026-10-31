@@ -841,10 +841,10 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
             <View style={styles.itemTexto}>
               <Text style={styles.texto}>
                 {formatarMoeda(a.total)} · {formatarDecimal(a.litros, a.litros % 1 === 0 ? 0 : 3)} L a {formatarDecimal(a.preco_litro, Math.round(a.preco_litro * 10_000) % 10 === 0 ? 3 : 4)}
-              </Text>
-              <Text style={styles.suave}>
-                {formatarData(a.data)} · {formatarKm(a.km)}
-                {a.posto ? ` · ${a.posto}` : ''} · {ROTULO_PAGAMENTO[a.forma_pagamento as FormaPagamento]}
+                <Text style={styles.suave}>
+                  {` · ${formatarData(a.data)} · ${formatarKm(a.km)}`}
+                  {a.posto ? ` · ${a.posto}` : ''} · {ROTULO_PAGAMENTO[a.forma_pagamento as FormaPagamento]}
+                </Text>
               </Text>
             </View>
             {a.tanque_cheio ? <Selo tipo="info">Tanque cheio</Selo> : null}
