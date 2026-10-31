@@ -10,7 +10,7 @@ import { Botao } from '@/components/ui/botao';
 import { BotaoIcone } from '@/components/ui/botao-icone';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
-import { CartaoResumo, Grade, Indicador, Secao, SecaoRecolhivel } from '@/components/ui/cartao';
+import { CartaoResumo, Grade, Secao, SecaoRecolhivel } from '@/components/ui/cartao';
 import { Janela } from '@/components/ui/janela';
 import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
@@ -281,9 +281,12 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
 
       {/* raramente usados: no fim, lado a lado no computador */}
       <View style={styles.ladoALado}>
-        <View style={styles.metade}>
-          <BlocoAdiantamento viagem={v} aoSalvar={(valor) => executar(() => atualizarViagem(v.id, { valor_adiantamento: valor }))} />
-        </View>
+        {/* finalizada: o adiantamento não muda mais e os valores já estão na prestação de contas */}
+        {status === 'finalizada' && (v.valor_adiantamento > 0 || v.gasto_proprio_bolso > 0) ? null : (
+          <View style={styles.metade}>
+            <BlocoAdiantamento viagem={v} aoSalvar={(valor) => executar(() => atualizarViagem(v.id, { valor_adiantamento: valor }))} />
+          </View>
+        )}
         <View style={styles.metade}>
           <BlocoComplementos
             viagem={v}
@@ -550,31 +553,36 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
 function BlocoPrestacao({ viagem: v, aoMarcar }: { viagem: Viagem; aoMarcar: (acertado: boolean) => Promise<void> }) {
   const saldo = v.adiantamento_saldo ?? 0;
   return (
-    <Secao titulo="Prestação de contas do adiantamento">
+    <Secao
+      titulo="Prestação de contas do adiantamento"
+      acao={
+        v.adiantamento_acertado ? (
+          <View style={styles.linha}>
+            <Selo tipo="sucesso">{`Acertado em ${formatarData(v.adiantamento_acertado_em)}`}</Selo>
+            <Botao titulo="Desfazer" variante="link" compacto onPress={() => aoMarcar(false)} />
+          </View>
+        ) : (
+          <Botao titulo="Marcar como acertado" compacto onPress={() => aoMarcar(true)} />
+        )
+      }>
       <Grade>
-        <Indicador rotulo="Adiantamento ao motorista" valor={formatarMoeda(v.valor_adiantamento)} />
-        <Indicador rotulo="Gasto pelo motorista" valor={formatarMoeda(v.adiantamento_gasto)} />
-        <Indicador
+        <CartaoResumo rotulo="Adiantamento ao motorista" cor={Cores.primaria} valor={formatarMoeda(v.valor_adiantamento)} />
+        <CartaoResumo rotulo="Gasto pelo motorista" cor={LARANJA} valor={formatarMoeda(v.adiantamento_gasto)} />
+        <CartaoResumo
           rotulo={saldo >= 0 ? 'Saldo a devolver pelo motorista' : 'Saldo a reembolsar ao motorista'}
-          tom="destaque"
+          cor={saldo >= 0 ? Cores.primariaEscura : Cores.perigo}
+          fundo={saldo >= 0 ? Cores.chipClaro : Cores.perigoFundo}
           valor={formatarMoeda(Math.abs(saldo))}
         />
         {v.gasto_proprio_bolso > 0 ? (
-          <Indicador
+          <CartaoResumo
             rotulo="Pago do próprio bolso"
+            cor={Cores.textoSuave}
             valor={formatarMoeda(v.gasto_proprio_bolso)}
             detalhe="A reembolsar ao motorista, além do saldo do adiantamento."
           />
         ) : null}
       </Grade>
-      {v.adiantamento_acertado ? (
-        <View style={styles.linha}>
-          <Selo tipo="sucesso">{`Acertado em ${formatarData(v.adiantamento_acertado_em)}`}</Selo>
-          <Botao titulo="Desfazer" variante="link" compacto onPress={() => aoMarcar(false)} />
-        </View>
-      ) : (
-        <Botao titulo="Marcar como acertado" compacto onPress={() => aoMarcar(true)} />
-      )}
     </Secao>
   );
 }
