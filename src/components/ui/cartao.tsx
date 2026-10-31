@@ -133,14 +133,16 @@ type PropsRecolhivel = {
   acao?: ReactNode;
   /** conteúdo que fica sempre visível (ex.: formulário de lançamento aberto) */
   topo?: ReactNode;
+  /** ícone num círculo e faixa à esquerda, na cor indicada */
+  icone?: { nome: keyof typeof MaterialCommunityIcons.glyphMap; cor: string };
   children: ReactNode;
 };
 
-/** Seção que mostra só o resumo; tocar no cabeçalho abre e fecha a lista. */
-export function SecaoRecolhivel({ titulo, resumo, extra, acao, topo, children }: PropsRecolhivel) {
+/** Seção que mostra só o resumo, tudo numa linha; tocar no cabeçalho abre e fecha a lista. */
+export function SecaoRecolhivel({ titulo, resumo, extra, acao, topo, icone, children }: PropsRecolhivel) {
   const [aberta, setAberta] = useState(false);
   return (
-    <View style={styles.secao}>
+    <View style={[styles.secao, styles.secaoRecolhivel, icone && { borderLeftWidth: 4, borderLeftColor: icone.cor }]}>
       <View style={styles.secaoCabecalho}>
         <Pressable
           accessibilityRole="button"
@@ -149,14 +151,17 @@ export function SecaoRecolhivel({ titulo, resumo, extra, acao, topo, children }:
           onPress={() => setAberta((a) => !a)}
           style={styles.recolhivelBotao}>
           <MaterialCommunityIcons name={aberta ? 'chevron-up' : 'chevron-down'} size={22} color={Cores.textoSuave} />
+          {icone ? (
+            <View style={[styles.recolhivelIcone, { backgroundColor: `${icone.cor}1A` }]}>
+              <MaterialCommunityIcons name={icone.nome} size={18} color={icone.cor} />
+            </View>
+          ) : null}
           <View style={styles.recolhivelTextos}>
             <Text accessibilityRole="header" style={styles.secaoTitulo}>
               {titulo}
             </Text>
-            <View style={styles.linhaRotulo}>
-              <Text style={styles.recolhivelResumo}>{resumo}</Text>
-              {extra}
-            </View>
+            <Text style={styles.recolhivelResumo}>{resumo}</Text>
+            {extra}
           </View>
         </Pressable>
         {acao}
@@ -169,7 +174,9 @@ export function SecaoRecolhivel({ titulo, resumo, extra, acao, topo, children }:
 
 const styles = StyleSheet.create({
   recolhivelBotao: { flexDirection: 'row', alignItems: 'center', gap: Espaco.sm, flexGrow: 1, flexShrink: 1, minWidth: 200 },
-  recolhivelTextos: { flexShrink: 1, gap: 2 },
+  recolhivelTextos: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: Espaco.md, rowGap: 2, flexShrink: 1 },
+  recolhivelIcone: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  secaoRecolhivel: { paddingVertical: Espaco.sm },
   recolhivelResumo: { fontSize: 14, color: Cores.textoSuave },
   grade: { flexDirection: 'row', flexWrap: 'wrap', gap: Espaco.md },
   indicador: { flexGrow: 1, flexBasis: 200, gap: 4, padding: Espaco.lg, borderRadius: Raio.md },

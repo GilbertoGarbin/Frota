@@ -81,6 +81,9 @@ export function tomDaMargem(percentual: number | null): 'sucesso' | 'perigo' | '
 
 // cor só do cartão de total (texto grande e em negrito, contraste suficiente)
 const LARANJA = '#D97706';
+// cores só dos ícones e faixas das seções da viagem
+const ROXO = '#7C3AED';
+const AZUL_PISCINA = '#0891B2';
 
 const COR_DA_MARGEM = {
   sucesso: { cor: Cores.sucessoTexto, fundo: Cores.sucessoFundo },
@@ -458,6 +461,7 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
   return (
     <SecaoRecolhivel
       titulo="Valores adicionais ao frete"
+      icone={{ nome: 'cash-plus', cor: Cores.primaria }}
       resumo={resumoLista(complementos.length, 'valor adicional', 'valores adicionais', somar(complementos.map((c) => c.valor)))}
       acao={
         editavel && !aberto ? (
@@ -742,6 +746,7 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
   return (
     <SecaoRecolhivel
       titulo="Recebimentos"
+      icone={{ nome: 'arrow-down-circle-outline', cor: Cores.sucessoTexto }}
       resumo={
         recebimentos.length === 0
           ? viagem.forma_recebimento_id
@@ -855,6 +860,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
     <>
       <SecaoRecolhivel
         titulo="Abastecimentos"
+        icone={{ nome: 'gas-station', cor: LARANJA }}
         resumo={resumoLista(abastecimentos.length, 'abastecimento', 'abastecimentos', somar(abastecimentos.map((a) => a.total)))}
         extra={seloAPagar(pagamentos.filter((p) => p.origem === 'abastecimento'))}
         acao={botaoLancar('abastecimento', 'Lançar abastecimento')}>
@@ -881,6 +887,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
         <View style={styles.metade}>
           <SecaoRecolhivel
             titulo="Despesas"
+            icone={{ nome: 'receipt', cor: ROXO }}
             resumo={resumoLista(despesas.length, 'despesa', 'despesas', somar(despesas.map((d) => d.valor)), 'Nenhuma despesa')}
             extra={seloAPagar(pagamentos.filter((p) => p.origem === 'despesa'))}
             acao={botaoLancar('despesa', 'Lançar despesa')}>
@@ -906,6 +913,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
         <View style={styles.metade}>
           <SecaoRecolhivel
             titulo="Documentos"
+            icone={{ nome: 'file-document-outline', cor: AZUL_PISCINA }}
             resumo={documentos.length === 0 ? 'Nenhum documento' : `${documentos.length} ${documentos.length === 1 ? 'documento' : 'documentos'}`}
             extra={
               documentos.some((d) => d.tipo === 'canhoto') ? <Selo tipo="sucesso">Canhoto enviado</Selo> : null
@@ -926,7 +934,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
       </View>
 
       {paradas.length > 0 ? (
-        <SecaoRecolhivel titulo="Paradas" resumo={`${paradas.length} ${paradas.length === 1 ? 'parada' : 'paradas'}`}>
+        <SecaoRecolhivel titulo="Paradas" icone={{ nome: 'map-marker-outline', cor: Cores.textoSuave }} resumo={`${paradas.length} ${paradas.length === 1 ? 'parada' : 'paradas'}`}>
           {paradas.map((p) => (
             <View key={p.id} style={styles.item}>
               <View style={styles.itemTexto}>
