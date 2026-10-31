@@ -81,9 +81,8 @@ export function tomDaMargem(percentual: number | null): 'sucesso' | 'perigo' | '
 
 // cor só do cartão de total (texto grande e em negrito, contraste suficiente)
 const LARANJA = '#D97706';
-// cores só dos ícones e faixas das seções da viagem
-const ROXO = '#7C3AED';
-const AZUL_PISCINA = '#0891B2';
+// Cor por significado: azul entra, laranja sai, cinza sem dinheiro ou zerado; verde/vermelho só na margem.
+const corDeSaida = (valor: number | null) => ((valor ?? 0) > 0 ? LARANJA : Cores.textoSuave);
 
 const COR_DA_MARGEM = {
   sucesso: { cor: Cores.sucessoTexto, fundo: Cores.sucessoFundo },
@@ -162,7 +161,7 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         <CartaoResumo
           estreito
           rotulo="Combustível"
-          cor={LARANJA}
+          cor={corDeSaida(v.combustivel_valor)}
           valor={formatarMoeda(v.combustivel_valor)}
           extra={<SeloCombustivel status={v.combustivel_status} />}
           detalhe={
@@ -176,11 +175,11 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
         <CartaoResumo
           estreito
           rotulo="Comissão"
-          cor={Cores.primariaEscura}
+          cor={corDeSaida(v.comissao_valor)}
           valor={formatarMoeda(v.comissao_valor)}
           detalhe={v.comissao_percentual > 0 ? `${formatarDecimal(v.comissao_percentual)}% do frete` : 'Motorista assalariado'}
         />
-        <CartaoResumo estreito rotulo="Outras despesas" cor={Cores.textoSuave} valor={formatarMoeda(v.total_despesas)} />
+        <CartaoResumo estreito rotulo="Outras despesas" cor={corDeSaida(v.total_despesas)} valor={formatarMoeda(v.total_despesas)} />
         <CartaoResumo
           estreito
           rotulo="Margem"
@@ -569,17 +568,17 @@ function BlocoPrestacao({ viagem: v, aoMarcar }: { viagem: Viagem; aoMarcar: (ac
       }>
       <Grade>
         <CartaoResumo rotulo="Adiantamento ao motorista" cor={Cores.primaria} valor={formatarMoeda(v.valor_adiantamento)} />
-        <CartaoResumo rotulo="Gasto pelo motorista" cor={LARANJA} valor={formatarMoeda(v.adiantamento_gasto)} />
+        <CartaoResumo rotulo="Gasto pelo motorista" cor={corDeSaida(v.adiantamento_gasto)} valor={formatarMoeda(v.adiantamento_gasto)} />
         <CartaoResumo
           rotulo={saldo >= 0 ? 'Saldo a devolver pelo motorista' : 'Saldo a reembolsar ao motorista'}
-          cor={saldo >= 0 ? Cores.primariaEscura : Cores.perigo}
+          cor={saldo >= 0 ? Cores.primaria : Cores.perigo}
           fundo={saldo >= 0 ? Cores.chipClaro : Cores.perigoFundo}
           valor={formatarMoeda(Math.abs(saldo))}
         />
         {v.gasto_proprio_bolso > 0 ? (
           <CartaoResumo
             rotulo="Pago do próprio bolso"
-            cor={Cores.textoSuave}
+            cor={LARANJA}
             valor={formatarMoeda(v.gasto_proprio_bolso)}
             detalhe="A reembolsar ao motorista, além do saldo do adiantamento."
           />
@@ -746,7 +745,7 @@ function BlocoRecebimentos({ viagem, recebimentos, aoGerar }: PropsRecebimentos)
   return (
     <SecaoRecolhivel
       titulo="Recebimentos"
-      icone={{ nome: 'arrow-down-circle-outline', cor: Cores.sucessoTexto }}
+      icone={{ nome: 'arrow-down-circle-outline', cor: Cores.primaria }}
       resumo={
         recebimentos.length === 0
           ? viagem.forma_recebimento_id
@@ -887,7 +886,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
         <View style={styles.metade}>
           <SecaoRecolhivel
             titulo="Despesas"
-            icone={{ nome: 'receipt', cor: ROXO }}
+            icone={{ nome: 'receipt-text-outline', cor: LARANJA }}
             resumo={resumoLista(despesas.length, 'despesa', 'despesas', somar(despesas.map((d) => d.valor)), 'Nenhuma despesa')}
             extra={seloAPagar(pagamentos.filter((p) => p.origem === 'despesa'))}
             acao={botaoLancar('despesa', 'Lançar despesa')}>
@@ -913,7 +912,7 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
         <View style={styles.metade}>
           <SecaoRecolhivel
             titulo="Documentos"
-            icone={{ nome: 'file-document-outline', cor: AZUL_PISCINA }}
+            icone={{ nome: 'file-document-outline', cor: Cores.textoSuave }}
             resumo={documentos.length === 0 ? 'Nenhum documento' : `${documentos.length} ${documentos.length === 1 ? 'documento' : 'documentos'}`}
             extra={
               documentos.some((d) => d.tipo === 'canhoto') ? <Selo tipo="sucesso">Canhoto enviado</Selo> : null
