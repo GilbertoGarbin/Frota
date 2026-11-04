@@ -12,6 +12,7 @@ import { CampoData } from '@/components/ui/campo-data';
 import { Segmentado } from '@/components/ui/segmentado';
 import { CATEGORIAS_DESPESA, COMBUSTIVEIS, despesaExigeComprovante, PAGAMENTOS, type Combustivel } from '@/constants/lancamentos';
 import { Cores, Espaco, Raio } from '@/constants/tema';
+import { avisoKmRodado } from '@/constants/viagem';
 import { useMotorista } from '@/context/MotoristaContext';
 import type { Anexo } from '@/services/anexo.service';
 import type { Registro, ViagemMotorista } from '@/services/motorista.service';
@@ -507,6 +508,8 @@ export function PainelConferencia({ viagem, aoFechar, aoFinalizar }: PropsPainel
   const { erro, setErro, salvando, enviar } = useEnvio(aoFinalizar);
   const agora = new Date();
   const [kmFinal, setKmFinal] = useState('');
+  // km final fora do normal que já foi avisado (confirmar = tocar de novo com o mesmo número)
+  const [kmConferido, setKmConferido] = useState<number | null>(null);
   const [data, setData] = useState(formatarData(hojeIso()));
   const [hora, setHora] = useState(`${dois(agora.getHours())}:${dois(agora.getMinutes())}`);
   const [local, setLocal] = useState(viagem.destino);
@@ -525,6 +528,11 @@ export function PainelConferencia({ viagem, aoFechar, aoFinalizar }: PropsPainel
     if (kmLido === null || Number.isNaN(kmLido)) return setErro('Informe o km final.');
     if (viagem.km_inicial !== null && kmLido < viagem.km_inicial) {
       return setErro(`O km final não pode ser menor que o km inicial (${formatarKm(viagem.km_inicial)}).`);
+    }
+    const avisoKm = avisoKmRodado(viagem.km_inicial, kmLido);
+    if (avisoKm && kmConferido !== kmLido) {
+      setKmConferido(kmLido);
+      return setErro(avisoKm);
     }
     if (!dataIso || !horaOk) return setErro('Data ou hora de chegada inválida.');
     const [ano, mes, dia] = dataIso.split('-').map(Number);

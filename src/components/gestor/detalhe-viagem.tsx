@@ -15,6 +15,7 @@ import { Janela } from '@/components/ui/janela';
 import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
 import { Cores, Espaco, Raio } from '@/constants/tema';
+import { avisoKmRodado } from '@/constants/viagem';
 import { useSessao } from '@/context/SessaoContext';
 import { useCarregar } from '@/hooks/use-carregar';
 import type { Anexo } from '@/services/anexo.service';
@@ -650,6 +651,8 @@ type PropsOperacao = {
 function FormOperacao({ operacao, viagem, faltaCanhoto, aoConcluir, aoCancelar }: PropsOperacao) {
   const iniciar = operacao === 'iniciar';
   const [km, setKm] = useState('');
+  // km final fora do normal que já foi avisado (confirmar = tocar de novo com o mesmo número)
+  const [kmConferido, setKmConferido] = useState<number | null>(null);
   const [data, setData] = useState(formatarData(hojeIso()));
   const [local, setLocal] = useState('');
   const [observacoes, setObservacoes] = useState('');
@@ -669,6 +672,12 @@ function FormOperacao({ operacao, viagem, faltaCanhoto, aoConcluir, aoCancelar }
     if (!dataIso) return setErro('Data inválida. Use dia/mês/ano.');
     if (!iniciar && viagem.km_inicial !== null && kmLido < viagem.km_inicial) {
       return setErro(`O km final não pode ser menor que o km inicial (${formatarKm(viagem.km_inicial)}).`);
+    }
+    // km rodado fora do normal: avisa uma vez; tocar de novo com o mesmo número confirma
+    const avisoKm = iniciar ? null : avisoKmRodado(viagem.km_inicial, kmLido);
+    if (avisoKm && kmConferido !== kmLido) {
+      setKmConferido(kmLido);
+      return setErro(avisoKm);
     }
     if (pedeCanhoto && !canhotoEnviado && !canhoto) return setErro('Anexe o canhoto: tire a foto ou escolha o arquivo.');
     setErro(null);
