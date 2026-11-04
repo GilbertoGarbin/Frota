@@ -170,11 +170,11 @@ function CartaoViagem({ viagem: v, motorista, veiculo, aoAbrir }: PropsCartao) {
             <Text style={styles.rota} numberOfLines={1}>
               {v.origem} → {v.destino}
             </Text>
+            <Text style={[styles.suave, styles.descricao]} numberOfLines={1}>
+              {formatarData(v.data_prevista)} · {motorista} · {veiculo}
+              {v.cliente ? ` · ${v.cliente}` : ''}
+            </Text>
           </View>
-          <Text style={styles.suave} numberOfLines={1}>
-            {formatarData(v.data_prevista)} · {motorista} · {veiculo}
-            {v.cliente ? ` · ${v.cliente}` : ''}
-          </Text>
         </View>
         {adiantamentoEmAberto(v) ? <Selo tipo="aviso">Adiantamento em aberto</Selo> : null}
         <View style={[styles.status, styles[`status_${corStatus}`]]}>
@@ -295,5 +295,7 @@ const styles = StyleSheet.create({
   },
   cabecalho: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.sm },
   titulos: { flex: 1, minWidth: 220, gap: 0 },
-  rota: { fontSize: 16, fontWeight: '700', color: Cores.texto },
+  rota: { fontSize: 16, fontWeight: '700', color: Cores.texto, flexShrink: 0 },
+  // Descrição ao lado da rota; se faltar espaço, corta com "…" em vez de quebrar linha
+  descricao: { flex: 1, minWidth: 0, marginLeft: Espaco.sm },
 });
