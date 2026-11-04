@@ -461,7 +461,7 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
     <SecaoRecolhivel
       titulo="Valores adicionais ao frete"
       subtitulo="complemento"
-      icone={{ nome: 'cash-plus', cor: Cores.primaria }}
+      icone={{ nome: 'currency-usd', cor: Cores.primaria }}
       resumo={resumoLista(complementos.length, 'valor adicional', 'valores adicionais', somar(complementos.map((c) => c.valor)))}
       acao={
         editavel && !aberto ? (
