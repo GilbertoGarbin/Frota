@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FormAbastecimentoGestor, FormDespesaGestor, FormDocumentoGestor } from '@/components/gestor/lancamentos-viagem';
 import { Pagina } from '@/components/gestor/pagina';
@@ -293,6 +293,7 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
           <BlocoComplementos
             viagem={v}
             complementos={dados.complementos}
+            recebimentos={dados.recebimentos}
             aoLancar={(c) => executar(() => lancarComplementoGestor(v.id, c))}
             aoAtualizar={(id, c) => executar(() => atualizarComplementoGestor(id, c))}
             aoExcluir={(id) => executar(() => excluirComplemento(id))}
@@ -408,12 +409,16 @@ const estilosAdiant = StyleSheet.create({
 type PropsComplementos = {
   viagem: Viagem;
   complementos: Complemento[];
+  /** para achar a conta a receber de cada complemento ("Ver conta") */
+  recebimentos: Recebimento[];
   aoLancar: (c: { tipo: TipoComplemento; valor: number; data: string; descricao: string | null }) => Promise<void>;
   aoAtualizar: (id: string, c: { tipo: TipoComplemento; valor: number; data: string; descricao: string | null }) => Promise<void>;
   aoExcluir: (id: string) => Promise<void>;
 };
 
-function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcluir }: PropsComplementos) {
+function BlocoComplementos({ viagem, complementos, recebimentos, aoLancar, aoAtualizar, aoExcluir }: PropsComplementos) {
+  const verConta = useVerConta('receber', viagem.id);
+  const secaoDaVolta = useSecaoDaVolta();
   const [aberto, setAberto] = useState(false);
   // id do lançamento em edição; null = lançamento novo
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -461,6 +466,7 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
     <SecaoRecolhivel
       titulo="Valores adicionais ao frete"
       subtitulo="complemento"
+      abertaInicial={secaoDaVolta === 'complemento'}
       icone={{ nome: 'currency-usd', cor: Cores.primaria }}
       resumo={resumoLista(complementos.length, 'valor adicional', 'valores adicionais', somar(complementos.map((c) => c.valor)))}
       acao={
@@ -472,42 +478,56 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
         <Text style={styles.suave}>Nenhum valor adicional lançado.</Text>
       ) : (
         // o que está sendo editado sai da lista enquanto o formulário está aberto
-        complementos.filter((c) => c.id !== editandoId).map((c) => (
-          <View key={c.id} style={[styles.item, styles.itemBaixo, styles.itemLado]}>
-            <View style={[styles.itemTexto, styles.itemTextoLado]}>
-              <Text style={styles.texto}>
-                {formatarMoeda(c.valor)} · {ROTULO_COMPLEMENTO[c.tipo as TipoComplemento]}
-                <Text style={styles.suave}>
-                  {` · ${formatarData(c.data)}`}
-                  {c.cliente_carga_adicional ? ` · ${c.cliente_carga_adicional}` : ''}
-                  {c.descricao ? ` · ${c.descricao}` : ''}
+        complementos.filter((c) => c.id !== editandoId).map((c) => {
+          // a carga complementar é do motorista: o gestor remove, mas não reescreve
+          const podeEditar = editavel && c.origem_lancamento === 'gestor';
+          // só o tipo "complemento" vira conta a receber própria (as outras somam ao frete)
+          const conta = recebimentos.find((r) => r.complemento_id === c.id);
+          return (
+            <View key={c.id} style={[styles.item, styles.itemBaixo, styles.itemLado]}>
+              {/* tocar no lançamento abre a edição */}
+              <Pressable
+                accessibilityRole={podeEditar ? 'button' : undefined}
+                accessibilityLabel={podeEditar ? 'Editar valor adicional' : undefined}
+                disabled={!podeEditar}
+                onPress={() => editar(c)}
+                style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+                  styles.itemTexto,
+                  styles.itemTextoLado,
+                  podeEditar && styles.itemClicavel,
+                  podeEditar && (hovered || pressed) && styles.itemClicavelSobre,
+                ]}>
+                <Text style={styles.texto}>
+                  {formatarMoeda(c.valor)} · {ROTULO_COMPLEMENTO[c.tipo as TipoComplemento]}
+                  <Text style={styles.suave}>
+                    {` · ${formatarData(c.data)}`}
+                    {c.cliente_carga_adicional ? ` · ${c.cliente_carga_adicional}` : ''}
+                    {c.descricao ? ` · ${c.descricao}` : ''}
+                  </Text>
                 </Text>
-              </Text>
-            </View>
-            {/* selo e Editar/Remover empilhados à direita do texto */}
-            <View style={styles.itemDireita}>
-            {/* quem lançou o quê fica sempre visível (spec, seção 2) */}
-            <Selo tipo={c.origem_lancamento === 'gestor' ? 'info' : 'neutro'}>
-              {c.origem_lancamento === 'gestor' ? 'Lançado pela gestão' : 'Lançado pelo motorista'}
-            </Selo>
-            {!editavel ? null : removendoId === c.id ? (
-              <View style={styles.acoesLinha}>
-                <Text style={styles.suave}>Remover?</Text>
-                <Botao titulo="Sim" variante="perigo" mini onPress={() => aoExcluir(c.id).then(() => setRemovendoId(null))} />
-                <Botao titulo="Não" variante="link" mini onPress={() => setRemovendoId(null)} />
+              </Pressable>
+              {/* selo e Ver conta/Remover empilhados à direita do texto */}
+              <View style={styles.itemDireita}>
+                {/* quem lançou o quê fica sempre visível (spec, seção 2) */}
+                <Selo tipo={c.origem_lancamento === 'gestor' ? 'info' : 'neutro'}>
+                  {c.origem_lancamento === 'gestor' ? 'Lançado pela gestão' : 'Lançado pelo motorista'}
+                </Selo>
+                {removendoId === c.id ? (
+                  <View style={styles.acoesLinha}>
+                    <Text style={styles.suave}>Remover?</Text>
+                    <Botao titulo="Sim" variante="perigo" mini onPress={() => aoExcluir(c.id).then(() => setRemovendoId(null))} />
+                    <Botao titulo="Não" variante="link" mini onPress={() => setRemovendoId(null)} />
+                  </View>
+                ) : (
+                  <View style={styles.acoesLinha}>
+                    {conta ? <Botao titulo="Ver conta" variante="link" mini onPress={() => verConta(conta.id, 'complemento')} /> : null}
+                    {editavel ? <Botao titulo="Remover" variante="link" mini onPress={() => setRemovendoId(c.id)} /> : null}
+                  </View>
+                )}
               </View>
-            ) : (
-              <View style={styles.acoesLinha}>
-                {/* a carga complementar é do motorista: o gestor remove, mas não reescreve */}
-                {c.origem_lancamento === 'gestor' ? (
-                  <Botao titulo="Editar" variante="link" mini onPress={() => editar(c)} />
-                ) : null}
-                <Botao titulo="Remover" variante="link" mini onPress={() => setRemovendoId(c.id)} />
-              </View>
-            )}
             </View>
-          </View>
-        ))
+          );
+        })
       )}
       {aberto ? (
         <Janela visivel titulo={editandoId ? 'Editar valor adicional' : 'Novo valor adicional'} aoFechar={fechar}>
@@ -1029,4 +1049,6 @@ const styles = StyleSheet.create({
   itemLado: { flexWrap: 'nowrap', alignItems: 'flex-start' },
   itemTextoLado: { minWidth: 0 },
   itemDireita: { alignItems: 'flex-end', gap: 2, flexShrink: 0 },
+  itemClicavel: { cursor: 'pointer', borderRadius: Raio.sm, paddingHorizontal: Espaco.xs, marginHorizontal: -Espaco.xs },
+  itemClicavelSobre: { backgroundColor: Cores.fundo },
 });
