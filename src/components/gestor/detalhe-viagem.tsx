@@ -460,6 +460,7 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
   return (
     <SecaoRecolhivel
       titulo="Valores adicionais ao frete"
+      subtitulo="complemento"
       icone={{ nome: 'cash-plus', cor: Cores.primaria }}
       resumo={resumoLista(complementos.length, 'valor adicional', 'valores adicionais', somar(complementos.map((c) => c.valor)))}
       acao={
@@ -472,8 +473,8 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
       ) : (
         // o que está sendo editado sai da lista enquanto o formulário está aberto
         complementos.filter((c) => c.id !== editandoId).map((c) => (
-          <View key={c.id} style={[styles.item, styles.itemBaixo]}>
-            <View style={styles.itemTexto}>
+          <View key={c.id} style={[styles.item, styles.itemBaixo, styles.itemLado]}>
+            <View style={[styles.itemTexto, styles.itemTextoLado]}>
               <Text style={styles.texto}>
                 {formatarMoeda(c.valor)} · {ROTULO_COMPLEMENTO[c.tipo as TipoComplemento]}
                 <Text style={styles.suave}>
@@ -483,6 +484,8 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
                 </Text>
               </Text>
             </View>
+            {/* selo e Editar/Remover empilhados à direita do texto */}
+            <View style={styles.itemDireita}>
             {/* quem lançou o quê fica sempre visível (spec, seção 2) */}
             <Selo tipo={c.origem_lancamento === 'gestor' ? 'info' : 'neutro'}>
               {c.origem_lancamento === 'gestor' ? 'Lançado pela gestão' : 'Lançado pelo motorista'}
@@ -502,6 +505,7 @@ function BlocoComplementos({ viagem, complementos, aoLancar, aoAtualizar, aoExcl
                 <Botao titulo="Remover" variante="link" mini onPress={() => setRemovendoId(c.id)} />
               </View>
             )}
+            </View>
           </View>
         ))
       )}
@@ -1022,4 +1026,7 @@ const styles = StyleSheet.create({
   },
   itemBaixo: { paddingVertical: 2 },
   itemTexto: { flex: 1, minWidth: 200, gap: 2 },
+  itemLado: { flexWrap: 'nowrap', alignItems: 'flex-start' },
+  itemTextoLado: { minWidth: 0 },
+  itemDireita: { alignItems: 'flex-end', gap: 2, flexShrink: 0 },
 });

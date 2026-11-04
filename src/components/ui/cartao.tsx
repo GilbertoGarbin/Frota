@@ -126,6 +126,8 @@ export function Secao({ titulo, acao, children }: PropsWithChildren<{ titulo: st
 
 type PropsRecolhivel = {
   titulo: string;
+  /** complemento do título em fonte menor, entre parênteses (ex.: "complemento") */
+  subtitulo?: string;
   /** linha de resumo ao lado do título (ex.: "2 abastecimentos · R$ 2.950,58") */
   resumo: string;
   /** selos ao lado do resumo (ex.: "a pagar") */
@@ -141,11 +143,12 @@ type PropsRecolhivel = {
 };
 
 /** Seção que mostra só o resumo, tudo numa linha; tocar no cabeçalho abre e fecha a lista. */
-export function SecaoRecolhivel({ titulo, resumo, extra, acao, topo, icone, abertaInicial = false, children }: PropsRecolhivel) {
+export function SecaoRecolhivel({ titulo, subtitulo, resumo, extra, acao, topo, icone, abertaInicial = false, children }: PropsRecolhivel) {
   const [aberta, setAberta] = useState(abertaInicial);
   return (
     <View style={[styles.secao, styles.secaoRecolhivel, icone && { borderLeftWidth: 4, borderLeftColor: icone.cor }]}>
-      <View style={styles.secaoCabecalho}>
+      {/* sem quebra: o botão da ação fica sempre à direita do título */}
+      <View style={[styles.secaoCabecalho, styles.cabecalhoRecolhivel]}>
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ expanded: aberta }}
@@ -161,6 +164,7 @@ export function SecaoRecolhivel({ titulo, resumo, extra, acao, topo, icone, aber
           <View style={styles.recolhivelTextos}>
             <Text accessibilityRole="header" style={styles.secaoTitulo}>
               {titulo}
+              {subtitulo ? <Text style={styles.subtitulo}>{` (${subtitulo})`}</Text> : null}
             </Text>
             <Text style={styles.recolhivelResumo}>{resumo}</Text>
             {extra}
@@ -175,7 +179,9 @@ export function SecaoRecolhivel({ titulo, resumo, extra, acao, topo, icone, aber
 }
 
 const styles = StyleSheet.create({
-  recolhivelBotao: { flexDirection: 'row', alignItems: 'center', gap: Espaco.sm, flexGrow: 1, flexShrink: 1, minWidth: 200 },
+  recolhivelBotao: { flexDirection: 'row', alignItems: 'center', gap: Espaco.sm, flexGrow: 1, flexShrink: 1, minWidth: 0 },
+  cabecalhoRecolhivel: { flexWrap: 'nowrap' },
+  subtitulo: { fontSize: 13, fontWeight: '400', color: Cores.textoSuave },
   recolhivelTextos: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: Espaco.md, rowGap: 2, flexShrink: 1 },
   recolhivelIcone: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   secaoRecolhivel: { paddingVertical: Espaco.sm },
