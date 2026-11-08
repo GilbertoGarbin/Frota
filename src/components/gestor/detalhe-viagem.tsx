@@ -111,6 +111,7 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
   const [confirmandoExcluir, setConfirmandoExcluir] = useState(false);
   // iniciar/finalizar pelo painel (motorista sem app, esquecimento, viagem antiga)
   const [operacao, setOperacao] = useState<'iniciar' | 'finalizar' | null>(null);
+  const [corrigindoKm, setCorrigindoKm] = useState(false);
 
   async function executar(acao: () => Promise<void>) {
     setErroAcao(null);
@@ -210,11 +211,13 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
           {status === 'em_andamento' && operacao === null ? (
             <View style={[styles.linha, styles.percursoAcoes]}>
               <Botao titulo="Finalizar viagem" compacto onPress={() => setOperacao('finalizar')} />
+              <Botao titulo="Corrigir km" variante="contorno" compacto onPress={() => setCorrigindoKm(true)} />
               <Botao titulo="Editar viagem" variante="contorno" compacto onPress={() => aoEditar(v)} />
             </View>
           ) : null}
           {status === 'finalizada' ? (
             <View style={[styles.linha, styles.percursoAcoes]}>
+              <Botao titulo="Corrigir km" variante="contorno" compacto onPress={() => setCorrigindoKm(true)} />
               <Botao titulo="Editar viagem" variante="contorno" compacto onPress={() => aoEditar(v)} />
             </View>
           ) : null}
@@ -257,6 +260,18 @@ export function DetalheViagem({ viagemId, nomeMotorista, placa, aoVoltar, aoEdit
                 recarregar();
               }}
               aoCancelar={() => setOperacao(null)}
+            />
+          </Janela>
+        ) : null}
+        {corrigindoKm ? (
+          <Janela visivel titulo="Corrigir km" subtitulo="Odômetro digitado errado na saída ou na chegada" aoFechar={() => setCorrigindoKm(false)}>
+            <FormCorrigirKm
+              viagem={v}
+              aoConcluir={() => {
+                setCorrigindoKm(false);
+                recarregar();
+              }}
+              aoCancelar={() => setCorrigindoKm(false)}
             />
           </Janela>
         ) : null}
@@ -745,6 +760,86 @@ function FormOperacao({ operacao, viagem, faltaCanhoto, aoConcluir, aoCancelar }
           onPress={confirmar}
           carregando={salvando}
         />
+        <Botao titulo="Cancelar" variante="link" compacto onPress={aoCancelar} />
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Corrige km inicial/final de viagem iniciada ou finalizada. O banco refaz o combustível do
+ * caminhão e, se o km atual dele veio do km errado, volta para o maior km conhecido.
+ */
+function FormCorrigirKm({ viagem, aoConcluir, aoCancelar }: { viagem: Viagem; aoConcluir: () => void; aoCancelar: () => void }) {
+  const finalizada = viagem.status === 'finalizada';
+  const [kmInicial, setKmInicial] = useState(viagem.km_inicial !== null ? mascararInteiro(String(Math.round(viagem.km_inicial))) : '');
+  const [kmFinal, setKmFinal] = useState(viagem.km_final !== null ? mascararInteiro(String(Math.round(viagem.km_final))) : '');
+  // rodado fora do normal que já foi avisado (confirmar = tocar de novo com os mesmos números)
+  const [conferido, setConferido] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  const inicialLido = lerDecimal(kmInicial);
+  const finalLido = finalizada ? lerDecimal(kmFinal) : null;
+  const rodado =
+    inicialLido !== null && finalLido !== null && !Number.isNaN(inicialLido) && !Number.isNaN(finalLido)
+      ? finalLido - inicialLido
+      : null;
+
+  async function salvar() {
+    if (inicialLido === null || Number.isNaN(inicialLido)) return setErro('Informe o km inicial.');
+    if (finalizada) {
+      if (finalLido === null || Number.isNaN(finalLido)) return setErro('Informe o km final.');
+      if (finalLido < inicialLido) return setErro('O km final não pode ser menor que o km inicial.');
+      const aviso = avisoKmRodado(inicialLido, finalLido);
+      const chave = `${inicialLido}-${finalLido}`;
+      if (aviso && conferido !== chave) {
+        setConferido(chave);
+        return setErro(aviso.replace('toque em finalizar de novo', 'toque em salvar de novo'));
+      }
+    }
+    setErro(null);
+    setSalvando(true);
+    try {
+      await atualizarViagem(viagem.id, finalizada ? { km_inicial: inicialLido, km_final: finalLido } : { km_inicial: inicialLido });
+      aoConcluir();
+    } catch (e) {
+      setErro(mensagemDeErro(e));
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <View style={styles.formularioJanela}>
+      {erro ? <Aviso tipo="erro">{erro}</Aviso> : null}
+      <View style={styles.linhaAdicional}>
+        <View style={styles.campoCurto}>
+          <Campo
+            rotulo="Km inicial *"
+            value={kmInicial}
+            onChangeText={(t) => setKmInicial(mascararInteiro(t))}
+            keyboardType="number-pad"
+            inputMode="numeric"
+          />
+        </View>
+        {finalizada ? (
+          <View style={styles.campoCurto}>
+            <Campo
+              rotulo="Km final *"
+              value={kmFinal}
+              onChangeText={(t) => setKmFinal(mascararInteiro(t))}
+              keyboardType="number-pad"
+              inputMode="numeric"
+            />
+          </View>
+        ) : null}
+      </View>
+      {rodado !== null && rodado >= 0 ? <Text style={styles.texto}>Rodado: {formatarKm(rodado)}</Text> : null}
+      <Text style={styles.suave}>
+        O combustível, a margem e o km atual do caminhão são recalculados ao salvar.
+      </Text>
+      <View style={styles.linha}>
+        <Botao titulo="Salvar" compacto onPress={salvar} carregando={salvando} />
         <Botao titulo="Cancelar" variante="link" compacto onPress={aoCancelar} />
       </View>
     </View>

@@ -1309,3 +1309,36 @@ test('gestor corrige e remove abastecimento e despesa de viagem finalizada', asy
   assert.equal((await um('select count(*)::int as n from pagamentos where viagem_id = $1 and origem in ($2, $3)', [viagem, 'abastecimento', 'despesa'])).n, 0);
   assert.equal(Number((await um('select total_despesas from viagens where id = $1', [viagem])).total_despesas), 0);
 });
+
+test('corrigir km da viagem: refaz combustível e volta o km atual do caminhão', async () => {
+  const gestorG = await uuid();
+  await db.query('insert into auth.users (id) values ($1)', [gestorG]);
+  await como(gestorG, () => q(`select criar_tenant('Transportes G')`));
+  const g = (fn) => como(gestorG, fn);
+
+  const vg = await g(async () => (await um(
+    `insert into veiculos (placa, modelo, consumo_medio_informado, km_atual) values ('GGG1G11', 'Volvo', 2.5, 1000) returning id`)).id);
+  const mg = await g(async () => (await um(
+    `insert into motoristas (nome, cpf, cnh_validade) values ('Gil', '88888888888', current_date + 400) returning id`)).id);
+  await g(() => q(
+    `insert into abastecimentos (veiculo_id, km, litros, preco_litro, tanque_cheio, forma_pagamento) values ($1, 1000, 100, 6, true, 'cartao_empresa')`, [vg]));
+  // viagem anterior já finalizada em 1.200
+  await g(() => q(
+    `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, status, km_inicial, km_final, data_hora_chegada)
+     values ($1, $2, 'X', 'Y', 1000, 'finalizada', 1000, 1200, now() - interval '2 days')`, [mg, vg]));
+  // odômetro digitado com dígitos a mais
+  const viagem = await g(async () => (await um(
+    `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, status, km_inicial, km_final, data_hora_chegada)
+     values ($1, $2, 'A', 'B', 5000, 'finalizada', 1200, 1200779, now()) returning id`, [mg, vg])).id);
+  assert.equal(Number((await um('select km_atual from veiculos where id = $1', [vg])).km_atual), 1200779);
+
+  await g(() => q('update viagens set km_final = 1700 where id = $1', [viagem]));
+  const v = await um('select km_final, combustivel_valor from viagens where id = $1', [viagem]);
+  assert.equal(Number(v.combustivel_valor), 1200); // 500 km ÷ 2,5 × 6
+  assert.equal(Number((await um('select km_atual from veiculos where id = $1', [vg])).km_atual), 1700);
+
+  // km atual digitado pelo gestor (não veio desta viagem) não é mexido
+  await g(() => q('update veiculos set km_atual = 5000 where id = $1', [vg]));
+  await g(() => q('update viagens set km_final = 1650 where id = $1', [viagem]));
+  assert.equal(Number((await um('select km_atual from veiculos where id = $1', [vg])).km_atual), 5000);
+});
