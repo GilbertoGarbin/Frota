@@ -16,13 +16,15 @@ import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useSessao } from '@/context/SessaoContext';
 import type { Anexo } from '@/services/anexo.service';
 import {
+  atualizarAbastecimentoGestor,
+  atualizarDespesaGestor,
   enviarDocumentoGestor,
   lancarAbastecimentoGestor,
   lancarDespesaGestor,
   type TipoDocumento,
 } from '@/services/lancamentos-gestor.service';
 import type { ItemNota, NotaLida } from '@/services/nota.service';
-import type { FormaPagamento, Viagem } from '@/services/viagens.service';
+import type { Abastecimento, Despesa, FormaPagamento, Viagem } from '@/services/viagens.service';
 import { totalAbastecimento } from '@/utils/dinheiro';
 import { mensagemDeErro } from '@/utils/erros';
 import {
@@ -97,26 +99,35 @@ function Botoes({ titulo, salvando, aoSalvar, aoCancelar }: { titulo: string; sa
   );
 }
 
-export function FormAbastecimentoGestor({ viagem, placa, aoSalvar, aoCancelar }: PropsForm) {
+/** Casas do preço por litro: 3 (digitado) ou 4 (nota com desconto). */
+const casasDoPreco = (preco: number) => (Math.round(preco * 10_000) % 10 === 0 ? 3 : 4);
+
+export function FormAbastecimentoGestor({
+  viagem,
+  placa,
+  abastecimento: a,
+  aoSalvar,
+  aoCancelar,
+}: PropsForm & { /** corrigir um abastecimento já lançado */ abastecimento?: Abastecimento }) {
   const { acesso } = useSessao();
   const { mensagem, setMensagem, salvando, enviar } = useEnvio(aoSalvar);
-  const [data, setData] = useState(formatarData(hojeIso()));
-  const [km, setKm] = useState('');
-  const [litros, setLitros] = useState('');
-  const [preco, setPreco] = useState('');
-  const [combustivel, setCombustivel] = useState<Combustivel>('diesel_s10');
-  const [pagamento, setPagamento] = useState<FormaPagamento | null>(null);
-  const [cheio, setCheio] = useState<'sim' | 'nao'>('sim');
-  const [posto, setPosto] = useState('');
-  const [chavePix, setChavePix] = useState('');
-  const [vencimento, setVencimento] = useState('');
+  const [data, setData] = useState(formatarData(a?.data ?? hojeIso()));
+  const [km, setKm] = useState(a ? mascararInteiro(String(Math.round(a.km))) : '');
+  const [litros, setLitros] = useState(a ? formatarDecimal(a.litros, a.litros % 1 === 0 ? 0 : 3) : '');
+  const [preco, setPreco] = useState(a ? formatarDecimal(a.preco_litro, casasDoPreco(a.preco_litro)) : '');
+  const [combustivel, setCombustivel] = useState<Combustivel>((a?.combustivel as Combustivel) ?? 'diesel_s10');
+  const [pagamento, setPagamento] = useState<FormaPagamento | null>((a?.forma_pagamento as FormaPagamento) ?? null);
+  const [cheio, setCheio] = useState<'sim' | 'nao'>(a && !a.tanque_cheio ? 'nao' : 'sim');
+  const [posto, setPosto] = useState(a?.posto ?? '');
+  const [chavePix, setChavePix] = useState(a?.chave_pix ?? '');
+  const [vencimento, setVencimento] = useState(formatarData(a?.vencimento));
   const [anexo, setAnexo] = useState<Anexo | null>(null);
   // nota fiscal lida: o diesel preenche o formulário; Arla e outros combustíveis vão junto
   const [nota, setNota] = useState<NotaLida | null>(null);
   const [extras, setExtras] = useState<ItemNota[]>([]);
   const [lancarExtras, setLancarExtras] = useState(true);
   // preço digitado tem 3 casas; o da nota (com desconto) vem com 4
-  const [casasPreco, setCasasPreco] = useState(3);
+  const [casasPreco, setCasasPreco] = useState(a ? casasDoPreco(a.preco_litro) : 3);
 
   const litrosLidos = lerDecimal(litros);
   const precoLido = lerDecimal(preco);
@@ -159,11 +170,22 @@ export function FormAbastecimentoGestor({ viagem, placa, aoSalvar, aoCancelar }:
     if (typeof extra === 'string') return invalido(extra);
     const comum = { data: dataIso, km: kmLido, forma_pagamento: pagamento, ...extra, posto: posto.trim() || null };
     const tenantId = acesso.tenantId;
+    const dadosAbastecimento = {
+      ...comum,
+      litros: litrosLidos,
+      preco_litro: precoLido,
+      combustivel,
+      tanque_cheio: cheio === 'sim',
+    };
+    if (a) {
+      enviar(() => atualizarAbastecimentoGestor(tenantId, viagem.id, a.id, dadosAbastecimento, anexo));
+      return;
+    }
     enviar(async () => {
       await lancarAbastecimentoGestor(
         tenantId,
         viagem,
-        { ...comum, litros: litrosLidos, preco_litro: precoLido, combustivel, tanque_cheio: cheio === 'sim' },
+        dadosAbastecimento,
         anexo,
       );
       // Arla e outros itens da mesma nota: mesmo dia, km e pagamento (o comprovante fica no principal)
@@ -188,7 +210,8 @@ export function FormAbastecimentoGestor({ viagem, placa, aoSalvar, aoCancelar }:
 
   return (
     <Moldura mensagem={mensagem} aoFecharMensagem={() => setMensagem(null)}>
-      <BotaoLerNota aoLer={aplicarNota} />
+      {/* ler a nota é para lançar; na correção os campos já vêm preenchidos */}
+      {a ? null : <BotaoLerNota aoLer={aplicarNota} />}
       {nota ? (
         <ResumoNota
           nota={nota}
@@ -239,23 +262,32 @@ export function FormAbastecimentoGestor({ viagem, placa, aoSalvar, aoCancelar }:
           <Text style={styles.totalValor}>{total === null ? '—' : formatarMoeda(total)}</Text>
         </View>
       </LinhaForm>
-      <CampoAnexo rotulo="Comprovante (opcional)" anexo={anexo} onChange={setAnexo} />
-      <Botoes titulo="Lançar abastecimento" salvando={salvando} aoSalvar={salvar} aoCancelar={aoCancelar} />
+      <CampoAnexo
+        rotulo={a?.comprovante_path ? 'Comprovante (anexar outro substitui o atual)' : 'Comprovante (opcional)'}
+        anexo={anexo}
+        onChange={setAnexo}
+      />
+      <Botoes titulo={a ? 'Salvar alteração' : 'Lançar abastecimento'} salvando={salvando} aoSalvar={salvar} aoCancelar={aoCancelar} />
     </Moldura>
   );
 }
 
-export function FormDespesaGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
+export function FormDespesaGestor({
+  viagem,
+  despesa: d,
+  aoSalvar,
+  aoCancelar,
+}: PropsForm & { /** corrigir uma despesa já lançada */ despesa?: Despesa }) {
   const { acesso } = useSessao();
   const { mensagem, setMensagem, salvando, enviar } = useEnvio(aoSalvar);
-  const [data, setData] = useState(formatarData(hojeIso()));
-  const [categoria, setCategoria] = useState<string | null>(null);
-  const [valor, setValor] = useState('');
-  const [pagamento, setPagamento] = useState<FormaPagamento | null>(null);
-  const [local, setLocal] = useState('');
-  const [descricao, setDescricao] = useState('');
-  const [chavePix, setChavePix] = useState('');
-  const [vencimento, setVencimento] = useState('');
+  const [data, setData] = useState(formatarData(d?.data ?? hojeIso()));
+  const [categoria, setCategoria] = useState<string | null>(d?.categoria ?? null);
+  const [valor, setValor] = useState(d ? formatarDecimal(d.valor) : '');
+  const [pagamento, setPagamento] = useState<FormaPagamento | null>((d?.forma_pagamento as FormaPagamento) ?? null);
+  const [local, setLocal] = useState(d?.local ?? '');
+  const [descricao, setDescricao] = useState(d?.descricao ?? '');
+  const [chavePix, setChavePix] = useState(d?.chave_pix ?? '');
+  const [vencimento, setVencimento] = useState(formatarData(d?.vencimento));
   const [anexo, setAnexo] = useState<Anexo | null>(null);
 
   function salvar() {
@@ -264,7 +296,7 @@ export function FormDespesaGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
       !categoria && 'Categoria',
       !valor.trim() && 'Valor',
       !pagamento && 'Forma de pagamento',
-      despesaExigeComprovante(pagamento) && !anexo && 'Comprovante (foto ou arquivo)',
+      despesaExigeComprovante(pagamento) && !anexo && !d?.comprovante_path && 'Comprovante (foto ou arquivo)',
     ]);
     if (faltando.length > 0) return setMensagem({ titulo: 'Preencha os campos obrigatórios', itens: faltando });
     const invalido = (texto: string) => setMensagem({ titulo: 'Confira a despesa', texto });
@@ -275,21 +307,20 @@ export function FormDespesaGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
     if (!categoria || !pagamento || !acesso) return;
     const extra = dadosDoPagamento(pagamento, chavePix, vencimento);
     if (typeof extra === 'string') return invalido(extra);
+    const dados = {
+      data: dataIso,
+      categoria,
+      valor: valorLido,
+      forma_pagamento: pagamento,
+      ...extra,
+      local: local.trim() || null,
+      descricao: descricao.trim() || null,
+    };
+    const tenantId = acesso.tenantId;
     enviar(() =>
-      lancarDespesaGestor(
-        acesso.tenantId,
-        viagem.id,
-        {
-          data: dataIso,
-          categoria,
-          valor: valorLido,
-          forma_pagamento: pagamento,
-          ...extra,
-          local: local.trim() || null,
-          descricao: descricao.trim() || null,
-        },
-        anexo,
-      ),
+      d
+        ? atualizarDespesaGestor(tenantId, viagem.id, d.id, dados, anexo)
+        : lancarDespesaGestor(tenantId, viagem.id, dados, anexo),
     );
   }
 
@@ -319,11 +350,17 @@ export function FormDespesaGestor({ viagem, aoSalvar, aoCancelar }: PropsForm) {
         <Campo rotulo="Descrição (opcional)" value={descricao} onChangeText={setDescricao} />
       </LinhaForm>
       <CampoAnexo
-        rotulo={despesaExigeComprovante(pagamento) ? 'Comprovante *' : 'Comprovante (opcional)'}
+        rotulo={
+          d?.comprovante_path
+            ? 'Comprovante (anexar outro substitui o atual)'
+            : despesaExigeComprovante(pagamento)
+              ? 'Comprovante *'
+              : 'Comprovante (opcional)'
+        }
         anexo={anexo}
         onChange={setAnexo}
       />
-      <Botoes titulo="Lançar despesa" salvando={salvando} aoSalvar={salvar} aoCancelar={aoCancelar} />
+      <Botoes titulo={d ? 'Salvar alteração' : 'Lançar despesa'} salvando={salvando} aoSalvar={salvar} aoCancelar={aoCancelar} />
     </Moldura>
   );
 }

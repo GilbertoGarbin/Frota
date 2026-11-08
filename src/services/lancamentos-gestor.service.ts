@@ -67,6 +67,58 @@ export async function lancarDespesaGestor(
   if (caminho) await registrarComprovante(viagemId, caminho);
 }
 
+// --- Correção pelo gestor -------------------------------------------------------
+// O banco refaz o resto sozinho: conta a pagar (trigger de pagamento), combustível do veículo
+// (recalcular_combustivel) e totais da viagem. Ao remover, a conta a pagar sai junto (cascade).
+
+/** Comprovante novo na correção: arquivo com nome próprio (o antigo continua em Documentos). */
+async function comprovanteNovo(tenantId: string, viagemId: string, anexo: Anexo | null): Promise<string | null> {
+  if (!anexo) return null;
+  const caminho = await enviarArquivo(tenantId, viagemId, Crypto.randomUUID(), anexo);
+  await registrarComprovante(viagemId, caminho);
+  return caminho;
+}
+
+export async function atualizarAbastecimentoGestor(
+  tenantId: string,
+  viagemId: string,
+  id: string,
+  dados: DadosAbastecimentoGestor,
+  anexo: Anexo | null,
+): Promise<void> {
+  const caminho = await comprovanteNovo(tenantId, viagemId, anexo);
+  const { error } = await supabase
+    .from('abastecimentos')
+    .update({ ...dados, ...(caminho ? { comprovante_path: caminho } : {}) })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function excluirAbastecimentoGestor(id: string): Promise<void> {
+  const { error } = await supabase.from('abastecimentos').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function atualizarDespesaGestor(
+  tenantId: string,
+  viagemId: string,
+  id: string,
+  dados: DadosDespesaGestor,
+  anexo: Anexo | null,
+): Promise<void> {
+  const caminho = await comprovanteNovo(tenantId, viagemId, anexo);
+  const { error } = await supabase
+    .from('despesas')
+    .update({ ...dados, ...(caminho ? { comprovante_path: caminho } : {}) })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function excluirDespesaGestor(id: string): Promise<void> {
+  const { error } = await supabase.from('despesas').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function enviarDocumentoGestor(
   tenantId: string,
   viagemId: string,

@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FormAbastecimentoGestor, FormDespesaGestor, FormDocumentoGestor } from '@/components/gestor/lancamentos-viagem';
@@ -25,7 +25,7 @@ import {
   type Pagamento,
   type Recebimento,
 } from '@/services/financeiro.service';
-import { enviarDocumentoGestor } from '@/services/lancamentos-gestor.service';
+import { enviarDocumentoGestor, excluirAbastecimentoGestor, excluirDespesaGestor } from '@/services/lancamentos-gestor.service';
 import {
   atualizarComplementoGestor,
   atualizarViagem,
@@ -41,7 +41,9 @@ import {
   sugerirAdiantamento,
   TIPOS_DO_GESTOR,
   urlDoArquivo,
+  type Abastecimento,
   type Complemento,
+  type Despesa,
   type DetalheViagem as Detalhe,
   type FormaPagamento,
   type StatusViagem,
@@ -877,11 +879,58 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
   const pagamentoDo = (campo: 'abastecimento_id' | 'despesa_id', id: string) => pagamentos.find((p) => p[campo] === id);
   // qual formulário de lançamento está aberto (um por vez)
   const [aberto, setAberto] = useState<'abastecimento' | 'despesa' | 'documento' | null>(null);
-  const fechar = () => setAberto(null);
-  const salvo = () => {
+  // lançamento sendo corrigido (abre o mesmo formulário, preenchido)
+  const [editando, setEditando] = useState<
+    { tipo: 'abastecimento'; item: Abastecimento } | { tipo: 'despesa'; item: Despesa } | null
+  >(null);
+  // pedindo confirmação para remover
+  const [removendoId, setRemovendoId] = useState<string | null>(null);
+  const fechar = () => {
     setAberto(null);
+    setEditando(null);
+  };
+  const salvo = () => {
+    fechar();
     aoLancar();
   };
+
+  async function remover(tipo: 'abastecimento' | 'despesa', id: string) {
+    try {
+      if (tipo === 'abastecimento') await excluirAbastecimentoGestor(id);
+      else await excluirDespesaGestor(id);
+      setRemovendoId(null);
+      aoLancar();
+    } catch (e) {
+      aoErro(mensagemDeErro(e));
+    }
+  }
+
+  /** Texto do lançamento: tocar abre a edição */
+  const textoClicavel = (rotulo: string, aoTocar: () => void, conteudo: ReactNode) => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={rotulo}
+      onPress={aoTocar}
+      style={({ hovered, pressed }: { hovered?: boolean; pressed: boolean }) => [
+        styles.itemTexto,
+        styles.itemClicavel,
+        (hovered || pressed) && styles.itemClicavelSobre,
+      ]}>
+      {conteudo}
+    </Pressable>
+  );
+
+  /** Remover com confirmação; avisa que a conta a pagar sai junto */
+  const acaoRemover = (tipo: 'abastecimento' | 'despesa', id: string, pagamento: Pagamento | undefined) =>
+    removendoId === id ? (
+      <View style={styles.acoesLinha}>
+        <Text style={styles.suave}>{pagamento ? 'Remover? A conta a pagar sai junto.' : 'Remover?'}</Text>
+        <Botao titulo="Sim" variante="perigo" mini onPress={() => remover(tipo, id)} />
+        <Botao titulo="Não" variante="link" mini onPress={() => setRemovendoId(null)} />
+      </View>
+    ) : (
+      <Botao titulo="Remover" variante="link" mini onPress={() => setRemovendoId(id)} />
+    );
   const botaoLancar = (qual: NonNullable<typeof aberto>, titulo: string) => (
     <BotaoIcone icone="plus" rotulo={titulo} onPress={() => setAberto(qual)} />
   );
@@ -908,18 +957,21 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
         {abastecimentos.length === 0 ? <Text style={styles.suave}>Nenhum abastecimento nesta viagem.</Text> : null}
         {abastecimentos.map((a) => (
           <View key={a.id} style={[styles.item, styles.itemBaixo]}>
-            <View style={styles.itemTexto}>
+            {textoClicavel(
+              'Editar abastecimento',
+              () => setEditando({ tipo: 'abastecimento', item: a }),
               <Text style={styles.texto}>
                 {formatarMoeda(a.total)} · {formatarDecimal(a.litros, a.litros % 1 === 0 ? 0 : 3)} L a {formatarDecimal(a.preco_litro, Math.round(a.preco_litro * 10_000) % 10 === 0 ? 3 : 4)}
                 <Text style={styles.suave}>
                   {` · ${formatarData(a.data)} · ${formatarKm(a.km)}`}
                   {a.posto ? ` · ${a.posto}` : ''} · {ROTULO_PAGAMENTO[a.forma_pagamento as FormaPagamento]}
                 </Text>
-              </Text>
-            </View>
+              </Text>,
+            )}
             {a.tanque_cheio ? <Selo tipo="info">Tanque cheio</Selo> : null}
             {comprovante(a.comprovante_path)}
             <SituacaoPagamento pagamento={pagamentoDo('abastecimento_id', a.id)} viagemId={viagem.id} />
+            {acaoRemover('abastecimento', a.id, pagamentoDo('abastecimento_id', a.id))}
           </View>
         ))}
       </SecaoRecolhivel>
@@ -936,18 +988,23 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
             {despesas.length === 0 ? <Text style={styles.suave}>Nenhuma despesa nesta viagem.</Text> : null}
             {despesas.map((d) => (
               <View key={d.id} style={styles.item}>
-                <View style={styles.itemTexto}>
-                  <Text style={styles.texto}>
-                    {d.categoria} · {formatarMoeda(d.valor)}
-                  </Text>
-                  <Text style={styles.suave}>
-                    {formatarData(d.data)} · {ROTULO_PAGAMENTO[d.forma_pagamento as FormaPagamento]}
-                    {d.local ? ` · ${d.local}` : ''}
-                    {d.descricao ? ` · ${d.descricao}` : ''}
-                  </Text>
-                </View>
+                {textoClicavel(
+                  'Editar despesa',
+                  () => setEditando({ tipo: 'despesa', item: d }),
+                  <>
+                    <Text style={styles.texto}>
+                      {d.categoria} · {formatarMoeda(d.valor)}
+                    </Text>
+                    <Text style={styles.suave}>
+                      {formatarData(d.data)} · {ROTULO_PAGAMENTO[d.forma_pagamento as FormaPagamento]}
+                      {d.local ? ` · ${d.local}` : ''}
+                      {d.descricao ? ` · ${d.descricao}` : ''}
+                    </Text>
+                  </>,
+                )}
                 {comprovante(d.comprovante_path)}
                 <SituacaoPagamento pagamento={pagamentoDo('despesa_id', d.id)} viagemId={viagem.id} />
+                {acaoRemover('despesa', d.id, pagamentoDo('despesa_id', d.id))}
               </View>
             ))}
           </SecaoRecolhivel>
@@ -1001,6 +1058,16 @@ function BlocoRegistros({ dados, placa, aoErro, aoLancar }: PropsRegistros) {
       {aberto === 'despesa' ? (
         <Janela visivel titulo="Nova despesa" aoFechar={fechar}>
           <FormDespesaGestor viagem={viagem} aoSalvar={salvo} aoCancelar={fechar} />
+        </Janela>
+      ) : null}
+      {editando?.tipo === 'abastecimento' ? (
+        <Janela visivel titulo="Editar abastecimento" aoFechar={fechar}>
+          <FormAbastecimentoGestor viagem={viagem} placa={placa} abastecimento={editando.item} aoSalvar={salvo} aoCancelar={fechar} />
+        </Janela>
+      ) : null}
+      {editando?.tipo === 'despesa' ? (
+        <Janela visivel titulo="Editar despesa" aoFechar={fechar}>
+          <FormDespesaGestor viagem={viagem} despesa={editando.item} aoSalvar={salvo} aoCancelar={fechar} />
         </Janela>
       ) : null}
       {aberto === 'documento' ? (

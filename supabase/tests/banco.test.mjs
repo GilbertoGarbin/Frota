@@ -1274,3 +1274,38 @@ test('canhoto obrigatório é configurável pela transportadora e por viagem', a
 
   await como(gestorA, () => q('select salvar_configuracoes(true)'));
 });
+
+test('gestor corrige e remove abastecimento e despesa de viagem finalizada', async () => {
+  const gestorF = await uuid();
+  await db.query('insert into auth.users (id) values ($1)', [gestorF]);
+  await como(gestorF, () => q(`select criar_tenant('Transportes F')`));
+  const f = (fn) => como(gestorF, fn);
+
+  const vf = await f(async () => (await um(
+    `insert into veiculos (placa, modelo, consumo_medio_informado, km_atual) values ('FFF1F11', 'Volvo', 2.5, 1000) returning id`)).id);
+  const mf = await f(async () => (await um(
+    `insert into motoristas (nome, cpf, cnh_validade) values ('Fabio', '77777777777', current_date + 400) returning id`)).id);
+  const viagem = await f(async () => (await um(
+    `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, status, km_inicial, km_final, data_hora_chegada)
+     values ($1, $2, 'A', 'B', 5000, 'finalizada', 1000, 1500, now()) returning id`, [mf, vf])).id);
+
+  const ab = await f(async () => (await um(
+    `insert into abastecimentos (viagem_id, veiculo_id, km, litros, preco_litro, tanque_cheio, forma_pagamento, chave_pix)
+     values ($1, $2, 1200, 100, 6, true, 'pix_empresa', 'posto@pix') returning id`, [viagem, vf])).id);
+  const de = await f(async () => (await um(
+    `insert into despesas (viagem_id, categoria, valor, forma_pagamento) values ($1, 'Pedágio', 80, 'pix_empresa') returning id`, [viagem])).id);
+  assert.equal(Number((await um('select valor from pagamentos where abastecimento_id = $1', [ab])).valor), 600);
+
+  // correção: a conta a pagar acompanha
+  await f(() => q(`update abastecimentos set litros = 50 where id = $1`, [ab]));
+  assert.equal(Number((await um('select valor from pagamentos where abastecimento_id = $1', [ab])).valor), 300);
+  await f(() => q(`update despesas set valor = 95 where id = $1`, [de]));
+  assert.equal(Number((await um('select valor from pagamentos where despesa_id = $1', [de])).valor), 95);
+  assert.equal(Number((await um('select total_despesas from viagens where id = $1', [viagem])).total_despesas), 95);
+
+  // remoção: a conta a pagar sai junto e os totais da viagem se refazem
+  await f(() => q('delete from abastecimentos where id = $1', [ab]));
+  await f(() => q('delete from despesas where id = $1', [de]));
+  assert.equal((await um('select count(*)::int as n from pagamentos where viagem_id = $1 and origem in ($2, $3)', [viagem, 'abastecimento', 'despesa'])).n, 0);
+  assert.equal(Number((await um('select total_despesas from viagens where id = $1', [viagem])).total_despesas), 0);
+});
