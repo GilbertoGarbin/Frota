@@ -1,12 +1,13 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Pagina } from '@/components/gestor/pagina';
 import { Aviso } from '@/components/ui/aviso';
 import { Botao } from '@/components/ui/botao';
 import { Campo } from '@/components/ui/campo';
 import { CampoData } from '@/components/ui/campo-data';
-import { Grade, Indicador } from '@/components/ui/cartao';
+import { CartaoResumo, Grade, Secao } from '@/components/ui/cartao';
 import { Janela } from '@/components/ui/janela';
 import { LinhaForm } from '@/components/ui/linha-form';
 import { Mensagem, type ConteudoMensagem } from '@/components/ui/mensagem';
@@ -14,7 +15,7 @@ import { Segmentado } from '@/components/ui/segmentado';
 import { Seletor } from '@/components/ui/seletor';
 import { Selo } from '@/components/ui/selo';
 import { Tabela, type Coluna } from '@/components/ui/tabela';
-import { Cores, Espaco } from '@/constants/tema';
+import { Cores, Espaco, Raio } from '@/constants/tema';
 import { useCarregar } from '@/hooks/use-carregar';
 import {
   CATEGORIAS_CUSTO_FIXO,
@@ -50,12 +51,9 @@ const PERIODICIDADE = [
 ] as const;
 type Periodicidade = (typeof PERIODICIDADE)[number]['valor'];
 
-/** O que todo caminhão costuma ter; serve para avisar o que falta cadastrar. */
-const ESSENCIAIS_DO_CAMINHAO: { rotulo: string; categorias: CategoriaCustoFixo[] }[] = [
-  { rotulo: 'parcela ou depreciação', categorias: ['financiamento', 'depreciacao'] },
-  { rotulo: 'seguro', categorias: ['seguro'] },
-  { rotulo: 'IPVA e licenciamento', categorias: ['ipva_licenciamento'] },
-];
+const COR_TOTAL = '#EC4899'; // a mesma dos custos fixos no gráfico do Financeiro
+const COR_CAMINHOES = '#D97706';
+const COR_GERAL = '#8B5CF6';
 
 /** O custo vale no mês? (compara por mês, como o banco faz no resumo financeiro) */
 function vigenteNoMes(custo: CustoFixo, inicioMes: string, fimMes: string): boolean {
@@ -77,52 +75,81 @@ export default function CustosFixos() {
   const custos = dados?.custos ?? [];
   const veiculos = dados?.veiculos ?? [];
   const ativos = veiculos.filter((v) => v.status !== 'inativo');
-  const placaDe = (id: string | null) => (id ? (veiculos.find((v) => v.id === id)?.placa ?? '—') : 'Geral');
+  const placaDe = (id: string | null) => (id ? (veiculos.find((v) => v.id === id)?.placa ?? '—') : null);
 
   const mes = mesAtual();
   const { inicio, fim } = periodoDoMes(mes);
   const vigentes = custos.filter((c) => vigenteNoMes(c, inicio, fim));
-  const totalGeral = somar(vigentes.filter((c) => !c.veiculo_id).map((c) => c.valor_mensal));
-  const totalCaminhoes = somar(vigentes.filter((c) => c.veiculo_id).map((c) => c.valor_mensal));
+  const doGeral = vigentes.filter((c) => !c.veiculo_id);
+  const dosCaminhoes = vigentes.filter((c) => c.veiculo_id);
+  const totalGeral = somar(doGeral.map((c) => c.valor_mensal));
+  const totalCaminhoes = somar(dosCaminhoes.map((c) => c.valor_mensal));
   // só para exibir; a conta que vale (no resultado por placa) é feita no banco
   const parteGeral = ativos.length > 0 ? emReais(Math.round(emCentavos(totalGeral) / ativos.length)) : 0;
 
-  const faltando = ativos
+  // um cartão por caminhão ativo (e pelo inativo que ainda tem custo próprio no mês)
+  const porCaminhao = veiculos
     .map((v) => {
-      const doCaminhao = vigentes.filter((c) => c.veiculo_id === v.id);
-      const falta = ESSENCIAIS_DO_CAMINHAO.filter(
-        (e) => !doCaminhao.some((c) => e.categorias.includes(c.categoria as CategoriaCustoFixo)),
-      ).map((e) => e.rotulo);
-      return { placa: v.placa, falta };
+      const ativo = v.status !== 'inativo';
+      const proprio = somar(dosCaminhoes.filter((c) => c.veiculo_id === v.id).map((c) => c.valor_mensal));
+      const geral = ativo ? parteGeral : 0;
+      return { veiculo: v, proprio, geral, total: somar([proprio, geral]), mostrar: ativo || proprio > 0 };
     })
-    .filter((x) => x.falta.length > 0);
+    .filter((x) => x.mostrar);
 
   const listados = custos.filter((c) =>
     filtro === TODOS ? true : filtro === GERAL ? !c.veiculo_id : c.veiculo_id === filtro,
   );
 
   const opcoesFiltro = [
-    { valor: TODOS, rotulo: 'Todos' },
+    { valor: TODOS, rotulo: 'Todos os custos' },
     { valor: GERAL, rotulo: 'Geral da transportadora' },
     ...veiculos.map((v) => ({ valor: v.id, rotulo: v.placa })),
   ];
 
   const colunas: Coluna<CustoFixo>[] = [
-    { titulo: 'Descrição', flex: 2, celula: (c) => c.descricao },
-    { titulo: 'Caminhão', celula: (c) => placaDe(c.veiculo_id) },
-    { titulo: 'Categoria', flex: 1.5, celula: (c) => rotuloCategoriaCustoFixo(c.categoria) },
     {
-      titulo: 'Valor mensal',
-      flex: 1.5,
-      celula: (c) =>
-        c.periodicidade === 'anual' && c.valor_anual != null
-          ? `${formatarMoeda(c.valor_mensal)} (${formatarMoeda(c.valor_anual)}/ano)`
-          : formatarMoeda(c.valor_mensal),
+      titulo: 'Descrição',
+      flex: 2,
+      celula: (c) => (
+        <View style={styles.celulaDupla}>
+          <Text style={styles.forte}>{c.descricao}</Text>
+          <Text style={styles.suave}>{rotuloCategoriaCustoFixo(c.categoria)}</Text>
+        </View>
+      ),
+    },
+    {
+      titulo: 'Caminhão',
+      celula: (c) => {
+        const placa = placaDe(c.veiculo_id);
+        return (
+          <View style={[styles.chip, placa ? styles.chipCaminhao : styles.chipGeral]}>
+            <MaterialCommunityIcons
+              name={placa ? 'truck-outline' : 'office-building-outline'}
+              size={14}
+              color={placa ? COR_CAMINHOES : COR_GERAL}
+            />
+            <Text style={[styles.chipTexto, placa ? styles.chipTextoCaminhao : styles.chipTextoGeral]}>{placa ?? 'Geral'}</Text>
+          </View>
+        );
+      },
+    },
+    {
+      titulo: 'Por mês',
+      flex: 1.3,
+      celula: (c) => (
+        <View style={styles.celulaDupla}>
+          <Text style={styles.forte}>{formatarMoeda(c.valor_mensal)}</Text>
+          <Text style={styles.suave}>
+            {c.periodicidade === 'anual' && c.valor_anual != null ? `${formatarMoeda(c.valor_anual)} por ano` : 'mensal'}
+          </Text>
+        </View>
+      ),
     },
     {
       titulo: 'Vigência',
-      flex: 1.5,
-      celula: (c) => `${formatarData(c.inicio).slice(3)} até ${c.fim ? formatarData(c.fim).slice(3) : 'sem data de fim'}`,
+      flex: 1.3,
+      celula: (c) => `${formatarData(c.inicio).slice(3)} até ${c.fim ? formatarData(c.fim).slice(3) : 'sem fim'}`,
     },
     {
       titulo: 'Situação',
@@ -139,43 +166,105 @@ export default function CustosFixos() {
       {dados ? (
         <>
           <Grade>
-            <Indicador
-              rotulo={`Total em ${rotuloMes(mes)}`}
-              tom="destaque"
+            <CartaoResumo
+              rotulo={`Total por mês · ${rotuloMes(mes)}`}
+              cor={COR_TOTAL}
               valor={formatarMoeda(somar(vigentes.map((c) => c.valor_mensal)))}
-              detalhe={`${vigentes.length} custo(s) vigente(s) — entra no resultado líquido do mês`}
+              detalhe={`${vigentes.length} custo(s) vigente(s) · entra no resultado do mês`}
             />
-            <Indicador
-              rotulo="Dos caminhões"
+            <CartaoResumo
+              rotulo="Ligados aos caminhões"
+              cor={COR_CAMINHOES}
+              apagado={totalCaminhoes === 0}
               valor={formatarMoeda(totalCaminhoes)}
-              detalhe="Parcela, seguro, IPVA… ligados a uma placa"
+              detalhe={`${dosCaminhoes.length} custo(s) · parcela, seguro, IPVA…`}
             />
-            <Indicador
+            <CartaoResumo
               rotulo="Geral da transportadora"
+              cor={COR_GERAL}
+              apagado={totalGeral === 0}
               valor={formatarMoeda(totalGeral)}
               detalhe={
                 ativos.length > 0
-                  ? `${formatarMoeda(parteGeral)} para cada um dos ${ativos.length} caminhão(ões) ativo(s)`
+                  ? `${formatarMoeda(parteGeral)} para cada caminhão ativo (${ativos.length})`
                   : 'Nenhum caminhão ativo para dividir'
               }
+              onPress={() => setFiltro(GERAL)}
             />
           </Grade>
-          {faltando.length > 0 ? (
-            <Aviso tipo="info">
-              {`Pode estar faltando custo fixo em ${rotuloMes(mes)}:\n` +
-                faltando.map((x) => `• ${x.placa}: ${x.falta.join(', ')}`).join('\n')}
-            </Aviso>
+
+          {porCaminhao.length > 0 ? (
+            <Secao titulo={`Quanto cada caminhão custa parado · ${rotuloMes(mes)}`}>
+              <View style={styles.caminhoes}>
+                {porCaminhao.map(({ veiculo, proprio, geral, total }) => {
+                  const marcado = filtro === veiculo.id;
+                  // proporção próprio × geral para a barrinha (só desenho)
+                  const fracao = total > 0 ? proprio / total : 0;
+                  return (
+                    <Pressable
+                      key={veiculo.id}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: marcado }}
+                      accessibilityLabel={`${veiculo.placa}: ${formatarMoeda(total)} por mês. Mostrar só os custos deste caminhão`}
+                      onPress={() => setFiltro(marcado ? TODOS : veiculo.id)}
+                      style={({ hovered, pressed }) => [
+                        styles.caminhao,
+                        marcado && styles.caminhaoMarcado,
+                        (hovered || pressed) && styles.caminhaoSobre,
+                      ]}>
+                      <View style={styles.caminhaoTopo}>
+                        <View style={styles.caminhaoIcone}>
+                          <MaterialCommunityIcons name="truck-outline" size={18} color={Cores.primaria} />
+                        </View>
+                        <View style={styles.caminhaoNome}>
+                          <Text style={styles.placa}>{veiculo.placa}</Text>
+                          <Text style={styles.suave} numberOfLines={1}>
+                            {veiculo.modelo}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.caminhaoTotal, total === 0 && styles.zerado]}>{formatarMoeda(total)}</Text>
+                      <View style={styles.barra}>
+                        {total > 0 ? (
+                          <>
+                            <View style={[styles.barraParte, { flex: fracao, backgroundColor: COR_CAMINHOES }]} />
+                            <View style={[styles.barraParte, { flex: 1 - fracao, backgroundColor: COR_GERAL }]} />
+                          </>
+                        ) : null}
+                      </View>
+                      <View style={styles.legenda}>
+                        <Text style={styles.suave}>
+                          <Text style={styles.pontoCaminhao}>● </Text>
+                          Próprio {formatarMoeda(proprio)}
+                        </Text>
+                        <Text style={styles.suave}>
+                          <Text style={styles.pontoGeral}>● </Text>
+                          Geral {formatarMoeda(geral)}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={styles.suave}>Toque num caminhão para ver só os custos dele.</Text>
+            </Secao>
           ) : null}
-          <View style={styles.filtro}>
-            <Seletor rotulo="Caminhão" compacto opcoes={opcoesFiltro} valor={filtro} onChange={setFiltro} />
-          </View>
-          <Tabela
-            aoTocar={setEditando}
-            colunas={colunas}
-            itens={listados}
-            chave={(c) => c.id}
-            vazio={custos.length === 0 ? 'Nenhum custo fixo cadastrado ainda.' : 'Nenhum custo fixo neste filtro.'}
-          />
+
+          <Secao
+            titulo="Custos cadastrados"
+            acao={
+              <View style={styles.filtro}>
+                <Seletor rotulo="Mostrar" compacto opcoes={opcoesFiltro} valor={filtro} onChange={setFiltro} />
+              </View>
+            }>
+            <Tabela
+              aoTocar={setEditando}
+              colunas={colunas}
+              itens={listados}
+              chave={(c) => c.id}
+              vazio={custos.length === 0 ? 'Nenhum custo fixo cadastrado ainda.' : 'Nenhum custo fixo neste filtro.'}
+            />
+          </Secao>
         </>
       ) : erro ? null : (
         <ActivityIndicator color={Cores.primaria} />
@@ -333,7 +422,56 @@ function FormCustoFixo({ custo, veiculos, veiculoInicial, aoFechar }: PropsForm)
 }
 
 const styles = StyleSheet.create({
-  filtro: { maxWidth: 280 },
+  filtro: { width: 240 },
+  celulaDupla: { gap: 2 },
+  forte: { fontSize: 14, fontWeight: '600', color: Cores.texto },
+  suave: { fontSize: 12, color: Cores.textoSuave },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  chipCaminhao: { backgroundColor: '#FEF3C7' },
+  chipGeral: { backgroundColor: '#EDE9FE' },
+  chipTexto: { fontSize: 12, fontWeight: '700' },
+  chipTextoCaminhao: { color: '#92400E' },
+  chipTextoGeral: { color: '#5B21B6' },
+  caminhoes: { flexDirection: 'row', flexWrap: 'wrap', gap: Espaco.md },
+  caminhao: {
+    flexGrow: 1,
+    flexBasis: 200,
+    maxWidth: 320,
+    gap: Espaco.sm,
+    padding: Espaco.md,
+    borderRadius: Raio.md,
+    borderWidth: 1,
+    borderColor: Cores.borda,
+    backgroundColor: Cores.fundo,
+  },
+  caminhaoMarcado: { borderColor: Cores.primaria, backgroundColor: Cores.chipClaro },
+  caminhaoSobre: { boxShadow: '0 4px 14px rgba(15, 23, 42, 0.10)' },
+  caminhaoTopo: { flexDirection: 'row', alignItems: 'center', gap: Espaco.sm },
+  caminhaoIcone: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Cores.chipClaro,
+  },
+  caminhaoNome: { flexShrink: 1 },
+  placa: { fontSize: 15, fontWeight: '700', color: Cores.texto },
+  caminhaoTotal: { fontSize: 20, fontWeight: '700', color: Cores.texto },
+  zerado: { color: Cores.textoSuave },
+  barra: { flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', backgroundColor: Cores.borda },
+  barraParte: { height: 6 },
+  legenda: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: Espaco.sm },
+  pontoCaminhao: { color: COR_CAMINHOES },
+  pontoGeral: { color: COR_GERAL },
   botoes: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Espaco.md },
   nota: { fontSize: 11, color: Cores.textoSuave },
 });
