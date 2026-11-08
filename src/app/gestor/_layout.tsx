@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Slot, usePathname, useRouter, type Href } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FaixaAssinatura } from '@/components/gestor/faixa-assinatura';
@@ -53,8 +53,59 @@ export default function GestorLayout() {
   );
 }
 
-// Desktop: barra lateral fixa escura (layout escolhido na spec). Tela estreita: faixa no topo.
+// Desktop: barra lateral fixa escura (layout escolhido na spec). Tela estreita (celular): barra no
+// topo com o botão ☰ e o nome da tela; o botão abre a mesma barra lateral por cima da tela.
 function Menu({ largo, aoReabrir }: { largo: boolean; aoReabrir: () => void }) {
+  const caminho = usePathname();
+  const [aberto, setAberto] = useState(false);
+
+  if (largo) return <Lateral aoReabrir={aoReabrir} />;
+
+  const atual = [...MENU, ...MENU_ADMIN].find((item) => item.rota === caminho);
+  return (
+    <View style={styles.barra}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Abrir o menu"
+        onPress={() => setAberto(true)}
+        hitSlop={8}
+        style={({ pressed }) => [styles.botaoMenu, pressed && styles.botaoMenuApertado]}>
+        <MaterialCommunityIcons name="menu" size={26} color={Cores.branco} />
+        <Text style={styles.botaoMenuTexto}>Menu</Text>
+      </Pressable>
+      <Text style={styles.barraTitulo} numberOfLines={1}>
+        {atual?.rotulo ?? ''}
+      </Text>
+      <Modal visible={aberto} transparent animationType="fade" onRequestClose={() => setAberto(false)}>
+        <View style={styles.gaveta}>
+          <SafeAreaView style={styles.gavetaPainel}>
+            <Lateral
+              aoReabrir={aoReabrir}
+              aoEscolher={() => setAberto(false)}
+              fechar={
+                <Pressable accessibilityRole="button" accessibilityLabel="Fechar o menu" onPress={() => setAberto(false)} hitSlop={10}>
+                  <MaterialCommunityIcons name="close" size={24} color={TEXTO_MENU} />
+                </Pressable>
+              }
+            />
+          </SafeAreaView>
+          {/* tocar fora do menu fecha */}
+          <Pressable accessibilityLabel="Fechar o menu" style={styles.gavetaFundo} onPress={() => setAberto(false)} />
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+type PropsLateral = {
+  aoReabrir: () => void;
+  /** no celular: fecha a gaveta ao escolher um item */
+  aoEscolher?: () => void;
+  /** botão de fechar ao lado do nome (só na gaveta) */
+  fechar?: ReactNode;
+};
+
+function Lateral({ aoReabrir, aoEscolher, fechar }: PropsLateral) {
   const router = useRouter();
   const caminho = usePathname();
   const { acesso, sair } = useSessao();
@@ -70,42 +121,31 @@ function Menu({ largo, aoReabrir }: { largo: boolean; aoReabrir: () => void }) {
         disabled={!item.rota}
         onPress={() => {
           if (!item.rota) return;
+          aoEscolher?.();
           if (ativo) aoReabrir();
           router.navigate(item.rota);
         }}
-        style={[styles.item, styles.itemComIcone, item.sub && largo && styles.itemSub, ativo && styles.itemAtivo]}>
-        {largo ? (
-          <MaterialCommunityIcons name={item.icone} size={item.sub ? 15 : 18} color={ativo ? Cores.branco : TEXTO_MENU} />
-        ) : null}
+        style={[styles.item, styles.itemComIcone, item.sub && styles.itemSub, ativo && styles.itemAtivo]}>
+        <MaterialCommunityIcons name={item.icone} size={item.sub ? 15 : 18} color={ativo ? Cores.branco : TEXTO_MENU} />
         <Text
           style={[styles.itemTexto, item.sub && styles.itemTextoSub, ativo && styles.itemTextoAtivo, !item.rota && styles.itemEmBreve]}>
           {item.rotulo}
         </Text>
-        {!item.rota && largo ? <Text style={styles.emBreve}>em breve</Text> : null}
+        {!item.rota ? <Text style={styles.emBreve}>em breve</Text> : null}
       </Pressable>
     );
   });
 
-  if (!largo) {
-    return (
-      <View style={styles.faixa}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.faixaItens}>
-          {itens}
-          <Pressable accessibilityRole="button" onPress={sair} style={styles.item}>
-            <Text style={styles.itemTexto}>Sair</Text>
-          </Pressable>
-        </ScrollView>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.lateral}>
-      <View style={styles.marca}>
-        <Text style={styles.marcaNome} numberOfLines={1}>
-          {acesso?.tenantNome ?? 'Frota'}
-        </Text>
-        <Text style={styles.marcaSub}>Gestão de frota</Text>
+    <View style={[styles.lateral, fechar ? styles.lateralGaveta : null]}>
+      <View style={[styles.marca, styles.marcaLinha]}>
+        <View style={styles.marcaTextos}>
+          <Text style={styles.marcaNome} numberOfLines={1}>
+            {acesso?.tenantNome ?? 'Frota'}
+          </Text>
+          <Text style={styles.marcaSub}>Gestão de frota</Text>
+        </View>
+        {fechar}
       </View>
       {/* rola quando a janela é baixa, sem passar por cima do rodapé */}
       <ScrollView role="navigation" style={styles.lista} contentContainerStyle={styles.listaItens}>
@@ -153,8 +193,34 @@ const styles = StyleSheet.create({
   },
   usuario: { fontSize: 13, color: TEXTO_MENU_SUAVE, paddingHorizontal: Espaco.md },
 
-  faixa: { backgroundColor: Cores.texto },
-  faixaItens: { gap: Espaco.xs, padding: Espaco.sm },
+  marcaLinha: { flexDirection: 'row', alignItems: 'center', gap: Espaco.md },
+  marcaTextos: { flex: 1 },
+
+  // celular: barra do topo e gaveta
+  barra: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Espaco.md,
+    minHeight: 56,
+    paddingHorizontal: Espaco.md,
+    backgroundColor: Cores.texto,
+  },
+  botaoMenu: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Espaco.xs,
+    minHeight: 44,
+    paddingHorizontal: Espaco.md,
+    borderRadius: Raio.sm,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  botaoMenuApertado: { backgroundColor: 'rgba(255,255,255,0.18)' },
+  botaoMenuTexto: { fontSize: 15, fontWeight: '600', color: Cores.branco },
+  barraTitulo: { flex: 1, fontSize: 16, fontWeight: '600', color: TEXTO_MENU },
+  gaveta: { flex: 1, flexDirection: 'row' },
+  gavetaPainel: { width: 280, maxWidth: '85%', backgroundColor: Cores.texto },
+  gavetaFundo: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.5)' },
+  lateralGaveta: { flex: 1, width: '100%' },
 
   item: {
     flexDirection: 'row',
