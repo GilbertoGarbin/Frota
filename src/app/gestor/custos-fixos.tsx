@@ -71,6 +71,10 @@ export default function CustosFixos() {
   const { dados, erro, recarregar } = useCarregar(carregarTela);
   const [editando, setEditando] = useState<CustoFixo | null | undefined>(undefined);
   const [filtro, setFiltro] = useState<string>(TODOS);
+  // janela por cima com os custos de um caminhão (id) ou do geral (GERAL)
+  const [detalhe, setDetalhe] = useState<string | null>(null);
+  // custo novo aberto pela janela de detalhe já vem com o caminhão dela
+  const [veiculoDoNovo, setVeiculoDoNovo] = useState<string | null>(null);
 
   const custos = dados?.custos ?? [];
   const veiculos = dados?.veiculos ?? [];
@@ -189,7 +193,7 @@ export default function CustosFixos() {
                   ? `${formatarMoeda(parteGeral)} para cada caminhão ativo (${ativos.length})`
                   : 'Nenhum caminhão ativo para dividir'
               }
-              onPress={() => setFiltro(GERAL)}
+              onPress={() => setDetalhe(GERAL)}
             />
           </Grade>
 
@@ -197,21 +201,15 @@ export default function CustosFixos() {
             <Secao titulo={`Quanto cada caminhão custa parado · ${rotuloMes(mes)}`}>
               <View style={styles.caminhoes}>
                 {porCaminhao.map(({ veiculo, proprio, geral, total }) => {
-                  const marcado = filtro === veiculo.id;
                   // proporção próprio × geral para a barrinha (só desenho)
                   const fracao = total > 0 ? proprio / total : 0;
                   return (
                     <Pressable
                       key={veiculo.id}
                       accessibilityRole="button"
-                      accessibilityState={{ selected: marcado }}
-                      accessibilityLabel={`${veiculo.placa}: ${formatarMoeda(total)} por mês. Mostrar só os custos deste caminhão`}
-                      onPress={() => setFiltro(marcado ? TODOS : veiculo.id)}
-                      style={({ hovered, pressed }) => [
-                        styles.caminhao,
-                        marcado && styles.caminhaoMarcado,
-                        (hovered || pressed) && styles.caminhaoSobre,
-                      ]}>
+                      accessibilityLabel={`${veiculo.placa}: ${formatarMoeda(total)} por mês. Ver os custos deste caminhão`}
+                      onPress={() => setDetalhe(veiculo.id)}
+                      style={({ hovered, pressed }) => [styles.caminhao, (hovered || pressed) && styles.caminhaoSobre]}>
                       <View style={styles.caminhaoTopo}>
                         <View style={styles.caminhaoIcone}>
                           <MaterialCommunityIcons name="truck-outline" size={18} color={Cores.primaria} />
@@ -246,7 +244,7 @@ export default function CustosFixos() {
                   );
                 })}
               </View>
-              <Text style={styles.suave}>Toque num caminhão para ver só os custos dele.</Text>
+              <Text style={styles.suave}>Toque num caminhão para ver os custos dele.</Text>
             </Secao>
           ) : null}
 
@@ -269,18 +267,158 @@ export default function CustosFixos() {
       ) : erro ? null : (
         <ActivityIndicator color={Cores.primaria} />
       )}
+      {detalhe !== null && dados ? (
+        <DetalheCustos
+          veiculo={detalhe === GERAL ? null : (veiculos.find((v) => v.id === detalhe) ?? null)}
+          custos={custos.filter((c) => (detalhe === GERAL ? !c.veiculo_id : c.veiculo_id === detalhe))}
+          vigenteNoMes={(c) => vigenteNoMes(c, inicio, fim)}
+          rotuloDoMes={rotuloMes(mes)}
+          parteGeral={detalhe === GERAL ? null : (porCaminhao.find((x) => x.veiculo.id === detalhe)?.geral ?? 0)}
+          totalGeral={totalGeral}
+          caminhoesAtivos={ativos.length}
+          aoEditar={setEditando}
+          aoNovo={() => {
+            setVeiculoDoNovo(detalhe === GERAL ? GERAL : detalhe);
+            setEditando(null);
+          }}
+          aoVerGeral={() => setDetalhe(GERAL)}
+          aoFechar={() => setDetalhe(null)}
+        />
+      ) : null}
       {editando !== undefined ? (
         <FormCustoFixo
           custo={editando}
           veiculos={veiculos}
-          veiculoInicial={editando ? null : filtro !== TODOS && filtro !== GERAL ? filtro : null}
+          veiculoInicial={
+            editando ? null : (veiculoDoNovo ?? (filtro !== TODOS && filtro !== GERAL ? filtro : null))
+          }
           aoFechar={(salvou) => {
             setEditando(undefined);
+            setVeiculoDoNovo(null);
             if (salvou) recarregar();
           }}
         />
       ) : null}
     </Pagina>
+  );
+}
+
+type PropsDetalhe = {
+  /** null = custos gerais da transportadora */
+  veiculo: Veiculo | null;
+  custos: CustoFixo[];
+  vigenteNoMes: (c: CustoFixo) => boolean;
+  rotuloDoMes: string;
+  /** parte do custo geral que cabe a este caminhão (null na janela do geral) */
+  parteGeral: number | null;
+  totalGeral: number;
+  caminhoesAtivos: number;
+  aoEditar: (c: CustoFixo) => void;
+  aoNovo: () => void;
+  aoVerGeral: () => void;
+  aoFechar: () => void;
+};
+
+/** Janela por cima da lista com os custos de um caminhão (ou os gerais), em vez de rolar a página. */
+function DetalheCustos({
+  veiculo,
+  custos,
+  vigenteNoMes: vigente,
+  rotuloDoMes,
+  parteGeral,
+  totalGeral,
+  caminhoesAtivos,
+  aoEditar,
+  aoNovo,
+  aoVerGeral,
+  aoFechar,
+}: PropsDetalhe) {
+  // vigentes primeiro, depois os encerrados/futuros
+  const ordenados = [...custos].sort((a, b) => Number(vigente(b)) - Number(vigente(a)));
+  const proprio = somar(custos.filter(vigente).map((c) => c.valor_mensal));
+  const total = somar([proprio, parteGeral ?? 0]);
+
+  return (
+    <Janela
+      visivel
+      titulo={veiculo ? `Custos fixos · ${veiculo.placa}` : 'Custos fixos gerais'}
+      subtitulo={veiculo ? veiculo.modelo : 'Da transportadora inteira, divididos igualmente entre os caminhões ativos'}
+      aoFechar={aoFechar}>
+      <View style={styles.detalheTotal}>
+        <Text style={styles.suave}>
+          {veiculo ? 'Quanto este caminhão custa parado' : 'Total geral'} · {rotuloDoMes}
+        </Text>
+        <Text style={styles.detalheValor}>{formatarMoeda(total)}</Text>
+        {veiculo ? (
+          <Text style={styles.suave}>
+            Próprio {formatarMoeda(proprio)} + parte do geral {formatarMoeda(parteGeral ?? 0)}
+          </Text>
+        ) : caminhoesAtivos > 0 ? (
+          <Text style={styles.suave}>
+            {formatarMoeda(emReais(Math.round(emCentavos(totalGeral) / caminhoesAtivos)))} para cada um dos {caminhoesAtivos}{' '}
+            caminhão(ões) ativo(s)
+          </Text>
+        ) : null}
+      </View>
+
+      {ordenados.length === 0 ? (
+        <Text style={styles.suave}>
+          {veiculo ? 'Nenhum custo fixo ligado a este caminhão ainda.' : 'Nenhum custo fixo geral ainda.'}
+        </Text>
+      ) : (
+        <View style={styles.itens}>
+          {ordenados.map((c) => {
+            const vale = vigente(c);
+            return (
+              <Pressable
+                key={c.id}
+                accessibilityRole="button"
+                accessibilityHint="Abre para editar"
+                onPress={() => aoEditar(c)}
+                style={({ hovered, pressed }) => [styles.item, !vale && styles.itemApagado, (hovered || pressed) && styles.itemSobre]}>
+                <View style={styles.itemTextos}>
+                  <Text style={styles.forte}>{c.descricao}</Text>
+                  <Text style={styles.suave}>
+                    {rotuloCategoriaCustoFixo(c.categoria)} · {formatarData(c.inicio).slice(3)} até{' '}
+                    {c.fim ? formatarData(c.fim).slice(3) : 'sem fim'}
+                  </Text>
+                </View>
+                <View style={styles.itemValor}>
+                  <Text style={styles.forte}>{formatarMoeda(c.valor_mensal)}</Text>
+                  <Text style={styles.suave}>
+                    {c.periodicidade === 'anual' && c.valor_anual != null ? `${formatarMoeda(c.valor_anual)}/ano` : 'por mês'}
+                  </Text>
+                </View>
+                {vale ? null : <Selo tipo="neutro">Fora do mês</Selo>}
+                <MaterialCommunityIcons name="chevron-right" size={20} color={Cores.textoSuave} />
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
+      {veiculo && parteGeral !== null && totalGeral > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={aoVerGeral}
+          style={({ hovered, pressed }) => [styles.item, styles.itemGeral, (hovered || pressed) && styles.itemSobre]}>
+          <MaterialCommunityIcons name="office-building-outline" size={18} color={COR_GERAL} />
+          <View style={styles.itemTextos}>
+            <Text style={styles.forte}>Parte do custo geral</Text>
+            <Text style={styles.suave}>
+              {formatarMoeda(totalGeral)} ÷ {caminhoesAtivos} caminhão(ões) ativo(s) · toque para ver os gerais
+            </Text>
+          </View>
+          <Text style={styles.forte}>{formatarMoeda(parteGeral)}</Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color={Cores.textoSuave} />
+        </Pressable>
+      ) : null}
+
+      <View style={styles.botoes}>
+        <Botao titulo={veiculo ? `+ Custo para ${veiculo.placa}` : '+ Custo geral'} onPress={aoNovo} />
+        <Botao titulo="Fechar" variante="link" onPress={aoFechar} />
+      </View>
+    </Janela>
   );
 }
 
@@ -452,7 +590,24 @@ const styles = StyleSheet.create({
     borderColor: Cores.borda,
     backgroundColor: Cores.fundo,
   },
-  caminhaoMarcado: { borderColor: Cores.primaria, backgroundColor: Cores.chipClaro },
+  detalheTotal: { gap: 2, padding: Espaco.md, borderRadius: Raio.md, backgroundColor: Cores.fundo },
+  detalheValor: { fontSize: 24, fontWeight: '700', color: Cores.texto },
+  itens: { borderWidth: 1, borderColor: Cores.borda, borderRadius: Raio.md, overflow: 'hidden' },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Espaco.md,
+    paddingHorizontal: Espaco.md,
+    paddingVertical: Espaco.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Cores.borda,
+    backgroundColor: Cores.branco,
+  },
+  itemApagado: { opacity: 0.6 },
+  itemSobre: { backgroundColor: Cores.chipClaro },
+  itemGeral: { borderWidth: 1, borderColor: Cores.borda, borderRadius: Raio.md, backgroundColor: '#F5F3FF' },
+  itemTextos: { flex: 1, gap: 2 },
+  itemValor: { alignItems: 'flex-end', gap: 2 },
   caminhaoSobre: { boxShadow: '0 4px 14px rgba(15, 23, 42, 0.10)' },
   caminhaoTopo: { flexDirection: 'row', alignItems: 'center', gap: Espaco.sm },
   caminhaoIcone: {
