@@ -114,6 +114,11 @@ export default function Financeiro() {
     { titulo: 'Comissão', celula: (v) => formatarMoeda(v.comissoes) },
     { titulo: 'Despesas', celula: (v) => formatarMoeda(v.despesas) },
     { titulo: 'Manutenção', celula: (v) => formatarMoeda(v.manutencoes) },
+    {
+      titulo: 'Custo fixo',
+      celula: (v) =>
+        `${formatarMoeda(v.custos_fixos)}${v.custo_fixo_por_km != null ? `\n${formatarMoeda(v.custo_fixo_por_km)}/km` : ''}`,
+    },
     { titulo: 'Resultado', celula: (v) => formatarMoeda(v.resultado) },
     {
       titulo: 'Margem',
@@ -251,9 +256,13 @@ export default function Financeiro() {
             colunas={colunas}
             itens={dados.veiculos}
             chave={(v) => v.veiculo_id}
-            vazio="Nenhuma viagem finalizada nem manutenção neste mês."
-            larguraMinima={1040}
+            vazio="Nenhum caminhão ativo nem movimento neste mês."
+            larguraMinima={1140}
           />
+          <Text style={styles.nota}>
+            Custo fixo = o do próprio caminhão + a parte dele no custo fixo geral (dividido igualmente entre os
+            caminhões ativos). Caminhão parado aparece com prejuízo: é o que ele custa no pátio.
+          </Text>
           {r.viagens_combustivel_estimado > 0 ? (
             <Text style={styles.nota}>
               * Valores de combustível de {r.viagens_combustivel_estimado} viagem(ns) ainda estimados — serão

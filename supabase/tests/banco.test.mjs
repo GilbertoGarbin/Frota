@@ -569,8 +569,13 @@ test('relatórios do gestor: resumo, desempenho por placa e alertas', async () =
   const d = await c(() => q('select * from desempenho_por_veiculo($1, $1)', [hoje]));
   assert.equal(d.length, 1);
   assert.equal(d[0].placa, 'CCC0C00');
-  assert.equal(Number(d[0].resultado), 3110); // 5500 − 1200 − 550 − 160 − 480
-  assert.equal(Number(d[0].margem_percentual), 56.5);
+  assert.equal(Number(d[0].resultado_operacional), 3110); // 5500 − 1200 − 550 − 160 − 480
+  // único caminhão ativo: fica com todo o custo fixo geral
+  assert.equal(Number(d[0].custos_fixos_proprios), 0);
+  assert.equal(Number(d[0].custos_fixos_rateados), 1150.5);
+  assert.equal(Number(d[0].resultado), 1959.5);
+  assert.equal(Number(d[0].margem_percentual), 35.6);
+  assert.equal(Number(d[0].custo_fixo_por_km), 2.3); // 1150,50 ÷ 500 km
 
   const alertas = await c(() => q('select * from alertas_gestor() order by mensagem'));
   const textos = alertas.map((a) => `${a.destino}/${a.gravidade}: ${a.mensagem}`);
@@ -590,6 +595,71 @@ test('relatórios do gestor: resumo, desempenho por placa e alertas', async () =
   assert.equal((await como(gestorB, () => q('select id from custos_fixos'))).length, 0);
   assert.equal((await como(gestorB, () => q('select id from pneus'))).length, 0);
   await assert.rejects(como(gestorB, () => q(`insert into pneus (veiculo_id, eixo, lado) values ($1, 3, 'direito')`, [vc])));
+  await assert.rejects(como(gestorB, () => q(`insert into custos_fixos (descricao, valor_mensal, veiculo_id) values ('X', 1, $1)`, [vc])));
+});
+
+test('custos fixos: por caminhão, anual e rateio do geral', async () => {
+  const gestorE = await uuid();
+  await db.query('insert into auth.users (id) values ($1)', [gestorE]);
+  await como(gestorE, () => q(`select criar_tenant('Transportes E')`));
+  const e = (fn) => como(gestorE, fn);
+  const hoje = (await um(`select (now() at time zone 'America/Sao_Paulo')::date::text as d`)).d;
+
+  const novoVeiculo = (placa, status = 'ativo') =>
+    e(async () => (await um(`insert into veiculos (placa, modelo, status) values ($1, 'Scania', $2) returning id`, [placa, status])).id);
+  const v1 = await novoVeiculo('EEE1E11');
+  const v2 = await novoVeiculo('EEE2E22');
+  const v3 = await novoVeiculo('EEE3E33', 'em_manutencao'); // conta como ativo (só está na oficina)
+  const vInativo = await novoVeiculo('EEE4E44', 'inativo');
+
+  // anual: o banco guarda o valor mensal (o que o cliente mandar é ignorado)
+  const ipva = await e(async () => (await um(
+    `insert into custos_fixos (descricao, categoria, periodicidade, valor_anual, valor_mensal, veiculo_id)
+     values ('IPVA', 'ipva_licenciamento', 'anual', 6000, 1, $1) returning *`, [v1])));
+  assert.equal(Number(ipva.valor_mensal), 500);
+  await e(() => q(`update custos_fixos set valor_anual = 1000 where id = $1`, [ipva.id]));
+  assert.equal(Number((await e(() => um('select valor_mensal from custos_fixos where id = $1', [ipva.id]))).valor_mensal), 83.33);
+  // voltar para mensal apaga o valor anual
+  await e(() => q(`update custos_fixos set periodicidade = 'mensal', valor_mensal = 500 where id = $1`, [ipva.id]));
+  const mensal = await e(() => um('select valor_mensal, valor_anual from custos_fixos where id = $1', [ipva.id]));
+  assert.equal(Number(mensal.valor_mensal), 500);
+  assert.equal(mensal.valor_anual, null);
+
+  await assert.rejects(e(() => q(`insert into custos_fixos (descricao, valor_mensal, categoria) values ('X', 10, 'inventada')`)));
+  await assert.rejects(e(() => q(`insert into custos_fixos (descricao, valor_mensal, periodicidade) values ('X', 10, 'anual')`)));
+
+  await e(() => q(`insert into custos_fixos (descricao, categoria, valor_mensal, veiculo_id) values ('Parcela', 'financiamento', 4000, $1)`, [v2]));
+  await e(() => q(`insert into custos_fixos (descricao, categoria, valor_mensal, veiculo_id) values ('Seguro antigo', 'seguro', 700, $1)`, [vInativo]));
+  await e(() => q(`insert into custos_fixos (descricao, categoria, valor_mensal) values ('Contador', 'administrativo', 900), ('Sistema', 'administrativo', 100)`));
+
+  const me = await e(async () => (await um(
+    `insert into motoristas (nome, cpf, cnh_validade) values ('Edu', '66666666666', current_date + 400) returning id`)).id);
+  const vg = await e(async () => (await um(
+    `insert into viagens (motorista_id, veiculo_id, origem, destino, valor_frete, status, km_inicial, km_final, data_hora_chegada)
+     values ($2, $1, 'A', 'B', 3000, 'finalizada', 0, 1000, now()) returning id`, [v1, me])).id);
+  assert.ok(vg);
+
+  const d = await e(() => q('select * from desempenho_por_veiculo($1, $1)', [hoje]));
+  const porPlaca = Object.fromEntries(d.map((x) => [x.placa, x]));
+  // geral de 1.000 dividido entre os 3 ativos = 333,33 cada; inativo aparece só pelo custo próprio
+  assert.deepEqual(Object.keys(porPlaca), ['EEE1E11', 'EEE2E22', 'EEE3E33', 'EEE4E44']);
+  assert.equal(Number(porPlaca.EEE1E11.custos_fixos_proprios), 500);
+  assert.equal(Number(porPlaca.EEE1E11.custos_fixos_rateados), 333.33);
+  assert.equal(Number(porPlaca.EEE1E11.custos_fixos), 833.33);
+  assert.equal(Number(porPlaca.EEE1E11.resultado), Number(porPlaca.EEE1E11.resultado_operacional) - 833.33);
+  assert.equal(Number(porPlaca.EEE1E11.custo_fixo_por_km), 0.83);
+  // caminhão parado: prejuízo do tamanho do custo fixo
+  assert.equal(Number(porPlaca.EEE2E22.resultado), -4333.33);
+  assert.equal(porPlaca.EEE2E22.margem_percentual, null);
+  assert.equal(porPlaca.EEE2E22.custo_fixo_por_km, null);
+  assert.equal(Number(porPlaca.EEE3E33.custos_fixos), 333.33);
+  assert.equal(Number(porPlaca.EEE4E44.custos_fixos_rateados), 0);
+  assert.equal(Number(porPlaca.EEE4E44.custos_fixos), 700);
+  assert.ok(vInativo && v3);
+
+  // resumo da transportadora soma tudo
+  const r = await e(() => um('select custos_fixos from resumo_financeiro($1, $1)', [hoje]));
+  assert.equal(Number(r.custos_fixos), 6200);
 });
 
 test('motorista: resumo do mês, edição da própria viagem e parada sugerida', async () => {

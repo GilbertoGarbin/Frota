@@ -71,15 +71,35 @@ export async function excluirManutencao(id: string): Promise<void> {
 
 // --- Custos fixos --------------------------------------------------------------
 
+/** Mesma lista do check no banco (migration custos_fixos_por_caminhao). */
+export const CATEGORIAS_CUSTO_FIXO = [
+  { valor: 'financiamento', rotulo: 'Financiamento / parcela', ajuda: 'Parcela do caminhão (financiamento, leasing, consórcio).' },
+  { valor: 'depreciacao', rotulo: 'Depreciação', ajuda: 'Quanto o caminhão perde de valor por mês. Use se ele já está quitado.' },
+  { valor: 'seguro', rotulo: 'Seguro', ajuda: 'Casco, RCF-DC, RCTR-C.' },
+  { valor: 'ipva_licenciamento', rotulo: 'IPVA e licenciamento', ajuda: 'Anual: informe o valor do ano.' },
+  { valor: 'salario_encargos', rotulo: 'Salário fixo + encargos', ajuda: 'Salário-base do motorista com INSS, FGTS, férias e 13º. A comissão não entra aqui.' },
+  { valor: 'rastreador', rotulo: 'Rastreador / monitoramento', ajuda: 'Mensalidade.' },
+  { valor: 'taxas', rotulo: 'Taxas (ANTT, tacógrafo)', ajuda: 'RNTRC, aferição do tacógrafo e outras taxas periódicas.' },
+  { valor: 'administrativo', rotulo: 'Administrativo', ajuda: 'Contador, escritório, sistema, telefone. Normalmente é geral da transportadora.' },
+  { valor: 'outros', rotulo: 'Outros', ajuda: '' },
+] as const;
+
+export type CategoriaCustoFixo = (typeof CATEGORIAS_CUSTO_FIXO)[number]['valor'];
+
+export function rotuloCategoriaCustoFixo(valor: string | null): string {
+  return CATEGORIAS_CUSTO_FIXO.find((c) => c.valor === valor)?.rotulo ?? '—';
+}
+
 export async function listarCustosFixos(): Promise<CustoFixo[]> {
   const { data, error } = await supabase.from('custos_fixos').select('*').order('descricao');
   if (error) throw error;
   return data;
 }
 
+/** No custo anual o banco calcula valor_mensal (valor_anual ÷ 12); o valor enviado é ignorado. */
 export type DadosCustoFixo = Pick<
   TablesInsert<'custos_fixos'>,
-  'descricao' | 'categoria' | 'valor_mensal' | 'inicio' | 'fim'
+  'descricao' | 'categoria' | 'veiculo_id' | 'periodicidade' | 'valor_mensal' | 'valor_anual' | 'inicio' | 'fim'
 >;
 
 export async function salvarCustoFixo(id: string | null, dados: DadosCustoFixo): Promise<void> {
@@ -162,8 +182,17 @@ export type DesempenhoVeiculo = {
   comissoes: number;
   despesas: number;
   manutencoes: number;
+  /** custo fixo do próprio caminhão */
+  custos_fixos_proprios: number;
+  /** parte do custo fixo geral (dividido igualmente entre os caminhões ativos) */
+  custos_fixos_rateados: number;
+  custos_fixos: number;
+  /** antes do custo fixo */
+  resultado_operacional: number;
+  /** depois do custo fixo */
   resultado: number;
   margem_percentual: number | null;
+  custo_fixo_por_km: number | null;
 };
 
 export async function buscarDesempenhoPorVeiculo(inicio: string, fim: string): Promise<DesempenhoVeiculo[]> {

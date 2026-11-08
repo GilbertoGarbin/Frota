@@ -283,7 +283,9 @@ export type Database = {
           fim: string | null
           id: string
           inicio: string
+          periodicidade: string
           tenant_id: string
+          valor_anual: number | null
           valor_mensal: number
           veiculo_id: string | null
         }
@@ -296,7 +298,9 @@ export type Database = {
           fim?: string | null
           id?: string
           inicio?: string
+          periodicidade?: string
           tenant_id?: string
+          valor_anual?: number | null
           valor_mensal: number
           veiculo_id?: string | null
         }
@@ -309,7 +313,9 @@ export type Database = {
           fim?: string | null
           id?: string
           inicio?: string
+          periodicidade?: string
           tenant_id?: string
+          valor_anual?: number | null
           valor_mensal?: number
           veiculo_id?: string | null
         }
@@ -1403,6 +1409,10 @@ export type Database = {
         Returns: {
           combustivel: number
           comissoes: number
+          custo_fixo_por_km: number
+          custos_fixos: number
+          custos_fixos_proprios: number
+          custos_fixos_rateados: number
           despesas: number
           faturamento: number
           km_rodado: number
@@ -1411,6 +1421,7 @@ export type Database = {
           modelo: string
           placa: string
           resultado: number
+          resultado_operacional: number
           veiculo_id: string
           viagens: number
           viagens_combustivel_estimado: number
