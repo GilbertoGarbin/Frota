@@ -27,7 +27,9 @@ Mesma do projeto FLUXO (`D:\Projetos\FLUXO`), usado como referência de organiza
 - **Expo SDK 56 + Expo Router + TypeScript + React Native Web** — um único código para Android e web.
 - **Supabase** (projeto próprio, São Paulo): Postgres, Auth, Storage, Edge Functions. Cliente em `src/lib/supabase.ts`.
 - **expo-sqlite** — fila offline do motorista (novidade em relação ao FLUXO).
-- **Android:** APK via EAS Build; correções de JS via EAS Update.
+- **Android:** APK via EAS Build; correções de JS via EAS Update. `publicar-apk.bat` compila na nuvem
+  (perfil `preview`) e publica como release no GitHub (`gh`); link fixo
+  `github.com/GilbertoGarbin/Frota/releases/latest/download/Frota.apk`.
 - **Web:** `npm run build:web` (`expo export -p web`), publicado na Vercel por deploy automático do GitHub.
 - Sem API/servidor separado no MVP. Edge Functions: `gerenciar-usuario` (criar login e redefinir
   senha precisam da `service_role`) e `ler-nota` (lê o PDF/XML da nota fiscal do posto e devolve os
