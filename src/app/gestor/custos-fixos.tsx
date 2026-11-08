@@ -102,19 +102,21 @@ export default function CustosFixos() {
     })
     .filter((x) => x.mostrar);
 
+  // tudo numa linha só por registro, para caber mais na janela
   const todasColunas: Coluna<CustoFixo>[] = [
     {
       titulo: 'Descrição',
       flex: 2,
       celula: (c) => (
-        <View style={styles.celulaDupla}>
-          <Text style={styles.forte}>{c.descricao}</Text>
-          <Text style={styles.suave}>{rotuloCategoriaCustoFixo(c.categoria)}</Text>
-        </View>
+        <Text style={styles.forte} numberOfLines={1}>
+          {c.descricao}
+          <Text style={styles.suave}>{`  ·  ${rotuloCategoriaCustoFixo(c.categoria)}`}</Text>
+        </Text>
       ),
     },
     {
       titulo: 'Caminhão',
+      largura: 120,
       celula: (c) => {
         const placa = placaDe(c.veiculo_id);
         return (
@@ -131,23 +133,24 @@ export default function CustosFixos() {
     },
     {
       titulo: 'Por mês',
-      flex: 1.3,
+      largura: 230,
       celula: (c) => (
-        <View style={styles.celulaDupla}>
-          <Text style={styles.forte}>{formatarMoeda(c.valor_mensal)}</Text>
-          <Text style={styles.suave}>
-            {c.periodicidade === 'anual' && c.valor_anual != null ? `${formatarMoeda(c.valor_anual)} por ano` : 'mensal'}
-          </Text>
-        </View>
+        <Text style={styles.forte} numberOfLines={1}>
+          {formatarMoeda(c.valor_mensal)}
+          {c.periodicidade === 'anual' && c.valor_anual != null ? (
+            <Text style={styles.suave}>{`  (${formatarMoeda(c.valor_anual)}/ano)`}</Text>
+          ) : null}
+        </Text>
       ),
     },
     {
       titulo: 'Vigência',
-      flex: 1.3,
+      largura: 170,
       celula: (c) => `${formatarData(c.inicio).slice(3)} até ${c.fim ? formatarData(c.fim).slice(3) : 'sem fim'}`,
     },
     {
       titulo: 'Situação',
+      largura: 130,
       celula: (c) =>
         vigenteNoMes(c, inicio, fim) ? <Selo tipo="sucesso">Vigente</Selo> : <Selo tipo="neutro">Fora do mês</Selo>,
     },
@@ -156,7 +159,6 @@ export default function CustosFixos() {
   // o que a janela mostra em cada caso
   const janela = (() => {
     if (detalhe === null) return null;
-    const vigentesDe = (lista: CustoFixo[]) => somar(lista.filter((c) => vigenteNoMes(c, inicio, fim)).map((c) => c.valor_mensal));
     // na lista de um caminhão (ou só do geral) a coluna Caminhão seria sempre igual
     const semCaminhao = todasColunas.filter((c) => c.titulo !== 'Caminhão');
     if (detalhe === TODOS || detalhe === CAMINHOES) {
@@ -164,9 +166,6 @@ export default function CustosFixos() {
       return {
         titulo: detalhe === TODOS ? 'Todos os custos fixos' : 'Custos fixos ligados aos caminhões',
         subtitulo: undefined,
-        rotuloTotal: `Total por mês · ${rotuloMes(mes)}`,
-        total: vigentesDe(lista),
-        linhaTotal: `${lista.filter((c) => vigenteNoMes(c, inicio, fim)).length} custo(s) vigente(s)`,
         lista,
         colunas: todasColunas,
         parteGeral: null,
@@ -179,12 +178,6 @@ export default function CustosFixos() {
       return {
         titulo: 'Custos fixos gerais',
         subtitulo: 'Da transportadora inteira, divididos igualmente entre os caminhões ativos',
-        rotuloTotal: `Total geral · ${rotuloMes(mes)}`,
-        total: totalGeral,
-        linhaTotal:
-          ativos.length > 0
-            ? `${formatarMoeda(parteGeral)} para cada um dos ${ativos.length} caminhão(ões) ativo(s)`
-            : 'Nenhum caminhão ativo para dividir',
         lista,
         colunas: semCaminhao,
         parteGeral: null,
@@ -195,13 +188,9 @@ export default function CustosFixos() {
     const veiculo = veiculos.find((v) => v.id === detalhe);
     const lista = custos.filter((c) => c.veiculo_id === detalhe);
     const geral = porCaminhao.find((x) => x.veiculo.id === detalhe)?.geral ?? 0;
-    const proprio = vigentesDe(lista);
     return {
       titulo: `Custos fixos · ${veiculo?.placa ?? ''}`,
       subtitulo: veiculo?.modelo,
-      rotuloTotal: `Quanto este caminhão custa parado · ${rotuloMes(mes)}`,
-      total: somar([proprio, geral]),
-      linhaTotal: `Próprio ${formatarMoeda(proprio)} + parte do geral ${formatarMoeda(geral)}`,
       lista,
       colunas: semCaminhao,
       parteGeral: totalGeral > 0 ? geral : null,
@@ -336,9 +325,6 @@ export default function CustosFixos() {
 type PropsDetalhe = {
   titulo: string;
   subtitulo?: string;
-  rotuloTotal: string;
-  total: number;
-  linhaTotal: string;
   lista: CustoFixo[];
   colunas: Coluna<CustoFixo>[];
   /** parte do custo geral que cabe ao caminhão (só na janela de um caminhão) */
@@ -357,9 +343,6 @@ type PropsDetalhe = {
 function DetalheCustos({
   titulo,
   subtitulo,
-  rotuloTotal,
-  total,
-  linhaTotal,
   lista,
   colunas,
   parteGeral,
@@ -376,19 +359,14 @@ function DetalheCustos({
   const ordenados = [...lista].sort((a, b) => Number(vigente(b)) - Number(vigente(a)));
 
   return (
-    <Janela visivel titulo={titulo} subtitulo={subtitulo} aoFechar={aoFechar}>
-      <View style={styles.detalheTotal}>
-        <Text style={styles.suave}>{rotuloTotal}</Text>
-        <Text style={styles.detalheValor}>{formatarMoeda(total)}</Text>
-        <Text style={styles.suave}>{linhaTotal}</Text>
-      </View>
-
+    <Janela visivel largura={1100} titulo={titulo} subtitulo={subtitulo} aoFechar={aoFechar}>
       <Tabela
         aoTocar={aoEditar}
         colunas={colunas}
         itens={ordenados}
         chave={(c) => c.id}
         vazio="Nenhum custo fixo aqui ainda."
+        larguraMinima={0}
       />
 
       {parteGeral !== null ? (
@@ -554,7 +532,6 @@ function FormCustoFixo({ custo, veiculos, veiculoInicial, aoFechar }: PropsForm)
 }
 
 const styles = StyleSheet.create({
-  celulaDupla: { gap: 2 },
   forte: { fontSize: 14, fontWeight: '600', color: Cores.texto },
   suave: { fontSize: 12, color: Cores.textoSuave },
   chip: {
@@ -583,8 +560,6 @@ const styles = StyleSheet.create({
     borderColor: Cores.borda,
     backgroundColor: Cores.fundo,
   },
-  detalheTotal: { gap: 2, padding: Espaco.md, borderRadius: Raio.md, backgroundColor: Cores.fundo },
-  detalheValor: { fontSize: 24, fontWeight: '700', color: Cores.texto },
   itemGeral: {
     flexDirection: 'row',
     alignItems: 'center',

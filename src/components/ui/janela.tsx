@@ -10,6 +10,8 @@ type Props = {
   titulo: string;
   subtitulo?: string;
   aoFechar: () => void;
+  /** largura máxima (padrão 680, a dos formulários); listas usam mais */
+  largura?: number;
   children: ReactNode;
 };
 
@@ -17,11 +19,11 @@ type Props = {
  * Janela por cima da tela para formulários de lançamento (como o "+" do FLUXO): fundo
  * escurecido, título com botão de fechar e conteúdo rolável. No celular ocupa quase a tela toda.
  */
-export function Janela({ visivel, titulo, subtitulo, aoFechar, children }: Props) {
+export function Janela({ visivel, titulo, subtitulo, aoFechar, largura, children }: Props) {
   return (
     <Modal visible={visivel} transparent animationType="fade" onRequestClose={aoFechar}>
       <KeyboardAvoidingView style={styles.fundo} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.janela}>
+        <View style={[styles.janela, largura ? { maxWidth: largura } : null]}>
           <View style={styles.cabecalho}>
             <View style={styles.titulos}>
               <Text accessibilityRole="header" style={styles.titulo}>
