@@ -45,6 +45,10 @@ const STATUS: { valor: StatusMotorista; rotulo: string }[] = [
   { valor: 'ativo', rotulo: 'Ativo' },
   { valor: 'inativo', rotulo: 'Inativo' },
 ];
+const SIM_NAO: { valor: 'sim' | 'nao'; rotulo: string }[] = [
+  { valor: 'sim', rotulo: 'Pode' },
+  { valor: 'nao', rotulo: 'Não pode' },
+];
 const SEM_VEICULO = 'nenhum';
 const ALERTA_CNH_DIAS = 30;
 
@@ -160,8 +164,12 @@ function FormMotorista({ motorista, veiculos, motoristas, temAcesso, aoFechar }:
   const [comissao, setComissao] = useState(motorista ? formatarDecimal(motorista.comissao_percentual) : '');
   const [salario, setSalario] = useState(formatarDecimal(motorista?.salario_fixo));
   const [status, setStatus] = useState<StatusMotorista>((motorista?.status as StatusMotorista) ?? 'ativo');
+  const [podeViagem, setPodeViagem] = useState<'sim' | 'nao'>(motorista?.pode_cadastrar_viagem === false ? 'nao' : 'sim');
+  const [podeCarga, setPodeCarga] = useState<'sim' | 'nao'>(motorista?.pode_carga_extra === false ? 'nao' : 'sim');
   const [mensagem, setMensagem] = useState<ConteudoMensagem | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const { acesso } = useSessao();
+  const ehAdmin = acesso?.papel === 'admin';
   const comissionado = modelo === 'comissionado';
 
   // Caminhão com outro motorista ativo não aparece (o banco também impede)
@@ -212,6 +220,7 @@ function FormMotorista({ motorista, veiculos, motoristas, temAcesso, aoFechar }:
         comissao_percentual: percentual,
         salario_fixo: salarioFixo,
         status,
+        ...(ehAdmin ? { pode_cadastrar_viagem: podeViagem === 'sim', pode_carga_extra: podeCarga === 'sim' } : {}),
       });
       aoFechar(true);
     } catch (e) {
@@ -295,6 +304,31 @@ function FormMotorista({ motorista, veiculos, motoristas, temAcesso, aoFechar }:
         ajuda="Motorista inativo perde o acesso ao app."
       />
       <AcessoAoApp temAcesso={temAcesso} />
+      <View style={styles.secao}>
+        <Text style={styles.secaoTitulo}>Permissões no app</Text>
+        {ehAdmin ? (
+          <LinhaForm minimo={240}>
+            <Segmentado
+              rotulo="Cadastrar viagem"
+              opcoes={SIM_NAO}
+              valor={podeViagem}
+              onChange={setPodeViagem}
+              ajuda="Se não pode, o botão de cadastrar viagem some do app. Ele só faz as viagens que o gestor programar."
+            />
+            <Segmentado
+              rotulo="Lançar carga extra"
+              opcoes={SIM_NAO}
+              valor={podeCarga}
+              onChange={setPodeCarga}
+              ajuda="Se não pode, o botão Carga extra some da viagem em andamento no app."
+            />
+          </LinhaForm>
+        ) : (
+          <Text style={styles.ajuda}>
+            {`Cadastrar viagem: ${podeViagem === 'sim' ? 'pode' : 'não pode'} · Lançar carga extra: ${podeCarga === 'sim' ? 'pode' : 'não pode'}. Só o admin da transportadora muda.`}
+          </Text>
+        )}
+      </View>
       <View style={styles.botoes}>
         <Botao titulo="Salvar" onPress={aoSalvar} carregando={salvando} />
         <Botao titulo="Cancelar" variante="link" onPress={() => aoFechar(false)} />

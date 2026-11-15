@@ -41,6 +41,15 @@ export default function NovaViagem() {
   const comissao = comissionado && freteLido && !Number.isNaN(freteLido) ? percentualDe(freteLido, m?.comissao_percentual ?? 0) : null;
   const emAndamento = viagens.some((v) => v.status === 'em_andamento');
 
+  // Sem permissão só chega aqui por link antigo: editar a própria viagem continua valendo
+  if (!editando && m?.pode_cadastrar_viagem === false) {
+    return (
+      <TelaMotorista titulo="Nova viagem" aoVoltar={() => router.back()}>
+        <Aviso tipo="info">O cadastro de viagens não está liberado para você. Fale com o gestor.</Aviso>
+      </TelaMotorista>
+    );
+  }
+
   function ler(): DadosNovaViagem | null {
     const dataIso = lerData(data);
     if (!dataIso) return (setErro('Data inválida. Use dia/mês/ano.'), null);

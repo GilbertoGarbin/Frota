@@ -1342,3 +1342,48 @@ test('corrigir km da viagem: refaz combustível e volta o km atual do caminhão'
   await g(() => q('update viagens set km_final = 1650 where id = $1', [viagem]));
   assert.equal(Number((await um('select km_atual from veiculos where id = $1', [vg])).km_atual), 5000);
 });
+
+test('permissões do motorista: cadastrar viagem e carga extra, só o admin muda', async () => {
+  const vp = await novoVeiculo('PER1A11');
+  const mp = await novoMotorista('Paulo', '93100000001', vp);
+  const loginP = await uuid();
+  const gestorComum = await uuid();
+  await db.query('insert into auth.users (id) values ($1), ($2)', [loginP, gestorComum]);
+  await db.query(
+    `insert into usuarios (id, tenant_id, papel, motorista_id) values ($1, $3, 'motorista', $4), ($2, $3, 'gestor', null)`,
+    [loginP, gestorComum, tenantA, mp],
+  );
+  const perms = () => um('select pode_cadastrar_viagem, pode_carga_extra from motoristas where id = $1', [mp]);
+
+  // padrão: pode tudo
+  assert.deepEqual(await perms(), { pode_cadastrar_viagem: true, pode_carga_extra: true });
+
+  // gestor que não é admin não muda as permissões (o resto do cadastro muda)
+  await como(gestorComum, () => q(`update motoristas set pode_cadastrar_viagem = false, telefone = '41999999999' where id = $1`, [mp]));
+  assert.equal((await perms()).pode_cadastrar_viagem, true);
+  assert.equal((await um('select telefone from motoristas where id = $1', [mp])).telefone, '41999999999');
+
+  // o admin tira as duas
+  await como(gestorA, () => q(`update motoristas set pode_cadastrar_viagem = false, pode_carga_extra = false where id = $1`, [mp]));
+  assert.deepEqual(await perms(), { pode_cadastrar_viagem: false, pode_carga_extra: false });
+
+  const nova = await uuid();
+  await assert.rejects(
+    como(loginP, () => q(`select criar_viagem_motorista($1, $2, 'A', 'B', 1000)`, [nova, vp])),
+    /não liberou/,
+  );
+
+  const aberta = await programar(mp, vp, 500);
+  await como(loginP, () => q('select iniciar_viagem($1, 100)', [aberta]));
+  await assert.rejects(como(loginP, () => q(`insert into complementos (viagem_id, valor) values ($1, 10)`, [aberta])));
+  // o gestor continua lançando
+  await como(gestorA, () => q(`insert into complementos (viagem_id, valor, tipo) values ($1, 50, 'diaria_espera')`, [aberta]));
+
+  // liberado de novo: volta a funcionar, e reenviar a mesma viagem não falha
+  await como(gestorA, () => q(`update motoristas set pode_cadastrar_viagem = true, pode_carga_extra = true where id = $1`, [mp]));
+  await como(loginP, () => q(`insert into complementos (viagem_id, valor) values ($1, 10)`, [aberta]));
+  await como(loginP, () => q(`select criar_viagem_motorista($1, $2, 'A', 'B', 1000)`, [nova, vp]));
+  await como(gestorA, () => q(`update motoristas set pode_cadastrar_viagem = false where id = $1`, [mp]));
+  await como(loginP, () => q(`select criar_viagem_motorista($1, $2, 'A', 'B', 1000)`, [nova, vp]));
+  assert.equal((await como(loginP, () => q('select * from viagens_do_motorista() where id = $1', [nova]))).length, 1);
+});

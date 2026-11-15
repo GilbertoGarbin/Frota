@@ -237,8 +237,10 @@ const ATALHOS: { painel: TipoPainel; rotulo: string; icone: NomeIcone }[] = [
 
 export function ViagemEmAndamento({ viagem: salva }: Props) {
   const router = useRouter();
-  const { aoVivo, registros } = useMotorista();
+  const { aoVivo, registros, perfil } = useMotorista();
   const comissionado = useComissionado();
+  // O admin pode tirar a carga extra deste motorista (perfil antigo, sem o campo, continua podendo)
+  const atalhos = ATALHOS.filter((a) => a.painel !== 'carga' || perfil.motorista?.pode_carga_extra !== false);
   const [painel, setPainel] = useState<TipoPainel | null>(null);
   const [avisoDocumento, setAvisoDocumento] = useState<string | undefined>(undefined);
 
@@ -298,7 +300,7 @@ export function ViagemEmAndamento({ viagem: salva }: Props) {
       {painel === 'abastecimento' ? <PainelAbastecimento viagem={viagem} aoFechar={fechar} /> : null}
       {painel === 'despesa' ? <PainelDespesa viagem={viagem} aoFechar={fechar} /> : null}
       {painel === 'parada' ? <PainelParada viagem={viagem} aoFechar={fechar} /> : null}
-      {painel === 'carga' ? <PainelCarga viagem={viagem} aoFechar={fechar} /> : null}
+      {painel === 'carga' && atalhos.some((a) => a.painel === 'carga') ? <PainelCarga viagem={viagem} aoFechar={fechar} /> : null}
       {painel === 'documentos' ? <PainelDocumentos viagem={viagem} aoFechar={fechar} aviso={avisoDocumento} /> : null}
       {painel === 'conferencia' ? (
         <PainelConferencia viagem={viagem} aoFechar={fechar} aoFinalizar={() => router.replace('/motorista/historico')} />
@@ -307,13 +309,13 @@ export function ViagemEmAndamento({ viagem: salva }: Props) {
       {painel === null ? (
         <>
           <View style={em.grade}>
-            {ATALHOS.map((a) => (
+            {atalhos.map((a) => (
               <Pressable key={a.painel} accessibilityRole="button" accessibilityLabel={a.rotulo} onPress={() => abrir(a.painel)} style={[styles.atalho, em.metade]}>
                 <Icone nome={a.icone} tamanho={24} cor={Cores.primaria} />
                 <Text style={styles.atalhoRotulo}>{a.rotulo}</Text>
               </Pressable>
             ))}
-            <Pressable accessibilityRole="button" accessibilityLabel="Documentos" onPress={() => abrir('documentos')} style={[styles.atalho, styles.atalhoLargo]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Documentos" onPress={() => abrir('documentos')} style={[styles.atalho, atalhos.length % 2 === 0 ? styles.atalhoLargo : em.metade]}>
               <Icone nome="documento" tamanho={24} cor={Cores.primaria} />
               <Text style={styles.atalhoRotulo}>Documentos</Text>
               {canhotoOk ? null : <Selo tipo="perigo">1 pendente</Selo>}

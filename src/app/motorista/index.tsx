@@ -32,6 +32,8 @@ export default function Inicio() {
     .sort((a, b) => a.data_prevista.localeCompare(b.data_prevista));
   const mes = resumoDoMes(viagens, mesAtual());
   const comissionado = motorista?.modelo_remuneracao === 'comissionado';
+  // O admin pode tirar do motorista o cadastro de viagem (perfil antigo, sem o campo, continua podendo)
+  const podeCadastrar = motorista?.pode_cadastrar_viagem !== false;
   const abrir = (id: string) => router.push({ pathname: '/motorista/viagem/[id]', params: { id } });
 
   return (
@@ -95,11 +97,11 @@ export default function Inicio() {
         <Cartao>
           <Text style={em.titulo}>Nenhuma viagem programada</Text>
           <Text style={em.suave}>Quando o gestor programar uma viagem, ela aparece aqui.</Text>
-          <Botao titulo="Iniciar viagem" onPress={() => router.push('/motorista/nova-viagem')} />
+          {podeCadastrar ? <Botao titulo="Iniciar viagem" onPress={() => router.push('/motorista/nova-viagem')} /> : null}
         </Cartao>
-      ) : (
+      ) : podeCadastrar ? (
         <Botao titulo="+ Cadastrar nova viagem" variante="contorno" onPress={() => router.push('/motorista/nova-viagem')} />
-      )}
+      ) : null}
     </TelaMotorista>
   );
 }

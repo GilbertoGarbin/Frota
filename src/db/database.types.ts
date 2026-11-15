@@ -657,6 +657,8 @@ export type Database = {
           id: string
           modelo_remuneracao: string
           nome: string
+          pode_cadastrar_viagem: boolean
+          pode_carga_extra: boolean
           salario_fixo: number | null
           status: string
           telefone: string | null
@@ -673,6 +675,8 @@ export type Database = {
           id?: string
           modelo_remuneracao?: string
           nome: string
+          pode_cadastrar_viagem?: boolean
+          pode_carga_extra?: boolean
           salario_fixo?: number | null
           status?: string
           telefone?: string | null
@@ -689,6 +693,8 @@ export type Database = {
           id?: string
           modelo_remuneracao?: string
           nome?: string
+          pode_cadastrar_viagem?: boolean
+          pode_carga_extra?: boolean
           salario_fixo?: number | null
           status?: string
           telefone?: string | null

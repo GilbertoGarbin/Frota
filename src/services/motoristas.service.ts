@@ -18,7 +18,9 @@ export type DadosMotorista = Pick<
   | 'comissao_percentual'
   | 'salario_fixo'
   | 'status'
->;
+> &
+  /** só o admin envia; para o gestor o banco mantém como estava */
+  Partial<Pick<TablesInsert<'motoristas'>, 'pode_cadastrar_viagem' | 'pode_carga_extra'>>;
 
 export type TelaMotoristas = {
   motoristas: Motorista[];

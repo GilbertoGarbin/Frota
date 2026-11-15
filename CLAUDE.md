@@ -144,6 +144,9 @@ num Postgres embutido (PGlite): **`npm run test:db` — rodar sempre que mexer e
   via `minhas_configuracoes`/`salvar_configuracoes`); `viagens.exige_canhoto` nasce com esse padrão (trigger
   quando não vem valor) e o gestor troca na viagem. `finalizar_viagem` só cobra o canhoto se a viagem exige.
   Configurações novas da transportadora entram nessa mesma tela e nas mesmas duas funções.
+- Permissões do motorista (`motoristas.pode_cadastrar_viagem`, `pode_carga_extra`, padrão true): só o admin muda
+  (trigger mantém o valor quando quem grava é gestor), no cadastro do motorista. O banco recusa
+  (`criar_viagem_motorista` e política de `complementos`, via `app.motorista_pode`) e o app esconde os botões.
 - Custos fixos (`custos_fixos`): de um caminhão (`veiculo_id`) ou geral (sem veículo); categoria em lista
   fechada (`CATEGORIAS_CUSTO_FIXO` = check do banco); `periodicidade` 'anual' guarda `valor_anual` e o trigger
   deriva `valor_mensal` (÷ 12). `desempenho_por_veiculo` desconta o fixo do caminhão + o geral dividido
