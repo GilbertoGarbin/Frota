@@ -164,17 +164,15 @@ function Lateral({ aoReabrir, aoEscolher, fechar }: PropsLateral) {
   );
 }
 
-const FUNDO_MENU = '#B91C1C';
-const FUNDO_MENU_ATIVO = '#7F1D1D';
-const TEXTO_MENU = '#FEE2E2';
-const TEXTO_MENU_SUAVE = '#FECACA';
+const TEXTO_MENU = '#CBD5E1';
+const TEXTO_MENU_SUAVE = '#94A3B8';
 
 const styles = StyleSheet.create({
-  raiz: { flex: 1, backgroundColor: FUNDO_MENU },
+  raiz: { flex: 1, backgroundColor: Cores.texto },
   raizLarga: { flexDirection: 'row' },
   conteudo: { flex: 1, backgroundColor: Cores.fundo },
 
-  lateral: { width: 240, backgroundColor: FUNDO_MENU, paddingVertical: Espaco.xl },
+  lateral: { width: 240, backgroundColor: Cores.texto, paddingVertical: Espaco.xl },
   marca: {
     paddingHorizontal: Espaco.xl,
     paddingBottom: Espaco.xl,
@@ -205,7 +203,7 @@ const styles = StyleSheet.create({
     gap: Espaco.md,
     minHeight: 56,
     paddingHorizontal: Espaco.md,
-    backgroundColor: FUNDO_MENU,
+    backgroundColor: Cores.texto,
   },
   botaoMenu: {
     flexDirection: 'row',
@@ -220,7 +218,7 @@ const styles = StyleSheet.create({
   botaoMenuTexto: { fontSize: 15, fontWeight: '600', color: Cores.branco },
   barraTitulo: { flex: 1, fontSize: 16, fontWeight: '600', color: TEXTO_MENU },
   gaveta: { flex: 1, flexDirection: 'row' },
-  gavetaPainel: { width: 280, maxWidth: '85%', backgroundColor: FUNDO_MENU },
+  gavetaPainel: { width: 280, maxWidth: '85%', backgroundColor: Cores.texto },
   gavetaFundo: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.5)' },
   lateralGaveta: { flex: 1, width: '100%' },
 
@@ -233,12 +231,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Espaco.md,
     borderRadius: Raio.sm,
   },
-  itemAtivo: { backgroundColor: FUNDO_MENU_ATIVO },
+  itemAtivo: { backgroundColor: Cores.primaria },
   itemComIcone: { justifyContent: 'flex-start' },
   itemSub: { minHeight: 32, marginLeft: Espaco.lg },
   itemTexto: { fontSize: 14, color: TEXTO_MENU },
   itemTextoSub: { fontSize: 13 },
   itemTextoAtivo: { color: Cores.branco, fontWeight: '600' },
-  itemEmBreve: { color: '#FCA5A5' },
-  emBreve: { fontSize: 11, color: '#FCA5A5' },
+  itemEmBreve: { color: '#64748B' },
+  emBreve: { fontSize: 11, color: '#64748B' },
 });
