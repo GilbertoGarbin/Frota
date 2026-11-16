@@ -38,22 +38,16 @@ export default function Historico() {
       </View>
 
       <View style={em.grade}>
-        <View style={em.metade}>
-          <ValorCalculado rotulo="Viagens no mês" valor={String(atual.viagens.length)} />
-        </View>
-        <View style={em.metade}>
+        {/* Quantidade de viagens e comparativos ficam para o relatório; aqui só km e comissão, lado a lado */}
+        <View style={comissionado ? em.metade : { flexBasis: '100%' }}>
           <ValorCalculado rotulo="Km rodados" valor={formatarKm(atual.km)} />
         </View>
         {comissionado ? (
-          <View style={{ flexBasis: '100%' }}>
+          <View style={em.metade}>
             <ValorCalculado
               rotulo="Comissão no mês"
               valor={formatarMoeda(atual.comissao)}
-              nota={
-                tendencia === null
-                  ? undefined
-                  : `${tendencia >= 0 ? '▲ +' : '▼ '}${tendencia}% em relação ao mês anterior`
-              }
+              nota={tendencia === null ? undefined : `${tendencia >= 0 ? '▲ +' : '▼ '}${tendencia}% vs. mês anterior`}
             />
           </View>
         ) : null}
