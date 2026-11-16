@@ -76,6 +76,9 @@ export default function Inicio() {
         </Cartao>
       ) : null}
 
+      {/* Caminho visível para a lista completa (antes só pela faixa da comissão) */}
+      <Botao titulo="Ver todas as minhas viagens ›" variante="contorno" onPress={() => router.navigate('/motorista/historico')} />
+
       {programadas.length > 0 ? <Text style={em.titulo}>Próximas viagens</Text> : null}
       {programadas.map((v) => {
         const veiculoDaViagem = perfil.veiculos.find((x) => x.id === v.veiculo_id);

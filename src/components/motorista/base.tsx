@@ -55,7 +55,9 @@ export function BarraInferior() {
     <SafeAreaView edges={['bottom']} style={styles.barra}>
       <View accessibilityRole="tablist" style={styles.barraItens}>
         {ABAS.map((aba) => {
-          const ativa = caminho === aba.rota;
+          // Dentro de uma viagem, a aba Viagens fica marcada: é por ela que se volta à lista
+          const ativa =
+            caminho === aba.rota || (aba.rota === '/motorista/historico' && caminho.startsWith('/motorista/viagem'));
           return (
             <Pressable
               key={aba.rotulo}
