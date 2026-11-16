@@ -28,37 +28,11 @@ export default function Historico() {
   const programadas = viagens
     .filter((v) => v.status === 'programada')
     .sort((a, b) => a.data_prevista.localeCompare(b.data_prevista));
+  const ehMesAtual = mes === mesAtual();
   const finalizadas = [...atual.viagens].sort((a, b) => (b.data_hora_chegada ?? '').localeCompare(a.data_hora_chegada ?? ''));
 
   return (
     <TelaMotorista titulo="Viagens" subtitulo="Toque numa viagem para abrir.">
-      {emAndamento.map((v) => (
-        <Cartao key={v.id} onPress={() => abrir(v.id)} rotuloAcessivel={`Viagem em andamento ${v.origem} para ${v.destino}`}>
-          <View style={em.linha}>
-            <Selo tipo="aviso">Em andamento</Selo>
-          </View>
-          <Text style={em.titulo}>
-            {v.origem} → {v.destino}
-          </Text>
-          <Text style={em.suave}>Frete {formatarMoeda(aoVivo(v).valor_frete_total)}</Text>
-        </Cartao>
-      ))}
-
-      {programadas.length > 0 ? <Text style={em.titulo}>Próximas viagens</Text> : null}
-      {programadas.map((v) => (
-        <Cartao key={v.id} onPress={() => abrir(v.id)} rotuloAcessivel={`Viagem ${v.origem} para ${v.destino}`}>
-          <Text style={em.titulo}>
-            {v.origem} → {v.destino}
-          </Text>
-          <Text style={em.suave}>
-            {formatarData(v.data_prevista)}
-            {placa(v.veiculo_id) ? ` · ${placa(v.veiculo_id)}` : ''}
-            {v.cliente ? ` · ${v.cliente}` : ''}
-          </Text>
-        </Cartao>
-      ))}
-
-      <Text style={em.titulo}>Finalizadas</Text>
       <View style={em.linha}>
         <SeletorMes mes={mes} onChange={setMes} />
       </View>
@@ -85,6 +59,38 @@ export default function Historico() {
         ) : null}
       </View>
 
+      {/* Em andamento e próximas são de agora: só aparecem no mês atual */}
+      {ehMesAtual ? (
+        <>
+          {emAndamento.map((v) => (
+            <Cartao key={v.id} onPress={() => abrir(v.id)} rotuloAcessivel={`Viagem em andamento ${v.origem} para ${v.destino}`}>
+              <View style={em.linha}>
+                <Selo tipo="aviso">Em andamento</Selo>
+              </View>
+              <Text style={em.titulo}>
+                {v.origem} → {v.destino}
+              </Text>
+              <Text style={em.suave}>Frete {formatarMoeda(aoVivo(v).valor_frete_total)}</Text>
+            </Cartao>
+          ))}
+
+          {programadas.length > 0 ? <Text style={em.titulo}>Próximas viagens</Text> : null}
+          {programadas.map((v) => (
+            <Cartao key={v.id} onPress={() => abrir(v.id)} rotuloAcessivel={`Viagem ${v.origem} para ${v.destino}`}>
+              <Text style={em.titulo}>
+                {v.origem} → {v.destino}
+              </Text>
+              <Text style={em.suave}>
+                {formatarData(v.data_prevista)}
+                {placa(v.veiculo_id) ? ` · ${placa(v.veiculo_id)}` : ''}
+                {v.cliente ? ` · ${v.cliente}` : ''}
+              </Text>
+            </Cartao>
+          ))}
+        </>
+      ) : null}
+
+      {finalizadas.length > 0 ? <Text style={em.titulo}>Finalizadas</Text> : null}
       {finalizadas.length === 0 ? <Text style={em.suave}>Nenhuma viagem finalizada neste mês.</Text> : null}
       {finalizadas.map((v) => (
         <Cartao
