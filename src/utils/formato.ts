@@ -73,6 +73,11 @@ export function rotuloMes({ ano, mes }: Mes): string {
   return `${MESES[mes - 1]} ${ano}`;
 }
 
+/** "Nov" — rótulo curto para eixo de gráfico */
+export function rotuloMesCurto({ mes }: Mes): string {
+  return MESES[mes - 1].slice(0, 3);
+}
+
 /** Primeiro e último dia do mês, em ISO */
 export function periodoDoMes({ ano, mes }: Mes): { inicio: string; fim: string } {
   const ultimoDia = new Date(Date.UTC(ano, mes, 0)).getUTCDate();

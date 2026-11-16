@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Cartao, estilosMotorista as em, TelaMotorista, ValorCalculado } from '@/components/motorista/base';
+import { Botao } from '@/components/ui/botao';
 import { Selo } from '@/components/ui/selo';
 import { SeletorMes } from '@/components/ui/seletor-mes';
 import { useMotorista } from '@/context/MotoristaContext';
@@ -33,6 +34,7 @@ export default function Historico() {
 
   return (
     <TelaMotorista titulo="Viagens" subtitulo="Toque numa viagem para abrir.">
+      <Botao titulo="Ver meu desempenho ›" variante="contorno" onPress={() => router.push('/motorista/desempenho')} />
       <View style={em.linha}>
         <SeletorMes mes={mes} onChange={setMes} />
       </View>
